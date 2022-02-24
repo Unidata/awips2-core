@@ -19,6 +19,8 @@
 package com.raytheon.uf.common.datastorage.audit;
 
 import com.raytheon.uf.common.datastorage.records.IMetadataIdentifier;
+import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
+import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 import com.raytheon.uf.common.time.SimulatedTime;
 
 /**
@@ -31,24 +33,38 @@ import com.raytheon.uf.common.time.SimulatedTime;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Sep 23, 2021 8608       mapeters    Initial creation
+ * Feb 17, 2022 8608       mapeters    Support dynamic serialize
  *
  * </pre>
  *
  * @author mapeters
  */
+@DynamicSerialize
 public class DataStorageInfo {
 
-    private final long startTime;
+    @DynamicSerializeElement
+    private long startTime;
 
-    private final String traceId;
+    @DynamicSerializeElement
+    private String traceId;
 
+    @DynamicSerializeElement
     private IMetadataIdentifier metaId;
 
-    private DataId dataId;
+    @DynamicSerializeElement
+    private IDataIdentifier dataId;
 
+    @DynamicSerializeElement
     private MetadataStatus metaStatus;
 
+    @DynamicSerializeElement
     private DataStatus dataStatus;
+
+    /**
+     * Do NOT call, only for serialization.
+     */
+    public DataStorageInfo() {
+    }
 
     /**
      * Constructor. Note that on instantiation, the current time is stored as
@@ -72,10 +88,24 @@ public class DataStorageInfo {
     }
 
     /**
+     * Do NOT call, only for serialization.
+     */
+    public void setStartTime(long startTime) {
+        this.startTime = startTime;
+    }
+
+    /**
      * @return the trace ID uniquely identifying this data storage operation
      */
     public String getTraceId() {
         return traceId;
+    }
+
+    /**
+     * Do NOT call, only for serialization.
+     */
+    public void setTraceId(String traceId) {
+        this.traceId = traceId;
     }
 
     public IMetadataIdentifier getMetaId() {
@@ -86,11 +116,11 @@ public class DataStorageInfo {
         this.metaId = metaId;
     }
 
-    public DataId getDataId() {
+    public IDataIdentifier getDataId() {
         return dataId;
     }
 
-    public void setDataId(DataId dataId) {
+    public void setDataId(IDataIdentifier dataId) {
         this.dataId = dataId;
     }
 

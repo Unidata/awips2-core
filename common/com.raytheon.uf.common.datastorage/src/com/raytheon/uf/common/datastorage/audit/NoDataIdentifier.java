@@ -18,65 +18,54 @@
  **/
 package com.raytheon.uf.common.datastorage.audit;
 
-import com.raytheon.uf.common.datastorage.records.IMetadataIdentifier;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
 /**
- * Container class for metadata and data identifiers.
+ * Data identifier implementation that doesn't actually identify any data. Used
+ * for metadata-only data types.
  *
  * <pre>
  *
  * SOFTWARE HISTORY
  *
  * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Sep 23, 2021 8608       mapeters    Initial creation
- * Feb 17, 2022 8608       mapeters    DataId refactored to IDataIdentifier
+ * ------------ ---------- ----------- ----------------------------------------
+ * Feb 04, 2022 8608       mapeters    Initial creation
  *
  * </pre>
  *
  * @author mapeters
  */
 @DynamicSerialize
-public class MetadataAndDataId {
+public class NoDataIdentifier implements IDataIdentifier {
+
+    private static final long serialVersionUID = 1L;
 
     @DynamicSerializeElement
-    private IMetadataIdentifier metaId;
-
-    @DynamicSerializeElement
-    private IDataIdentifier dataId;
+    private String traceId;
 
     /**
-     * Default constructor for serialization.
+     * Empty constructor for serialization.
      */
-    public MetadataAndDataId() {
+    public NoDataIdentifier() {
     }
 
-    public MetadataAndDataId(IMetadataIdentifier metaId,
-            IDataIdentifier dataId) {
-        this.metaId = metaId;
-        this.dataId = dataId;
+    public NoDataIdentifier(String traceId) {
+        this.traceId = traceId;
     }
 
-    public IMetadataIdentifier getMetaId() {
-        return metaId;
+    @Override
+    public String getTraceId() {
+        return traceId;
     }
 
-    public void setMetaId(IMetadataIdentifier metaId) {
-        this.metaId = metaId;
-    }
-
-    public IDataIdentifier getDataId() {
-        return dataId;
-    }
-
-    public void setDataId(IDataIdentifier dataId) {
-        this.dataId = dataId;
+    public void setTraceId(String traceId) {
+        this.traceId = traceId;
     }
 
     @Override
     public String toString() {
-        return "DataIds [metaId=" + metaId + ", dataId=" + dataId + "]";
+        return "NoDataIdentifier [traceId=" + traceId + "]";
     }
 }

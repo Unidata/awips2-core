@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -35,7 +35,7 @@ import com.raytheon.uf.edex.database.plugin.PluginFactory;
 
 /**
  * Receives events from the file endpoint.
- * 
+ *
  * <pre>
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
@@ -46,10 +46,10 @@ import com.raytheon.uf.edex.database.plugin.PluginFactory;
  * Feb 06, 2009 1990       bphillip    Refactored to use plugin daos
  * Mar 19, 2013 1785       bgonzale    Added performance status to indexOne and index.
  * Dec 17, 2015 5166       kbisanz     Update logging to use SLF4J
+ * Feb 22, 2022 8608       mapeters    Add auditMissingPiecesForDatabaseOnlyPdos()
  * </pre>
- * 
+ *
  * @author Frank Griffith
- * @version 1.0
  */
 public class IndexSrv {
 
@@ -72,9 +72,9 @@ public class IndexSrv {
 
     /**
      * Index a single record
-     * 
+     *
      * Return null if the indexing was not successful, else return the record.
-     * 
+     *
      * @param record
      *            the record
      * @return the record, else null if indexing failed
@@ -98,9 +98,9 @@ public class IndexSrv {
 
     /**
      * Index all records in an array
-     * 
+     *
      * Return the list of records that were successfully persisted
-     * 
+     *
      * @param record
      *            a record array
      * @return the list of objects that were successfully persisted
@@ -122,8 +122,10 @@ public class IndexSrv {
             timer.start();
             PluginDataObject[] persisted = dao.persistToDatabase(record);
             timer.stop();
-            perfLog.logDuration(pluginName + ": Saved " + persisted.length
-                    + " record(s): Time to Save", timer.getElapsedTime());
+            perfLog.logDuration(
+                    pluginName + ": Saved " + persisted.length
+                            + " record(s): Time to Save",
+                    timer.getElapsedTime());
             if (logger.isDebugEnabled()) {
                 for (PluginDataObject rec : record) {
                     logger.debug("Persisted: " + rec + " to database");
@@ -135,6 +137,38 @@ public class IndexSrv {
             logger.error("Error occurred during persist", e);
             return new PluginDataObject[0];
         }
+    }
+
+    /**
+     * This should be called for PDOs that only store metadata to the database,
+     * and have no associated data store values.
+     *
+     * The data store route normally audits the metadata ID, data ID, and data
+     * status, so this generates and sends those pieces to the auditer.
+     *
+     * @param pdos
+     *            the plugin data objects to audit
+     * @return the given PDOs (to support calling this in a spring route)
+     */
+    public PluginDataObject[] auditMissingPiecesForDatabaseOnlyPdos(
+            PluginDataObject[] pdos) {
+        if (pdos == null || pdos.length == 0) {
+            return new PluginDataObject[0];
+        }
+
+        try {
+            String pluginName = pdos[0].getPluginName();
+            PluginDao dao = PluginFactory.getInstance()
+                    .getPluginDao(pluginName);
+            dao.auditMissingPiecesForDatabaseOnlyPdos(pdos);
+        } catch (Throwable e) {
+            logger.error(
+                    "Error occurred auditing missing pieces for database-only PDOs: "
+                            + pdos,
+                    e);
+        }
+
+        return pdos;
     }
 
     public void dispose() {

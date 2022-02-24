@@ -54,6 +54,7 @@ import com.raytheon.uf.common.util.SystemUtil;
  * Oct 10, 2012 1261        djohnson     Add generic for identifier.
  * Feb 11, 2014 2784        rferrel     Identifier no longer a DynamicSerializeElement.
  * Sep 23, 2021  8608       mapeters    Auto-generated traceId
+ * Feb 17, 2022  8608       mapeters    Add thread name to traceId
  *
  * </pre>
  *
@@ -83,7 +84,8 @@ public abstract class PersistableDataObject<IDENTIFIER_TYPE>
      */
     @DynamicSerializeElement
     private String traceId = String.join(":", processId,
-            getClass().getSimpleName(), UUID.randomUUID().toString());
+            Thread.currentThread().getName(), getClass().getSimpleName(),
+            UUID.randomUUID().toString());
 
     /**
      * Some records allow data to be updated instead of inserted. This flag

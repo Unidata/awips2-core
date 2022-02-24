@@ -57,7 +57,9 @@ import com.raytheon.uf.common.dataplugin.persist.PersistableDataObject;
 import com.raytheon.uf.common.dataquery.db.QueryParam;
 import com.raytheon.uf.common.dataquery.db.QueryResult;
 import com.raytheon.uf.common.dataquery.db.QueryResultRow;
+import com.raytheon.uf.common.status.IPerformanceStatusHandler;
 import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.PerformanceStatus;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.edex.database.DataAccessLayerException;
 import com.raytheon.uf.edex.database.processor.IDatabaseProcessor;
@@ -115,6 +117,7 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  * Sep 11, 2019  7931     tgurney   Add default aliases for returned columns
  *                                  that don't have aliases
  * Nov 04, 2019  7960     mapeters  Added {@link #createAll}
+ * Feb 23, 2022  8608     mapeters  Added perfLog
  *
  * </pre>
  *
@@ -123,6 +126,9 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
 public class CoreDao {
 
     protected final IUFStatusHandler logger = UFStatus.getHandler(getClass());
+
+    protected final IPerformanceStatusHandler perfLog = PerformanceStatus
+            .getHandler(getClass().getSimpleName() + ":");
 
     protected static final Pattern MAPPED_SQL_PATTERN = Pattern.compile(
             "select (.+?) FROM .*",
@@ -387,24 +393,17 @@ public class CoreDao {
         int rowsDeleted = 0;
         try {
             // Get a session and create a new criteria instance
-            rowsDeleted = txTemplate
-                    .execute(new TransactionCallback<Integer>() {
-                        @Override
-                        public Integer doInTransaction(
-                                TransactionStatus status) {
-                            String queryString = query.createHQLDelete();
-                            Query hibQuery = getCurrentSession()
-                                    .createQuery(queryString);
-                            try {
-                                query.populateHQLQuery(hibQuery,
-                                        getSessionFactory());
-                            } catch (DataAccessLayerException e) {
-                                throw new org.hibernate.TransactionException(
-                                        "Error populating delete statement", e);
-                            }
-                            return hibQuery.executeUpdate();
-                        }
-                    });
+            rowsDeleted = txTemplate.execute(status -> {
+                String queryString = query.createHQLDelete();
+                Query hibQuery = getCurrentSession().createQuery(queryString);
+                try {
+                    query.populateHQLQuery(hibQuery, getSessionFactory());
+                } catch (DataAccessLayerException e) {
+                    throw new org.hibernate.TransactionException(
+                            "Error populating delete statement", e);
+                }
+                return hibQuery.executeUpdate();
+            });
         } catch (TransactionException e) {
             throw new DataAccessLayerException("Transaction failed", e);
         }
@@ -425,31 +424,24 @@ public class CoreDao {
         List<?> queryResult = null;
         try {
             // Get a session and create a new criteria instance
-            queryResult = txTemplate
-                    .execute(new TransactionCallback<List<?>>() {
-                        @Override
-                        public List<?> doInTransaction(
-                                TransactionStatus status) {
-                            String queryString = query.createHQLQuery();
-                            Query hibQuery = getCurrentSession()
-                                    .createQuery(queryString);
-                            try {
-                                query.populateHQLQuery(hibQuery,
-                                        getSessionFactory());
-                            } catch (DataAccessLayerException e) {
-                                throw new org.hibernate.TransactionException(
-                                        "Error populating query", e);
-                            }
-                            // hibQuery.setCacheMode(CacheMode.NORMAL);
-                            // hibQuery.setCacheRegion(QUERY_CACHE_REGION);
-                            Integer maxResults = query.getMaxResults();
-                            if (maxResults != null && maxResults > 0) {
-                                hibQuery.setMaxResults(maxResults);
-                            }
-                            List<?> results = hibQuery.list();
-                            return results;
-                        }
-                    });
+            queryResult = txTemplate.execute(status -> {
+                String queryString = query.createHQLQuery();
+                Query hibQuery = getCurrentSession().createQuery(queryString);
+                try {
+                    query.populateHQLQuery(hibQuery, getSessionFactory());
+                } catch (DataAccessLayerException e) {
+                    throw new org.hibernate.TransactionException(
+                            "Error populating query", e);
+                }
+                // hibQuery.setCacheMode(CacheMode.NORMAL);
+                // hibQuery.setCacheRegion(QUERY_CACHE_REGION);
+                Integer maxResults = query.getMaxResults();
+                if (maxResults != null && maxResults > 0) {
+                    hibQuery.setMaxResults(maxResults);
+                }
+                List<?> results = hibQuery.list();
+                return results;
+            });
 
         } catch (TransactionException e) {
             throw new DataAccessLayerException("Transaction failed", e);
@@ -769,62 +761,54 @@ public class CoreDao {
      */
     public QueryResult executeHQLQuery(final String hqlQuery,
             final Map<String, Object> paramMap, int maxResults) {
-        QueryResult result = txTemplate
-                .execute(new TransactionCallback<QueryResult>() {
-                    @Override
-                    public QueryResult doInTransaction(
-                            TransactionStatus status) {
-                        Query hibQuery = getCurrentSession()
-                                .createQuery(hqlQuery);
-                        // hibQuery.setCacheMode(CacheMode.NORMAL);
-                        // hibQuery.setCacheRegion(QUERY_CACHE_REGION);
-                        hibQuery.setCacheable(true);
-                        if (maxResults > 0) {
-                            hibQuery.setMaxResults(maxResults);
-                        }
-                        addParamsToQuery(hibQuery, paramMap);
+        QueryResult rval = txTemplate.execute(status -> {
+            Query hibQuery = getCurrentSession().createQuery(hqlQuery);
+            // hibQuery.setCacheMode(CacheMode.NORMAL);
+            // hibQuery.setCacheRegion(QUERY_CACHE_REGION);
+            hibQuery.setCacheable(true);
+            if (maxResults > 0) {
+                hibQuery.setMaxResults(maxResults);
+            }
+            addParamsToQuery(hibQuery, paramMap);
 
-                        List<?> queryResult = hibQuery.list();
+            List<?> queryResult = hibQuery.list();
 
-                        QueryResultRow[] rows = new QueryResultRow[queryResult
-                                .size()];
-                        if (!queryResult.isEmpty()) {
-                            if (queryResult.get(0) instanceof Object[]) {
-                                for (int i = 0; i < queryResult.size(); i++) {
-                                    QueryResultRow row = new QueryResultRow(
-                                            (Object[]) queryResult.get(i));
-                                    rows[i] = row;
-                                }
-
-                            } else {
-                                for (int i = 0; i < queryResult.size(); i++) {
-                                    QueryResultRow row = new QueryResultRow(
-                                            new Object[] {
-                                                    queryResult.get(i) });
-                                    rows[i] = row;
-                                }
-                            }
-                        }
-                        QueryResult result = new QueryResult();
-                        String[] returnAliases = hibQuery.getReturnAliases();
-                        if (returnAliases == null) {
-                            result.addColumnName("record", 0);
-                        } else {
-                            for (int i = 0; i < returnAliases.length; i++) {
-                                if (returnAliases[i] == null) {
-                                    String suffix = UUID.randomUUID().toString()
-                                            .substring(0, 8);
-                                    result.addColumnName("column_" + suffix, i);
-                                } else {
-                                    result.addColumnName(returnAliases[i], i);
-                                }
-                            }
-                        }
-                        result.setRows(rows);
-                        return result;
+            QueryResultRow[] rows = new QueryResultRow[queryResult.size()];
+            if (!queryResult.isEmpty()) {
+                if (queryResult.get(0) instanceof Object[]) {
+                    for (int i = 0; i < queryResult.size(); i++) {
+                        QueryResultRow row = new QueryResultRow(
+                                (Object[]) queryResult.get(i));
+                        rows[i] = row;
                     }
-                });
-        return result;
+
+                } else {
+                    for (int i = 0; i < queryResult.size(); i++) {
+                        QueryResultRow row = new QueryResultRow(
+                                new Object[] { queryResult.get(i) });
+                        rows[i] = row;
+                    }
+                }
+            }
+            QueryResult result = new QueryResult();
+            String[] returnAliases = hibQuery.getReturnAliases();
+            if (returnAliases == null) {
+                result.addColumnName("record", 0);
+            } else {
+                for (int i = 0; i < returnAliases.length; i++) {
+                    if (returnAliases[i] == null) {
+                        String suffix = UUID.randomUUID().toString()
+                                .substring(0, 8);
+                        result.addColumnName("column_" + suffix, i);
+                    } else {
+                        result.addColumnName(returnAliases[i], i);
+                    }
+                }
+            }
+            result.setRows(rows);
+            return result;
+        });
+        return rval;
     }
 
     /**
@@ -848,16 +832,11 @@ public class CoreDao {
     public int executeHQLStatement(final String hqlStmt,
             final Map<String, Object> paramMap) {
 
-        int queryResult = txTemplate
-                .execute(new TransactionCallback<Integer>() {
-                    @Override
-                    public Integer doInTransaction(TransactionStatus status) {
-                        Query hibQuery = getCurrentSession()
-                                .createQuery(hqlStmt);
-                        addParamsToQuery(hibQuery, paramMap);
-                        return hibQuery.executeUpdate();
-                    }
-                });
+        int queryResult = txTemplate.execute(status -> {
+            Query hibQuery = getCurrentSession().createQuery(hqlStmt);
+            addParamsToQuery(hibQuery, paramMap);
+            return hibQuery.executeUpdate();
+        });
 
         return queryResult;
     }
@@ -956,21 +935,15 @@ public class CoreDao {
     public Object[] executeSQLQuery(final String sql,
             final Map<String, Object> paramMap, int maxRowCount) {
         long start = System.currentTimeMillis();
-        List<?> queryResult = txTemplate
-                .execute(new TransactionCallback<List<?>>() {
-                    @Override
-                    public List<?> doInTransaction(TransactionStatus status) {
-                        String replaced = COLONS.matcher(sql)
-                                .replaceAll(COLON_REPLACEMENT);
-                        SQLQuery query = getCurrentSession()
-                                .createSQLQuery(replaced);
-                        addParamsToQuery(query, paramMap);
-                        if (maxRowCount > 0) {
-                            query.setMaxResults(maxRowCount);
-                        }
-                        return query.list();
-                    }
-                });
+        List<?> queryResult = txTemplate.execute(status -> {
+            String replaced = COLONS.matcher(sql).replaceAll(COLON_REPLACEMENT);
+            SQLQuery query = getCurrentSession().createSQLQuery(replaced);
+            addParamsToQuery(query, paramMap);
+            if (maxRowCount > 0) {
+                query.setMaxResults(maxRowCount);
+            }
+            return query.list();
+        });
         logger.debug("executeSQLQuery took: "
                 + (System.currentTimeMillis() - start) + " ms");
         return queryResult.toArray();
@@ -1110,19 +1083,14 @@ public class CoreDao {
     public List<?> executeCriteriaQuery(final List<Criterion> criterion) {
 
         long start = System.currentTimeMillis();
-        List<?> queryResult = txTemplate
-                .execute(new TransactionCallback<List<?>>() {
-                    @Override
-                    public List<?> doInTransaction(TransactionStatus status) {
+        List<?> queryResult = txTemplate.execute(status -> {
 
-                        Criteria crit = getCurrentSession()
-                                .createCriteria(daoClass);
-                        for (Criterion cr : criterion) {
-                            crit.add(cr);
-                        }
-                        return crit.list();
-                    }
-                });
+            Criteria crit = getCurrentSession().createCriteria(daoClass);
+            for (Criterion cr : criterion) {
+                crit.add(cr);
+            }
+            return crit.list();
+        });
         logger.debug("executeCriteriaQuery took: "
                 + (System.currentTimeMillis() - start) + " ms");
         return queryResult;
@@ -1179,18 +1147,12 @@ public class CoreDao {
     public int executeSQLUpdate(final String sql,
             final Map<String, Object> paramMap) {
         long start = System.currentTimeMillis();
-        int updateResult = txTemplate
-                .execute(new TransactionCallback<Integer>() {
-                    @Override
-                    public Integer doInTransaction(TransactionStatus status) {
-                        String replaced = COLONS.matcher(sql)
-                                .replaceAll(COLON_REPLACEMENT);
-                        SQLQuery query = getCurrentSession()
-                                .createSQLQuery(replaced);
-                        addParamsToQuery(query, paramMap);
-                        return query.executeUpdate();
-                    }
-                });
+        int updateResult = txTemplate.execute(status -> {
+            String replaced = COLONS.matcher(sql).replaceAll(COLON_REPLACEMENT);
+            SQLQuery query = getCurrentSession().createSQLQuery(replaced);
+            addParamsToQuery(query, paramMap);
+            return query.executeUpdate();
+        });
         logger.debug("executeSQLUpdate took: "
                 + (System.currentTimeMillis() - start) + " ms");
         return updateResult;
@@ -1365,16 +1327,13 @@ public class CoreDao {
      * @return list of objects
      */
     public List<?> findByNamedQuery(final String queryName, int maxRowCount) {
-        return txTemplate.execute(new TransactionCallback<List<?>>() {
-            @Override
-            public List<?> doInTransaction(TransactionStatus status) {
-                Session session = getCurrentSession();
-                Query query = session.getNamedQuery(queryName);
-                if (maxRowCount > 0) {
-                    query.setMaxResults(maxRowCount);
-                }
-                return query.list();
+        return txTemplate.execute(status -> {
+            Session session = getCurrentSession();
+            Query query = session.getNamedQuery(queryName);
+            if (maxRowCount > 0) {
+                query.setMaxResults(maxRowCount);
             }
+            return query.list();
         });
     }
 
@@ -1411,17 +1370,14 @@ public class CoreDao {
      */
     public List<?> findByNamedQueryAndNamedParam(final String queryName,
             final String paramName, final Object paramValue, int maxRowCount) {
-        return txTemplate.execute(new TransactionCallback<List<?>>() {
-            @Override
-            public List<?> doInTransaction(TransactionStatus status) {
-                Session session = getCurrentSession();
-                Query query = session.getNamedQuery(queryName);
-                addParamToQuery(query, paramName, paramValue);
-                if (maxRowCount > 0) {
-                    query.setMaxResults(maxRowCount);
-                }
-                return query.list();
+        return txTemplate.execute(status -> {
+            Session session = getCurrentSession();
+            Query query = session.getNamedQuery(queryName);
+            addParamToQuery(query, paramName, paramValue);
+            if (maxRowCount > 0) {
+                query.setMaxResults(maxRowCount);
             }
+            return query.list();
         });
     }
 
@@ -1459,17 +1415,14 @@ public class CoreDao {
             throw new IllegalArgumentException("paramMap must not be null");
 
         }
-        return txTemplate.execute(new TransactionCallback<List<?>>() {
-            @Override
-            public List<?> doInTransaction(TransactionStatus status) {
-                Session session = getCurrentSession();
-                Query query = session.getNamedQuery(queryName);
-                addParamsToQuery(query, paramMap);
-                if (maxRowCount > 0) {
-                    query.setMaxResults(maxRowCount);
-                }
-                return query.list();
+        return txTemplate.execute(status -> {
+            Session session = getCurrentSession();
+            Query query = session.getNamedQuery(queryName);
+            addParamsToQuery(query, paramMap);
+            if (maxRowCount > 0) {
+                query.setMaxResults(maxRowCount);
             }
+            return query.list();
         });
     }
 }

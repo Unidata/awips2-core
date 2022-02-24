@@ -26,7 +26,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -35,7 +34,7 @@ import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.datastorage.DuplicateRecordStorageException;
 import com.raytheon.uf.common.datastorage.StorageException;
 import com.raytheon.uf.common.datastorage.StorageStatus;
-import com.raytheon.uf.common.datastorage.audit.DataStorageAuditerContainer;
+import com.raytheon.uf.common.datastorage.audit.DataStorageAuditUtils;
 import com.raytheon.uf.common.datastorage.audit.MetadataStatus;
 import com.raytheon.uf.common.datastorage.records.IDataRecord;
 import com.raytheon.uf.common.status.IPerformanceStatusHandler;
@@ -59,10 +58,11 @@ import com.raytheon.uf.edex.database.plugin.PluginFactory;
  * Mar 19, 2013 1785       bgonzale    Added performance status to persist.
  * Dec 17, 2015 5166       kbisanz     Update logging to use SLF4J
  * Apr 25, 2016 5604       rjpeter     Added dupElim checking by dataURI.
+ * Feb 17, 2022 8608       mapeters    Use DataStorageAuditUtils
+ *
  * </pre>
  *
  * @author chammack
- * @version 1.0
  */
 public class PersistSrv {
 
@@ -124,14 +124,8 @@ public class PersistSrv {
                     discardedPdos.add(pdo);
                 }
             }
-            if (!discardedPdos.isEmpty()) {
-                Map<String, MetadataStatus> traceIdsToStatus = discardedPdos
-                        .stream()
-                        .collect(Collectors.toMap(pdo -> pdo.getTraceId(),
-                                pdo -> MetadataStatus.NA));
-                DataStorageAuditerContainer.getInstance().getAuditer()
-                        .processMetadataStatuses(traceIdsToStatus);
-            }
+            DataStorageAuditUtils.auditMetadataStatuses(MetadataStatus.NA,
+                    discardedPdos);
 
             if (se != null) {
                 Map<PluginDataObject, StorageException> pdosThatFailed = new HashMap<>(

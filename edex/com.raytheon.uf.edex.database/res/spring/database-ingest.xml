@@ -59,11 +59,11 @@
 
     <camelContext id="clusteredDataStorageAuditContext" xmlns="http://camel.apache.org/schema/spring"
         errorHandlerRef="errorHandler">
-
+        
         <endpoint id="cleanupCron" uri="quartz://DataStorageAudit/?cron=${data.storage.auditer.cleanup.cron}"/> 
 
         <route id="dataStorageAuditInfoRoute">
-            <from uri="jms-generic:queue:data.storage.audit.event?threadName=DataStorageAudit"/>
+            <from uri="jms-durable:queue:data.storage.audit.event?threadName=DataStorageAudit"/>
             <bean ref="serializationUtil" method="transformFromThrift"/>
             <bean ref="dataStorageAuditerImpl" method="processEvent"/>
         </route>
@@ -77,6 +77,11 @@
 
     <bean factory-bean="contextManager" factory-method="registerClusteredContext">
         <constructor-arg ref="clusteredDataStorageAuditContext"/>
+    </bean>
+
+    <bean factory-bean="contextManager" factory-method="registerContextStateProcessor">
+        <constructor-arg ref="clusteredDataStorageAuditContext" />
+        <constructor-arg ref="dataStorageAuditerImpl" />
     </bean>
 
 </beans>

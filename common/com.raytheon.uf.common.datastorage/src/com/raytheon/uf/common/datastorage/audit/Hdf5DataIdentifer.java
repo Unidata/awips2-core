@@ -25,23 +25,27 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
 /**
- * Identifies where the data in a data storage operation is going in the data
- * store.
+ * Data identifier implementation for HDF5 data. Identifies where the HDF5 data
+ * in a data storage operation is going in the HDF5 data store.
  *
  * <pre>
  *
  * SOFTWARE HISTORY
  *
  * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
+ * ------------ ---------- ----------- ----------------------------------------
  * Sep 23, 2021 8608       mapeters    Initial creation
+ * Feb 17, 2022 8608       mapeters    Rename from DataId, implement
+ *                                     {@link IDataIdentifier}
  *
  * </pre>
  *
  * @author mapeters
  */
 @DynamicSerialize
-public class DataId {
+public class Hdf5DataIdentifer implements IDataIdentifier {
+
+    private static final long serialVersionUID = 1L;
 
     @DynamicSerializeElement
     private String traceId;
@@ -55,14 +59,14 @@ public class DataId {
     @DynamicSerializeElement
     private Set<String> datasets;
 
-    public DataId() {
+    public Hdf5DataIdentifer() {
     }
 
-    public DataId(String traceId, String file, String group) {
+    public Hdf5DataIdentifer(String traceId, String file, String group) {
         this(traceId, file, group, new HashSet<>());
     }
 
-    public DataId(String traceId, String file, String group,
+    public Hdf5DataIdentifer(String traceId, String file, String group,
             Set<String> datasets) {
         this.traceId = traceId;
         this.file = file;
@@ -70,6 +74,7 @@ public class DataId {
         this.datasets = datasets;
     }
 
+    @Override
     public String getTraceId() {
         return traceId;
     }
@@ -113,7 +118,7 @@ public class DataId {
 
     @Override
     public String toString() {
-        return "DataId [traceId=" + traceId + ", file=" + file + ", group="
-                + group + ", datasets=" + datasets + "]";
+        return "Hdf5DataIdentifer [traceId=" + traceId + ", file=" + file
+                + ", group=" + group + ", datasets=" + datasets + "]";
     }
 }

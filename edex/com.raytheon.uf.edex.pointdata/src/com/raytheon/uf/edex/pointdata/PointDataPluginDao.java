@@ -25,6 +25,7 @@ import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
@@ -39,6 +40,7 @@ import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.dataplugin.PluginException;
 import com.raytheon.uf.common.dataplugin.persist.DefaultPathProvider;
 import com.raytheon.uf.common.dataplugin.persist.IPersistable;
+import com.raytheon.uf.common.dataplugin.persist.PersistableDataObject;
 import com.raytheon.uf.common.datastorage.DataStoreFactory;
 import com.raytheon.uf.common.datastorage.IDataStore;
 import com.raytheon.uf.common.datastorage.IDataStore.StoreOp;
@@ -47,16 +49,12 @@ import com.raytheon.uf.common.datastorage.StorageException;
 import com.raytheon.uf.common.datastorage.StorageProperties;
 import com.raytheon.uf.common.datastorage.StorageStatus;
 import com.raytheon.uf.common.datastorage.records.IDataRecord;
-import com.raytheon.uf.common.datastorage.records.IMetadataIdentifier;
 import com.raytheon.uf.common.datastorage.records.IntegerDataRecord;
-import com.raytheon.uf.common.datastorage.records.NoMetadataIdentifier;
 import com.raytheon.uf.common.pointdata.IPointData;
 import com.raytheon.uf.common.pointdata.PointDataContainer;
 import com.raytheon.uf.common.pointdata.PointDataDescription;
 import com.raytheon.uf.common.pointdata.PointDataView;
 import com.raytheon.uf.common.serialization.SerializationException;
-import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.time.DataTime;
 import com.raytheon.uf.edex.core.dataplugin.PluginRegistry;
 import com.raytheon.uf.edex.database.plugin.PluginDao;
@@ -66,6 +64,14 @@ import net.sf.cglib.beans.BeanMap;
 /**
  * Provides an extension to PluginDao that provides access for PointData data
  * types
+ *
+ * Note that this DAO currently disables data storage auditing for point data.
+ * Auditing's primary purpose is to keep the postgres metadata and hdf5 data in
+ * sync, which is difficult to do for point data due to its usage of indices
+ * (each metadata entry references the data at a particular index across all
+ * datasets/parameters in an hdf5 file). So instead of auditing, point data is
+ * configured to use write-through instead of write-behind in ignite, which
+ * should automatically keep things in sync.
  *
  * <pre>
  *
@@ -84,16 +90,14 @@ import net.sf.cglib.beans.BeanMap;
  * Nov 20, 2014  3853     njensen     Improved javadoc of getPointDataDescription()
  * Nov 16, 2017  6367     tgurney     Send timing information to log file
  * Sep 23, 2021  8608     mapeters    Add metadata id handling
+ * Feb 17, 2022  8608     mapeters    Disable broken data storage auditing
  *
  * </pre>
  *
  * @author chammack
  */
-
 public abstract class PointDataPluginDao<T extends PluginDataObject>
         extends PluginDao {
-    private static final IUFStatusHandler statusHandler = UFStatus
-            .getHandler(PointDataPluginDao.class);
 
     public enum LevelRequest {
         ALL, NONE, SPECIFIC;
@@ -140,9 +144,11 @@ public abstract class PointDataPluginDao<T extends PluginDataObject>
             throws PluginException {
         long t0 = System.currentTimeMillis();
 
-        // NOTE: currently making the assumption that models aren't
-        // mixed in the records aggregate. If this isn't true,
-        // some pre-processing will be needed.
+        /*
+         * NOTE: currently making the assumption that models aren't mixed in the
+         * records aggregate. If this isn't true, some pre-processing will be
+         * needed.
+         */
         Map<PointDataContainer, List<PointDataView>> containerMap = new HashMap<>(
                 records.length);
         Map<PointDataContainer, File> fileMap = new HashMap<>();
@@ -150,19 +156,11 @@ public abstract class PointDataPluginDao<T extends PluginDataObject>
         for (PluginDataObject p : records) {
             if (p instanceof IPointData) {
                 PointDataView pdv = ((IPointData) p).getPointDataView();
-                List<PointDataView> views = containerMap
-                        .get(pdv.getContainer());
-                if (views == null) {
-                    views = new ArrayList<>();
-                    containerMap.put(pdv.getContainer(), views);
-                }
+                PointDataContainer pdc = pdv.getContainer();
+                List<PointDataView> views = containerMap.computeIfAbsent(pdc,
+                        k -> new ArrayList<>());
                 views.add(pdv);
-                File file = fileMap.get(pdv.getContainer());
-                if (file == null) {
-                    file = getFullFilePath(p);
-                    fileMap.put(pdv.getContainer(), file);
-                }
-
+                fileMap.computeIfAbsent(pdc, k -> getFullFilePath(p));
             }
         }
 
@@ -179,17 +177,15 @@ public abstract class PointDataPluginDao<T extends PluginDataObject>
                             StorageProperties.Compression.valueOf(compression));
                 }
 
-                /*
-                 * The append indices make it hard to track the metadata here or
-                 * properly handle errors with write behind
-                 */
-                IMetadataIdentifier metaId = new NoMetadataIdentifier(false,
-                        true);
                 Set<String> params = container.getParameters();
                 for (String param : params) {
                     try {
                         IDataRecord idr = container.getParameterRecord(param);
-                        ds.addDataRecord(idr, metaId, sp);
+                        /*
+                         * Don't pass metadata IDs since auditing is disabled
+                         * for point data currently. See class javadoc.
+                         */
+                        ds.addDataRecord(idr, Set.of(), sp);
                     } catch (StorageException e) {
                         throw new PluginException("Error adding record", e);
                     }
@@ -224,10 +220,9 @@ public abstract class PointDataPluginDao<T extends PluginDataObject>
         }
 
         finally {
-            statusHandler.info("Time spent in persist: "
-                    + (System.currentTimeMillis() - t0));
+            perfLog.logDuration("Persisting point data to hdf5",
+                    System.currentTimeMillis() - t0);
         }
-
     }
 
     public File getFullFilePath(PluginDataObject p) {
@@ -242,8 +237,23 @@ public abstract class PointDataPluginDao<T extends PluginDataObject>
     @Override
     protected IDataStore populateDataStore(IDataStore dataStore,
             IPersistable obj) throws Exception {
-        // TODO Auto-generated method stub
+        // This method should never be called due to our persistToHDF5 override
         return null;
+    }
+
+    @Override
+    @SuppressWarnings("rawtypes")
+    protected void auditMetadataStorageStatus(
+            Collection<? extends PersistableDataObject> persisted,
+            Collection<? extends PersistableDataObject> duplicates,
+            Collection<? extends PersistableDataObject> all) {
+        // Auditing is disabled for point data currently. See class javadoc.
+    }
+
+    @Override
+    public void auditMissingPiecesForDatabaseOnlyPdos(
+            PluginDataObject... pdos) {
+        // Auditing is disabled for point data currently. See class javadoc.
     }
 
     public PointDataDbDescription getPointDataDbDescription() {
@@ -255,7 +265,7 @@ public abstract class PointDataPluginDao<T extends PluginDataObject>
                     dbDataDescription = PointDataDbDescription
                             .fromStream(stream);
                 } catch (JAXBException e) {
-                    statusHandler.error("Unable to load " + pluginName
+                    logger.error("Unable to load " + pluginName
                             + " Point Data Database Description", e);
                 }
             }
@@ -284,7 +294,7 @@ public abstract class PointDataPluginDao<T extends PluginDataObject>
                         .fromStream(this.getClass().getResourceAsStream(
                                 "/res/pointdata/" + pluginName + ".xml"));
             } catch (SerializationException e) {
-                statusHandler.error("Unable to load " + pluginName
+                logger.error("Unable to load " + pluginName
                         + " Point Data Description", e);
             }
         }
@@ -341,8 +351,9 @@ public abstract class PointDataPluginDao<T extends PluginDataObject>
         long t0 = System.currentTimeMillis();
         IDataRecord[] recs = ds.retrieveDatasets(attributes, dsRequest);
         long t1 = System.currentTimeMillis();
-        statusHandler.info("Time spent on pointdata hdf5 retrieval from file "
-                + file.getPath() + ": " + (t1 - t0));
+        perfLog.logDuration(
+                "Retrieving point data from hdf5 file " + file.getPath(),
+                t1 - t0);
 
         List<IDataRecord> recList = new ArrayList<>();
         if (request != LevelRequest.SPECIFIC) {

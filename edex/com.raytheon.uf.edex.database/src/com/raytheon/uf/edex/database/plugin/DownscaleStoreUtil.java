@@ -52,6 +52,8 @@ import com.raytheon.uf.common.numeric.source.DataSource;
  * Mar 07, 2014  2791     bsteffen    Move Data Source/Destination to numeric
  *                                    plugin.
  * Sep 23, 2021  8608     mapeters    Add metadata id handling
+ * Feb 17, 2022  8608     mapeters    Remove unused storeAfterEach option (would
+ *                                    cause data storage audit errors if used)
  *
  * </pre>
  *
@@ -91,37 +93,14 @@ public class DownscaleStoreUtil {
      * @param downScaler
      * @param dataSource
      * @param creator
-     * @return number of levels not including the base level
-     * @throws StorageException
-     */
-    public static <T extends PluginDataObject> int storeInterpolated(
-            IDataStore dataStore, GridDownscaler downScaler,
-            BufferWrapper dataSource, IDataRecordCreator creator,
-            IMetadataIdentifier metadataIdentifier) throws StorageException {
-        // default to batch storage
-        return storeInterpolated(dataStore, downScaler, dataSource, creator,
-                metadataIdentifier, false);
-    }
-
-    /**
-     * Create and add interpolated levels from dataSource.
-     *
-     * @param dataStore
-     * @param downScaler
-     * @param dataSource
-     * @param creator
      * @param metadataIdentifier
-     * @param storeAfterEach
-     *            if true, call store method on dataStore after each level is
-     *            created
      * @return number of levels not including the base level
      * @throws StorageException
      */
     public static <T extends PluginDataObject> int storeInterpolated(
             IDataStore dataStore, GridDownscaler downScaler,
             BufferWrapper dataWrapper, IDataRecordCreator creator,
-            IMetadataIdentifier metadataIdentifier, boolean storeAfterEach)
-            throws StorageException {
+            IMetadataIdentifier metadataIdentifier) throws StorageException {
 
         // How many interpolation levels do we need for this data?
         int levels = downScaler.getNumberOfDownscaleLevels();
@@ -166,9 +145,6 @@ public class DownscaleStoreUtil {
                     }
                     IDataRecord dr = creator.create(data, downScaleLevel, size);
                     dataStore.addDataRecord(dr, metadataIdentifier);
-                    if (storeAfterEach) {
-                        dataStore.store();
-                    }
                     // Set source to current level
                     dataWrapper = destWrapper;
                 } catch (TransformException e) {

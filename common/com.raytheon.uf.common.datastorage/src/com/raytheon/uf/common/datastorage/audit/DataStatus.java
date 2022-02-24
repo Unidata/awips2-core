@@ -30,6 +30,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Sep 23, 2021 8608       mapeters    Initial creation
+ * Feb 17, 2022 8608       mapeters    Add NA value
  *
  * </pre>
  *
@@ -60,11 +61,19 @@ public enum DataStatus {
     FAILURE_ASYNC(false),
 
     /** Auditer deleted the data since the metadata didn't exist */
-    DELETED(false);
+    DELETED(false),
+
+    /**
+     * Not applicable, indicating that the metadata being stored doesn't have
+     * any associated data (and isn't supposed to). Treat this as though the
+     * data exists since it technically has all the data it needs and so we
+     * don't delete the metadata.
+     */
+    NA(true);
 
     private final boolean exists;
 
-    private DataStatus(boolean exists) {
+    DataStatus(boolean exists) {
         this.exists = exists;
     }
 

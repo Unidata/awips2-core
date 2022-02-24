@@ -19,30 +19,22 @@
 ##
 
 # File auto-generated against equivalent DynamicSerialize Java class
-# and then modified by mapeters
+#
+#      SOFTWARE HISTORY
+#
+#     Date            Ticket#       Engineer       Description
+#     ------------    ----------    -----------    --------------------------
+#     Sep 23, 2021    8608          mapeters       Generated and slightly modified
+#     Feb 17, 2022    8608          mapeters       Removed writeBehindSupported, metadataUsed
+#
 
 class NoMetadataIdentifier(object):
 
     def __init__(self):
         self.traceId = None
-        self.writeBehindSupported = True
-        self.metadataUsed = False
 
     def getTraceId(self):
         return self.traceId
 
     def setTraceId(self, traceId):
         self.traceId = traceId
-
-    def getWriteBehindSupported(self):
-        return self.writeBehindSupported
-
-    def setWriteBehindSupported(self, writeBehindSupported):
-        self.writeBehindSupported = writeBehindSupported
-
-    def getMetadataUsed(self):
-        return self.metadataUsed
-
-    def setMetadataUsed(self, metadataUsed):
-        self.metadataUsed = metadataUsed
-

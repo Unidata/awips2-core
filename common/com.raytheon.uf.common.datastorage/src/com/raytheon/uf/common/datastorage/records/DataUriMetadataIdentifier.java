@@ -34,6 +34,8 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Sep 23, 2021 8608       mapeters    Initial creation
+ * Feb 17, 2022 8608       mapeters    Remove isMetadataUsed() and isWriteBehindSupported(),
+ *                                     update constructors, add hashCodeIgnoreTraceId()
  *
  * </pre>
  *
@@ -60,18 +62,23 @@ public class DataUriMetadataIdentifier implements IMetadataIdentifier {
     }
 
     public DataUriMetadataIdentifier(String dataUri, String traceId) {
-        this(dataUri, MetadataSpecificity.GROUP, traceId);
+        this(dataUri, traceId, MetadataSpecificity.GROUP);
     }
 
-    public DataUriMetadataIdentifier(String dataUri,
-            MetadataSpecificity specificity, String traceId) {
+    public DataUriMetadataIdentifier(String dataUri, String traceId,
+            MetadataSpecificity specificity) {
         this.dataUri = dataUri;
-        this.specificity = specificity;
         this.traceId = traceId;
+        this.specificity = specificity;
     }
 
     public DataUriMetadataIdentifier(PluginDataObject pdo) {
         this(pdo.getDataURI(), pdo.getTraceId());
+    }
+
+    public DataUriMetadataIdentifier(PluginDataObject pdo,
+            MetadataSpecificity specificity) {
+        this(pdo.getDataURI(), pdo.getTraceId(), specificity);
     }
 
     public String getDataUri() {
@@ -92,11 +99,6 @@ public class DataUriMetadataIdentifier implements IMetadataIdentifier {
     }
 
     @Override
-    public boolean isWriteBehindSupported() {
-        return true;
-    }
-
-    @Override
     public String getTraceId() {
         return traceId;
     }
@@ -106,13 +108,13 @@ public class DataUriMetadataIdentifier implements IMetadataIdentifier {
     }
 
     @Override
-    public boolean isMetadataUsed() {
-        return true;
+    public int hashCode() {
+        return Objects.hash(dataUri, specificity, traceId);
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(dataUri, specificity, traceId);
+    public int hashCodeIgnoreTraceId() {
+        return Objects.hash(dataUri, specificity);
     }
 
     @Override
@@ -124,14 +126,7 @@ public class DataUriMetadataIdentifier implements IMetadataIdentifier {
         return Objects.equals(traceId, other.traceId);
     }
 
-    /**
-     * Determine whether this metadata identifier is considered equal to some
-     * other object, ignoring their trace IDs.
-     *
-     * @param obj
-     *            the object to compare against
-     * @return true if equal other than trace IDs, false otherwise
-     */
+    @Override
     public boolean equalsIgnoreTraceId(Object obj) {
         if (this == obj) {
             return true;
