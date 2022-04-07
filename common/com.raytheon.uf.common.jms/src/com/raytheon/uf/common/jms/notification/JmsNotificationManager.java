@@ -84,6 +84,8 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Oct 16, 2019  7724     tgurney     Move queue creation to the session
  * Oct 22, 2019  7724     tgurney     Fix topic creation
  * Jan 16, 2020  8008     randerso    Move topic prefix to QpidUFSession
+ * Apr 07, 2022  8836     tgurney     Replace synchronize on "this" with a
+ *                                    dedicated lock accessible to subclasses
  *
  * </pre>
  *
@@ -170,6 +172,8 @@ public class JmsNotificationManager
 
     private final Timer reconnectTimer = new Timer("JMSReconnectTimer", true);
 
+    private final Object connectionLock = new Object();
+
     /**
      * Timer task that updates reconnectScheduled and attempts to connect.
      */
@@ -212,46 +216,48 @@ public class JmsNotificationManager
      * @param notifyError
      *            whether to report errors(through UFStatus) or ignore them.
      */
-    public synchronized void connect(boolean notifyError) {
-        if (connected) {
-            return;
-        }
-        boolean successful = true;
-        try {
-            disconnect(notifyError);
-
-            // Create a Connection
-            connection = connectionFactory.createConnection();
-            connection.setExceptionListener(this);
-            connection.start();
-            /* Enable thread caching. */
-            executorService.setKeepAliveTime(60, TimeUnit.SECONDS);
-            connected = true;
-        } catch (JMSException e) {
-            if (notifyError) {
-                statusHandler.handle(Priority.SIGNIFICANT,
-                        "NotificationManager failed to connect.", e);
+    public void connect(boolean notifyError) {
+        synchronized (connectionLock) {
+            if (connected) {
+                return;
             }
-            successful = false;
-        }
+            boolean successful = true;
+            try {
+                disconnect(notifyError);
 
-        synchronized (listeners) {
-            for (NotificationListener listener : listeners.values()) {
-                try {
-                    listener.setupConnection(this);
-                } catch (JMSException e) {
-                    successful = false;
-                    if (notifyError) {
-                        statusHandler.handle(Priority.SIGNIFICANT,
-                                "NotificationManager failed to setup message listener.",
-                                e);
+                // Create a Connection
+                connection = connectionFactory.createConnection();
+                connection.setExceptionListener(this);
+                connection.start();
+                /* Enable thread caching. */
+                executorService.setKeepAliveTime(60, TimeUnit.SECONDS);
+                connected = true;
+            } catch (JMSException e) {
+                if (notifyError) {
+                    statusHandler.handle(Priority.SIGNIFICANT,
+                            "NotificationManager failed to connect.", e);
+                }
+                successful = false;
+            }
+
+            synchronized (listeners) {
+                for (NotificationListener listener : listeners.values()) {
+                    try {
+                        listener.setupConnection(this);
+                    } catch (JMSException e) {
+                        successful = false;
+                        if (notifyError) {
+                            statusHandler.handle(Priority.SIGNIFICANT,
+                                    "NotificationManager failed to setup message listener.",
+                                    e);
+                        }
                     }
                 }
             }
-        }
 
-        if (!successful) {
-            onException(null);
+            if (!successful) {
+                onException(null);
+            }
         }
     }
 
@@ -262,11 +268,14 @@ public class JmsNotificationManager
      * @return the created session or null if not connected
      * @throws JMSException
      */
-    protected synchronized Session createSession() throws JMSException {
-        if (connected) {
-            return connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-        } else {
-            return null;
+    protected Session createSession() throws JMSException {
+        synchronized (connectionLock) {
+            if (connected) {
+                return connection.createSession(false,
+                        Session.AUTO_ACKNOWLEDGE);
+            } else {
+                return null;
+            }
         }
     }
 
@@ -276,8 +285,11 @@ public class JmsNotificationManager
      * @param notifyError
      *            true if errors should be logged
      */
-    public synchronized void disconnect(boolean notifyError) {
-        if (connection != null) {
+    public void disconnect(boolean notifyError) {
+        synchronized (connectionLock) {
+            if (connection == null) {
+                return;
+            }
             connected = false;
             synchronized (listeners) {
                 for (NotificationListener listener : listeners.values()) {
@@ -309,8 +321,9 @@ public class JmsNotificationManager
     }
 
     /*
-     * NOTE: cannot synchronize on this in onException. Often called from within
-     * a synchronized on listeners and can end up in a deadlock scenario.
+     * NOTE: cannot synchronize on connectionLock in onException. Often called
+     * from within a synchronized on listeners and can end up in a deadlock
+     * scenario.
      */
     @Override
     public void onException(JMSException e) {
@@ -786,5 +799,9 @@ public class JmsNotificationManager
             }
             return t;
         }
+    }
+
+    protected Object getConnectionLock() {
+        return connectionLock;
     }
 }
