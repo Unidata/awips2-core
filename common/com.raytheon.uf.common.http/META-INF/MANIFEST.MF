@@ -9,4 +9,5 @@ Export-Package: com.raytheon.uf.common.http,
  com.raytheon.uf.common.http.auth
 Require-Bundle: org.apache.http,
  org.apache.commons.codec,
- javax.servlet
+ javax.servlet,
+ org.eclipse.jetty

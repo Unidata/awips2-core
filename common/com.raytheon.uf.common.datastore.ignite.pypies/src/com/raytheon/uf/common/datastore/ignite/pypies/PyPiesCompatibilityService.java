@@ -34,6 +34,7 @@ import com.raytheon.uf.common.datastore.ignite.IgniteClusterManager;
 import com.raytheon.uf.common.datastore.ignite.IgniteDataStore;
 import com.raytheon.uf.common.datastore.ignite.IgniteUtils;
 import com.raytheon.uf.common.datastore.pypies.servlet.PyPiesServlet;
+import com.raytheon.uf.common.http.TraceForbiddingHttpServer;
 
 /**
  * EDEX service that uses Jetty and {@link PyPiesServlet} to handle http
@@ -50,6 +51,7 @@ import com.raytheon.uf.common.datastore.pypies.servlet.PyPiesServlet;
  * Mar 27, 2020  8071     bsteffen  Add handling for /status
  * Jun 25, 2021  8450     mapeters  Updated for centralized ignite instance management,
  *                                  moved from ignite server to edex
+ * Apr 05, 2022  8837     mapeters  Use TraceForbiddingHttpServer for security
  *
  * </pre>
  *
@@ -85,7 +87,7 @@ public class PyPiesCompatibilityService
         logger.info("Starting PyPies compatibility service on port " + port
                 + "...");
 
-        Server server = new Server(port);
+        Server server = new TraceForbiddingHttpServer(port);
 
         IDataStoreFactory factory = DataStoreFactory.getInstance()
                 .getUnderlyingFactory();
