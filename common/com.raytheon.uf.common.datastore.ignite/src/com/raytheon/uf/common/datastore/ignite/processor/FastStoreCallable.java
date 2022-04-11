@@ -24,7 +24,6 @@ import java.util.Map;
 
 import javax.cache.integration.CacheLoader;
 
-import org.apache.commons.lang3.ArrayUtils;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -39,7 +38,6 @@ import com.raytheon.uf.common.datastore.ignite.DataStoreKey;
 import com.raytheon.uf.common.datastore.ignite.DataStoreValue;
 import com.raytheon.uf.common.datastore.ignite.IgniteCacheAccessor;
 import com.raytheon.uf.common.datastore.ignite.IgniteServerManager;
-import com.raytheon.uf.common.datastore.ignite.IgniteUtils;
 
 /**
  *
@@ -81,6 +79,8 @@ import com.raytheon.uf.common.datastore.ignite.IgniteUtils;
  * ------------ ---------- ----------- --------------------------
  * Feb 17, 2022 8608       mapeters    Initial creation (extracted and updated
  *                                     from IgniteDataStore.FastReplaceCallable)
+ * Apr 08, 2022 8653       tjensen     Update replace to check h5s for prevValue
+ *                                     and properly merge cached values
  *
  * </pre>
  *
@@ -106,13 +106,13 @@ public class FastStoreCallable implements IgniteCallable<StorageStatus> {
 
     private IgniteCacheAccessor<DataStoreKey, DataStoreValue> cacheAccessor;
 
-    private String cacheName;
+    private final String cacheName;
 
-    private DataStoreKey key;
+    private final DataStoreKey key;
 
     private DataStoreValue value;
 
-    private StoreOp storeOp;
+    private final StoreOp storeOp;
 
     public FastStoreCallable(String cacheName, DataStoreKey key,
             DataStoreValue value, StoreOp storeOp) {
@@ -132,46 +132,35 @@ public class FastStoreCallable implements IgniteCallable<StorageStatus> {
     public StorageStatus call() {
         StorageStatus status = new StorageStatus();
         Object lock = getLock(key);
-        /*
-         * This synchronization is primarily intended to prevent trace IDs from
-         * getting overwritten by other threads. That can cause the auditer to
-         * report errors about not receiving data storage statuses for that
-         * trace ID.
-         */
+
         synchronized (lock) {
             try {
-                if (storeOp == StoreOp.REPLACE) {
-                    DataStoreValue prevValue = null;
-                    try {
-                        prevValue = cacheAccessor.doAsyncCacheOp(
-                                cache -> cache.withSkipStore().getAsync(key));
-                    } catch (StorageException e) {
-                        logger.error("Error loading previous cache value for: "
-                                + cacheName + ", " + key, e);
-                    }
-
-                    if (prevValue != null) {
-                        IgniteUtils.updateMetadata(value, Arrays
-                                .asList(prevValue.getRecordsAndMetadata()));
-                    }
-
-                    cacheAccessor.doAsyncCacheOp(c -> c.putAsync(key, value));
-                } else {
-                    DataStoreValue prevValue = cacheAccessor.doAsyncCacheOp(
-                            cache -> cache.getAndPutIfAbsentAsync(key, value));
-                    if (prevValue != null) {
-                        DataStoreValue mergedValue = StoreProcessor.merge(
-                                Arrays.asList(
-                                        prevValue.getRecordsAndMetadata()),
-                                Arrays.asList(value.getRecordsAndMetadata()),
-                                storeOp, status);
-                        if (!ArrayUtils.isEmpty(status.getExceptions())) {
-                            throw status.getExceptions()[0];
+                DataStoreValue prevValue = null;
+                try {
+                    prevValue = cacheAccessor.doAsyncCacheOp(cache -> {
+                        @SuppressWarnings("unchecked")
+                        CacheConfiguration<?, ?> cacheConfig = cache
+                                .getConfiguration(CacheConfiguration.class);
+                        if (!cacheConfig.isLoadPreviousValue()) {
+                            cache = cache.withSkipStore();
                         }
-                        cacheAccessor.doAsyncCacheOp(
-                                cache -> cache.putAsync(key, mergedValue));
-                    }
+                        return cache.getAsync(key);
+                    });
+                } catch (StorageException e) {
+                    throw new StorageException(
+                            "Error loading previous cache value for: "
+                                    + cacheName + ", " + key,
+                            e.getRecord(), e);
                 }
+
+                if (prevValue != null) {
+                    value = StoreProcessor.merge(
+                            Arrays.asList(prevValue.getRecordsAndMetadata()),
+                            Arrays.asList(value.getRecordsAndMetadata()),
+                            storeOp, status);
+                }
+
+                cacheAccessor.doAsyncCacheOp(c -> c.putAsync(key, value));
             } catch (StorageException e) {
                 /*
                  * Store and return exceptions instead of letting them just
