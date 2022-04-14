@@ -56,6 +56,7 @@ import com.raytheon.uf.common.time.util.TimeUtil;
  * Mar 26, 2020  8074     bsteffen  Ensure fill value is copied.
  * Jun 10, 2021  8450     mapeters  Add performance logging
  * Sep 23, 2021  8608     mapeters  Add metadata handling
+ * Apr 13, 2022  8845     njensen   Fix dimension value in processPoint()
  *
  * </pre>
  *
@@ -253,8 +254,8 @@ public class RetrieveProcessor implements
 
         String name = record.getName();
         String group = record.getGroup();
-        return DataStoreFactory.createStorageRecord(name, group, newArray, 1,
-                newDims);
+        return DataStoreFactory.createStorageRecord(name, group, newArray,
+                newDims.length, newDims);
     }
 
     protected static IDataRecord processXLine(IDataRecord record,
