@@ -107,6 +107,8 @@ import com.raytheon.viz.ui.actions.LoadBundleHandler;
  * Feb 11, 2020  8036     tgurney   Fix another NPE on CAVE perspective switch
  * Jul 23, 2020  8194     randerso  Added null and exists checks when loading
  *                                  bundles
+ * Apr 22, 2022  8854     tgurney   Performance improvement in menu data time
+ *                                  updates
  *
  * </pre>
  *
@@ -135,6 +137,8 @@ public class BundleContributionItem extends ContributionItem {
             .ofPattern("dd.HHmm").withZone(ZoneOffset.UTC);
 
     private final String menuText;
+
+    private String timeString = null;
 
     protected boolean shownBefore;
 
@@ -293,37 +297,9 @@ public class BundleContributionItem extends ContributionItem {
     }
 
     protected void updateMenuTextAsync() {
-        VizApp.runAsync(() -> {
-            if (widget == null || widget.isDisposed()) {
-                return;
-            }
-            String oldMenuText = widget.getText();
-            updateMenuText();
-            if (widget == null || widget.isDisposed()
-                    || widget.getText().equals(oldMenuText)) {
-                return;
-            }
-            MenuItem[] items = widget.getParent().getItems();
-            for (MenuItem mi : items) {
-                if (!mi.isDisposed()
-                        && mi.getData() instanceof BundleContributionItem) {
-                    BundleContributionItem item = (BundleContributionItem) mi
-                            .getData();
-                    if (item.performQuery) {
-                        VizApp.runAsync(() -> {
-                            String timeStr = item.getTimeString();
-                            String timePadding = item.getTimePadding(timeStr);
-                            String textToSet = item.menuText + TIME_SEPARATOR
-                                    + timePadding + timeStr;
-                            if (item.widget != null
-                                    && !item.widget.isDisposed()) {
-                                item.widget.setText(textToSet);
-                            }
-                        });
-                    }
-                }
-            }
-        });
+        if (widget != null && !widget.isDisposed()) {
+            VizApp.runAsync(this::updateMenuText);
+        }
     }
 
     /**
@@ -351,12 +327,11 @@ public class BundleContributionItem extends ContributionItem {
             String timeStr = getTimeString();
             String timePadding = getTimePadding(timeStr);
             textToSet = menuText + TIME_SEPARATOR + timePadding + timeStr;
+
         } else {
             textToSet = menuText;
         }
-
         widget.setText(textToSet);
-
         // notify things of menu update times
         Event event = new Event();
         event.data = widget;
@@ -444,8 +419,11 @@ public class BundleContributionItem extends ContributionItem {
             }
 
         }
-
-        updateMenuTextAsync();
+        String newTimeString = getTimeString();
+        if (!newTimeString.equals(timeString)) {
+            timeString = newTimeString;
+            updateMenuTextAsync();
+        }
     }
 
     private Listener getItemListener() {
