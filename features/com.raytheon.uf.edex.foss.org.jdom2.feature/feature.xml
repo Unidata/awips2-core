@@ -2,7 +2,7 @@
 <feature
       id="com.raytheon.uf.edex.foss.org.jdom2.feature"
       label="org.jdom2 Feature"
-      version="2.0.6"
+      version="2.0.6.1"
       provider-name="RAYTHEON">
 
    <description url="http://www.example.com/description">
@@ -21,6 +21,6 @@
          id="org.jdom2"
          download-size="0"
          install-size="0"
-         version="2.0.6"/>
+         version="2.0.6.1"/>
 
 </feature>
