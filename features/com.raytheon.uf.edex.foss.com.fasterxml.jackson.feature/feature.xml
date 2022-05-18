@@ -2,7 +2,7 @@
 <feature
       id="com.raytheon.uf.edex.foss.com.fasterxml.jackson.feature"
       label="com.fasterxml.jackson Feature"
-      version="2.10.5.1"
+      version="2.13.2.2"
       provider-name="RAYTHEON">
 
    <description url="http://www.example.com/description">
@@ -21,6 +21,6 @@
          id="com.fasterxml.jackson"
          download-size="0"
          install-size="0"
-         version="2.10.5.1"/>
+         version="2.13.2.2"/>
 
 </feature>
