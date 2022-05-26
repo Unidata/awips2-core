@@ -36,7 +36,6 @@
        <import feature="com.raytheon.uf.edex.foss.org.itadaki.bzip2.feature" version="0.0.0"/>
        <import feature="com.raytheon.uf.edex.foss.com.sun.jna.feature" version="0.0.0"/>
        <import feature="com.raytheon.uf.edex.foss.org.apache.commons.cli.feature" version="0.0.0"/>
-       <import feature="com.raytheon.uf.edex.foss.org.owasp.esapi.feature" version="0.0.0"/>
        <import feature="com.raytheon.uf.edex.foss.org.apache.commons.ssl.feature" version="0.0.0"/>
        <import feature="com.raytheon.uf.edex.foss.org.opensaml.feature" version="0.0.0"/>
        <import feature="com.raytheon.uf.edex.foss.org.joda.time.feature" version="0.0.0"/>
