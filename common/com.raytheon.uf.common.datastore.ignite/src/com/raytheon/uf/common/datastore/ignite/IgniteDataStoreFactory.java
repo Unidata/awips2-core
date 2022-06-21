@@ -51,6 +51,8 @@ import com.raytheon.uf.common.datastore.ignite.store.DataStoreCacheStoreFactory;
  *                                  a server node if it is not found in the
  *                                  client's configuration
  * Jun 25, 2021  8450     mapeters  Centralize ignite instance/cache management
+ * Jun 21, 2022  8879     mapeters  Handle signature change in methods for
+ *                                  doing ignite operations (do*Op)
  *
  * </pre>
  *
@@ -106,7 +108,7 @@ public class IgniteDataStoreFactory implements IDataStoreFactory {
         Object factory = null;
         try {
             config = cacheAccessor.doSyncCacheOp(
-                    c -> c.getConfiguration(CacheConfiguration.class));
+                    c -> c.getConfiguration(CacheConfiguration.class), true);
             factory = config.getCacheStoreFactory();
         } catch (StorageException e) {
             logger.error("Error getting cache configuration", e);
@@ -122,7 +124,7 @@ public class IgniteDataStoreFactory implements IDataStoreFactory {
                             GetCacheStoreFactoryTask task = new GetCacheStoreFactoryTask(
                                     cacheName);
                             return compute.call(task);
-                        });
+                        }, true);
             } catch (StorageException e) {
                 logger.error(
                         "Error retrieving cache store factory for " + cacheName,
@@ -166,7 +168,7 @@ public class IgniteDataStoreFactory implements IDataStoreFactory {
                 CacheConfiguration<?, ?> config = c
                         .getConfiguration(CacheConfiguration.class);
                 return config.getCacheStoreFactory();
-            });
+            }, true);
         }
     }
 }

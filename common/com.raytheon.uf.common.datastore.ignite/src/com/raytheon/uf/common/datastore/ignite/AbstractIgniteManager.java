@@ -38,6 +38,7 @@ import com.raytheon.uf.common.datastorage.StorageException;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jun 25, 2021 8450       mapeters    Initial creation
+ * Jun 21, 2022 8879       mapeters    Add allowRetries param to do*IgniteOp()
  *
  * </pre>
  *
@@ -74,19 +75,23 @@ public abstract class AbstractIgniteManager implements Serializable {
      * @param igniteOpFunction
      *            a function that performs the ignite operation when applied to
      *            the managed ignite instance and returns the operation result
+     * @param allowRetries
+     *            whether or not to allow retrying this operation if it fails
      * @return the ignite operation result
      * @throws StorageException
      *             if the operation still fails after retrying
      */
-    public <T> T doIgniteOp(Function<Ignite, T> igniteOpFunction)
-            throws StorageException {
+    public <T> T doIgniteOp(Function<Ignite, T> igniteOpFunction,
+            boolean allowRetries) throws StorageException {
+        int maxAttempts = allowRetries ? IgniteUtils.OP_NUM_ATTEMPTS : 1;
+
         Exception exception = null;
-        for (int i = 0; i < IgniteUtils.OP_NUM_ATTEMPTS; ++i) {
+        for (int i = 0; i < maxAttempts; ++i) {
             try {
                 return igniteOpFunction.apply(getIgnite());
             } catch (Exception e) {
                 exception = e;
-                IgniteUtils.handleException(logger, e, i, null);
+                IgniteUtils.handleException(logger, e, i, maxAttempts, null);
             }
         }
 
@@ -101,15 +106,17 @@ public abstract class AbstractIgniteManager implements Serializable {
      * @param igniteOpConsumer
      *            a consumer that performs the ignite operation when applied to
      *            the managed ignite instance
+     * @param allowRetries
+     *            whether or not to allow retrying this operation if it fails
      * @throws StorageException
      *             if the operation still fails after retrying
      */
-    public void doVoidIgniteOp(Consumer<Ignite> igniteOpConsumer)
-            throws StorageException {
+    public void doVoidIgniteOp(Consumer<Ignite> igniteOpConsumer,
+            boolean allowRetries) throws StorageException {
         doIgniteOp(ignite -> {
             igniteOpConsumer.accept(ignite);
             return null;
-        });
+        }, allowRetries);
     }
 
     protected void setLogger(Logger logger) {

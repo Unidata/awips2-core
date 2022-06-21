@@ -45,7 +45,9 @@ import com.raytheon.uf.common.datastorage.records.RecordAndMetadata;
  *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Jul 8, 2021  8450       mapeters    Initial creation
+ * Jul 08, 2021 8450       mapeters    Initial creation
+ * Jun 21, 2022 8879       mapeters    Change OP_NUM_ATTEMPTS to int, add
+ *                                     maxAttempts param to handleException()
  *
  * </pre>
  *
@@ -65,7 +67,7 @@ public class IgniteUtils {
 
     public static final String IGNITE_CLUSTER_2_SERVERS = "IGNITE_CLUSTER_2_SERVERS";
 
-    public static final long OP_NUM_ATTEMPTS = getLongProperty(
+    public static final int OP_NUM_ATTEMPTS = getIntegerProperty(
             "ignite.op.num.attempts");
 
     public static final long OP_TIMEOUT_SECS = getLongProperty(
@@ -104,6 +106,26 @@ public class IgniteUtils {
     }
 
     /**
+     * Get the integer value of the given property.
+     *
+     * @param name
+     *            the property name
+     * @return the integer value
+     * @throws IllegalStateException
+     *             if the property is not set to a valid integer value
+     */
+    public static int getIntegerProperty(String name) {
+        Integer value = Integer.getInteger(name);
+        if (value == null) {
+            throw new IllegalStateException(
+                    "Invalid integer value for property " + name + ": '"
+                            + System.getProperty(name) + "'");
+        }
+
+        return value;
+    }
+
+    /**
      * @return true if ignite is active/being used, false if only pypies is
      *         being used
      */
@@ -119,15 +141,18 @@ public class IgniteUtils {
      * @param e
      *            the exception
      * @param attemptNum
-     *            the operation attempt number
+     *            the operation attempt number (0-based)
+     * @param maxAttempts
+     *            the maximum number of times to attempt the operation (1-based)
      * @param asyncCacheOpFuture
      *            the async cache op future that the exception occurred during,
      *            or null if it was not such an operation
      */
     public static void handleException(Logger logger, Exception e,
-            int attemptNum, IgniteFuture<?> asyncCacheOpFuture) {
+            int attemptNum, int maxAttempts,
+            IgniteFuture<?> asyncCacheOpFuture) {
         logger.error("Error executing ignite operation on attempt "
-                + (attemptNum + 1) + "/" + OP_NUM_ATTEMPTS, e);
+                + (attemptNum + 1) + "/" + maxAttempts, e);
 
         /*
          * Some ignite exceptions provide a future that is supposed to complete
@@ -164,7 +189,7 @@ public class IgniteUtils {
             }
         }
 
-        if (!recovered && attemptNum < OP_NUM_ATTEMPTS - 1) {
+        if (!recovered && attemptNum < maxAttempts - 1) {
             // Give ignite time to hopefully fix itself
             try {
                 logger.info("Waiting " + OP_RETRY_DELAY_SECS

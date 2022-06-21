@@ -59,6 +59,8 @@ import com.raytheon.uf.common.datastore.ignite.plugin.PluginRegistryConfig.Confi
  * Jul 15, 2021 8450       mapeters    Initial creation (extracted from
  *                                     CachePluginRegistry)
  * Sep 23, 2021 8608       mapeters    Moved from com.raytheon.uf.common.datastorage.ignite
+ * Jun 21, 2022 8879       mapeters    Handle signature change in methods for
+ *                                     doing ignite operations (do*Op)
  *
  * </pre>
  *
@@ -134,7 +136,7 @@ public class CachePluginRegistryPersistenceService implements Service {
                 String cacheName = entry.getCache();
                 try {
                     cacheAccessor.doAsyncCacheOp(
-                            c -> c.putIfAbsentAsync(plugin, cacheName));
+                            c -> c.putIfAbsentAsync(plugin, cacheName), true);
                 } catch (StorageException e) {
                     logger.error(
                             "Error storing plugin cache name mapping to cache: "
@@ -187,7 +189,7 @@ public class CachePluginRegistryPersistenceService implements Service {
                         config.addEntry(plugin, cacheName);
                     }
                     return config;
-                });
+                }, true);
             } catch (StorageException e) {
                 logger.error(
                         "Cannot write cache plugin registry to file due to error reading entries from cache",

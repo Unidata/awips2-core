@@ -81,6 +81,8 @@ import com.raytheon.uf.common.datastore.ignite.IgniteServerManager;
  *                                     from IgniteDataStore.FastReplaceCallable)
  * Apr 08, 2022 8653       tjensen     Update replace to check h5s for prevValue
  *                                     and properly merge cached values
+ * Jun 21, 2022 8879       mapeters    Handle signature change in methods for
+ *                                     doing ignite operations (do*Op)
  *
  * </pre>
  *
@@ -145,7 +147,7 @@ public class FastStoreCallable implements IgniteCallable<StorageStatus> {
                             cache = cache.withSkipStore();
                         }
                         return cache.getAsync(key);
-                    });
+                    }, true);
                 } catch (StorageException e) {
                     throw new StorageException(
                             "Error loading previous cache value for: "
@@ -160,7 +162,7 @@ public class FastStoreCallable implements IgniteCallable<StorageStatus> {
                             storeOp, status);
                 }
 
-                cacheAccessor.doAsyncCacheOp(c -> c.putAsync(key, value));
+                cacheAccessor.doAsyncCacheOp(c -> c.putAsync(key, value), true);
             } catch (StorageException e) {
                 /*
                  * Store and return exceptions instead of letting them just

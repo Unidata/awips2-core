@@ -40,6 +40,7 @@ import com.raytheon.uf.common.datastorage.StorageException;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jul 15, 2021 8450       mapeters    Initial creation
+ * Jun 21, 2022 8879       mapeters    Add allowRetries param to do*CacheOp()
  *
  * </pre>
  *
@@ -74,15 +75,19 @@ public class IgniteCacheAccessor<K, V> {
      * @param cacheAsyncOpFunction
      *            a function that starts the async cache operation when applied
      *            to the cache and returns a future for it
+     * @param allowRetries
+     *            whether or not to allow retrying this operation if it fails
      * @return the cache operation result
      * @throws StorageException
      *             if the operation still fails after retrying
      */
     public <T> T doAsyncCacheOp(
-            Function<IgniteCache<K, V>, IgniteFuture<T>> cacheAsyncOpFunction)
-            throws StorageException {
+            Function<IgniteCache<K, V>, IgniteFuture<T>> cacheAsyncOpFunction,
+            boolean allowRetries) throws StorageException {
+        int maxAttempts = allowRetries ? IgniteUtils.OP_NUM_ATTEMPTS : 1;
+
         Exception exception = null;
-        for (int i = 0; i < IgniteUtils.OP_NUM_ATTEMPTS; ++i) {
+        for (int i = 0; i < maxAttempts; ++i) {
             IgniteFuture<T> cacheOpFuture = null;
             try {
                 cacheOpFuture = cacheAsyncOpFunction.apply(getCache());
@@ -90,7 +95,8 @@ public class IgniteCacheAccessor<K, V> {
                         TimeUnit.SECONDS);
             } catch (Exception e) {
                 exception = e;
-                IgniteUtils.handleException(logger, e, i, cacheOpFuture);
+                IgniteUtils.handleException(logger, e, i, maxAttempts,
+                        cacheOpFuture);
             }
         }
 
@@ -107,20 +113,24 @@ public class IgniteCacheAccessor<K, V> {
      * @param cacheSyncOpFunction
      *            a function that starts the synchronous cache operation when
      *            applied to the cache and returns the operation result
+     * @param allowRetries
+     *            whether or not to allow retrying this operation if it fails
      * @return the cache operation result
      * @throws StorageException
      *             if the operation still fails after retrying
      */
     public <T> T doSyncCacheOp(
-            Function<IgniteCache<K, V>, T> cacheSyncOpFunction)
-            throws StorageException {
+            Function<IgniteCache<K, V>, T> cacheSyncOpFunction,
+            boolean allowRetries) throws StorageException {
+        int maxAttempts = allowRetries ? IgniteUtils.OP_NUM_ATTEMPTS : 1;
+
         Exception exception = null;
-        for (int i = 0; i < IgniteUtils.OP_NUM_ATTEMPTS; ++i) {
+        for (int i = 0; i < maxAttempts; ++i) {
             try {
                 return cacheSyncOpFunction.apply(getCache());
             } catch (Exception e) {
                 exception = e;
-                IgniteUtils.handleException(logger, e, i, null);
+                IgniteUtils.handleException(logger, e, i, maxAttempts, null);
             }
         }
 

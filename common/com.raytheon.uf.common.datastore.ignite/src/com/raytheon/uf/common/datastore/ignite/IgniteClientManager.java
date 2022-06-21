@@ -45,6 +45,7 @@ import com.raytheon.uf.common.datastore.ignite.IgniteClientFailureHandler.Ignite
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jun 25, 2021 8450       mapeters    Initial creation
+ * Jun 21, 2022 8879       mapeters    Add allowRetries param to do*IgniteOp()
  *
  * </pre>
  *
@@ -145,7 +146,7 @@ public class IgniteClientManager extends AbstractIgniteManager
             logger.info("Stopping failed ignite client...");
 
             try {
-                doVoidIgniteOp(ignite -> ignite.close());
+                doVoidIgniteOp(ignite -> ignite.close(), true);
             } catch (StorageException e) {
                 logger.error("Error stopping failed ignite client", e);
             }
@@ -181,7 +182,8 @@ public class IgniteClientManager extends AbstractIgniteManager
 
             if (ignite != null) {
                 try {
-                    doVoidIgniteOp(ignite -> ignite.getOrCreateCache(config));
+                    doVoidIgniteOp(ignite -> ignite.getOrCreateCache(config),
+                            true);
                 } catch (StorageException e) {
                     logger.error("Error creating cache: " + config, e);
                 }
@@ -210,7 +212,7 @@ public class IgniteClientManager extends AbstractIgniteManager
 
         for (CacheConfiguration<?, ?> config : cacheConfigs.values()) {
             try {
-                doVoidIgniteOp(ignite -> ignite.getOrCreateCache(config));
+                doVoidIgniteOp(ignite -> ignite.getOrCreateCache(config), true);
             } catch (StorageException e) {
                 logger.error("Error creating cache: " + config, e);
             }

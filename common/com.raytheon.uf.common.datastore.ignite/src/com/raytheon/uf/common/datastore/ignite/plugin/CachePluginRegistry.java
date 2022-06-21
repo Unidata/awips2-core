@@ -65,6 +65,8 @@ import com.raytheon.uf.common.datastore.ignite.IgniteUtils;
  * Jun 25, 2021  8450     mapeters  Updated for centralized ignite instance management,
  *                                  moved persistence to file on server side to
  *                                  CachePluginRegistryPersistenceService
+ * Jun 21, 2022  8879     mapeters  Handle signature change in methods for
+ *                                  doing ignite operations (do*Op)
  *
  * </pre>
  *
@@ -98,8 +100,8 @@ public class CachePluginRegistry {
         try {
             if (cacheAccessor != null) {
                 try {
-                    cacheAccessor
-                            .doAsyncCacheOp(c -> c.putAsync(plugin, cacheName));
+                    cacheAccessor.doAsyncCacheOp(
+                            c -> c.putAsync(plugin, cacheName), true);
                 } catch (StorageException e) {
                     logger.error(
                             "Error storing plugin cache name mapping to ignite server: "
@@ -129,8 +131,8 @@ public class CachePluginRegistry {
             this.cacheAccessor = clusterManager
                     .getCacheAccessor(IgniteUtils.PLUGIN_REGISTRY_CACHE_NAME);
             try {
-                cacheAccessor
-                        .doAsyncCacheOp(c -> c.putAllAsync(cacheNamesByPlugin));
+                cacheAccessor.doAsyncCacheOp(
+                        c -> c.putAllAsync(cacheNamesByPlugin), true);
             } catch (StorageException e) {
                 logger.error(
                         "Error storing plugin cache name mappings to ignite server",
@@ -151,7 +153,8 @@ public class CachePluginRegistry {
             String name = null;
             boolean errorOccurred = false;
             try {
-                name = cacheAccessor.doAsyncCacheOp(c -> c.getAsync(plugin));
+                name = cacheAccessor.doAsyncCacheOp(c -> c.getAsync(plugin),
+                        true);
             } catch (StorageException e) {
                 logger.error("Error retrieving cache name to use for plugin "
                         + plugin + ", temporarily falling back to "

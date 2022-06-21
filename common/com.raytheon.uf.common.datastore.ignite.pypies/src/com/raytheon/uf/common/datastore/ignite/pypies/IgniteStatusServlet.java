@@ -53,6 +53,7 @@ import com.raytheon.uf.common.util.SizeUtil;
  * ------------- -------- --------- -----------------
  * Mar 27, 2020  8071     bsteffen  Initial creation
  * Jun 25, 2021  8450     mapeters  Updated to support 1 or 2 ignite clusters
+ * Jun 21, 2022  8879     mapeters  Don't retry failed ignite operations
  *
  * </pre>
  *
@@ -81,7 +82,7 @@ public class IgniteStatusServlet extends HttpServlet {
                  * reporting status so don't need/want any special exception
                  * handling.
                  */
-                ignite = igniteManager.doIgniteOp(i -> i);
+                ignite = igniteManager.doIgniteOp(i -> i, false);
             } catch (StorageException e) {
                 throw new ServletException("Error accessing ignite client", e);
             }
@@ -101,7 +102,7 @@ public class IgniteStatusServlet extends HttpServlet {
                 .getIgniteClientManagers()) {
             Ignite ignite;
             try {
-                ignite = igniteManager.doIgniteOp(i -> i);
+                ignite = igniteManager.doIgniteOp(i -> i, false);
             } catch (StorageException e) {
                 throw new ServletException("Error accessing ignite client", e);
             }
