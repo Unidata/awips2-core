@@ -147,6 +147,8 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  *                                    {@link #getMetadata(String)} to work with data objects
  *                                    that don't have a dataURI table column
  * Feb 17, 2022  8608     mapeters    Add auditMissingPiecesForDatabaseOnlyPdos()
+ * Jun 22, 2022  8865     mapeters    Updates to hdf5 storage methods to audit missing pieces
+ *                                    for PDOs that are filtered out
  *
  * </pre>
  *
@@ -209,17 +211,20 @@ public abstract class PluginDao extends CoreDao {
     }
 
     /**
-     * Defines the behavior for storing data to the HDF5 data store
+     * Add the data to the data store object for it to be stored. This does not
+     * actually save the data to hdf5, {@link IDataStore#store(StoreOp)} must be
+     * called to do that.
      *
      * @param dataStore
-     *            The datastore to save the data to
+     *            the data store object to add the data to
      * @param obj
-     *            The object containing the data to be stored
-     * @return The updated data store
+     *            the object containing the data to be stored
+     * @return true if the data object was added to the data store, false
+     *         otherwise
      * @throws Exception
      *             if problems occur while interacting with the HDF5 data store
      */
-    protected abstract IDataStore populateDataStore(IDataStore dataStore,
+    protected abstract boolean populateDataStore(IDataStore dataStore,
             IPersistable obj) throws Exception;
 
     /**
@@ -580,22 +585,18 @@ public abstract class PluginDao extends CoreDao {
 
         Iterator<File> fileIterator = persistableMap.keySet().iterator();
         List<StorageException> exceptions = new ArrayList<>();
+
+        List<IPersistable> dbOnlyRecords = new ArrayList<>();
         while (fileIterator.hasNext()) {
             File file = fileIterator.next();
             List<IPersistable> persistables = persistableMap.get(file);
-
-            // create the directories necessary for this file, if they do not
-            // exist
-            // File directory = file.getParentFile();
-            // if (!directory.exists()) {
-            // directory.mkdirs();
-            // }
 
             IDataStore dataStore = null;
             IDataStore replaceDataStore = null;
 
             for (IPersistable persistable : persistables) {
                 try {
+                    boolean populated;
                     if (((PersistableDataObject<?>) persistable)
                             .isOverwriteAllowed()) {
                         if (replaceDataStore == null) {
@@ -603,12 +604,16 @@ public abstract class PluginDao extends CoreDao {
                                     .getDataStore(file);
                         }
 
-                        populateDataStore(replaceDataStore, persistable);
+                        populated = populateDataStore(replaceDataStore,
+                                persistable);
                     } else {
                         if (dataStore == null) {
                             dataStore = DataStoreFactory.getDataStore(file);
                         }
-                        populateDataStore(dataStore, persistable);
+                        populated = populateDataStore(dataStore, persistable);
+                    }
+                    if (!populated) {
+                        dbOnlyRecords.add(persistable);
                     }
                 } catch (Exception e) {
                     throw new PluginException("Error populating data store", e);
@@ -635,6 +640,11 @@ public abstract class PluginDao extends CoreDao {
                     logger.error("Error persisting replace records to HDF5", e);
                 }
             }
+        }
+
+        if (!dbOnlyRecords.isEmpty()) {
+            auditMissingPiecesForDatabaseOnlyPdos(
+                    dbOnlyRecords.toArray(new PluginDataObject[0]));
         }
 
         // Create an aggregated status object

@@ -67,6 +67,8 @@ import com.raytheon.uf.edex.esb.camel.context.ContextManager;
  * Mar  4, 2021  8326     tgurney     Fixes for Camel 3 API changes
  * May 12, 2021  8436     tgurney     Change CamelContext detection -- always
  *                                    get the context of the endpoint uri
+ * Jun 28, 2022  8865     mapeters    Change determination of default context
+ *                                    to use when sending outside JVM
  *
  * </pre>
  *
@@ -292,12 +294,8 @@ public class MessageProducer implements IMessageProducer {
         }
 
         if (ctx == null) {
-            // this jvm does not consume from this route, use first context
-            List<CamelContext> contexts = contextData.getContexts();
-            if (!contexts.isEmpty()) {
-                // should always be a context defined
-                ctx = contexts.get(0);
-            }
+            // this jvm does not consume from this route, use default context
+            ctx = contextData.getDefaultContext();
         }
 
         if (ctx != null) {

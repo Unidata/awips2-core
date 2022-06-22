@@ -31,6 +31,7 @@ import java.util.Map;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Sep 23, 2021 8608       mapeters    Initial creation
+ * Jun 28, 2022 8865       mapeters    Rename uri to URI
  *
  * </pre>
  *
@@ -38,7 +39,7 @@ import java.util.Map;
  */
 public interface IDataStorageAuditer {
 
-    String uri = "data.storage.audit.event";
+    String URI = "data.storage.audit.event";
 
     /**
      * Audit the metadata and data IDs of data being stored.

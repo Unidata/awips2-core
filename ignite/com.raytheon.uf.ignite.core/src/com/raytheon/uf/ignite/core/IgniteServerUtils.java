@@ -45,8 +45,10 @@ import com.raytheon.uf.common.serialization.SerializationUtil;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jul 21, 2021 8450       mapeters    Initial creation
- * Sep 23, 2021 8608       mapeters    Add {@link #sendMessageToQueue},
- *                                     moved from com.raytheon.uf.common.datastorage.ignite
+ * Sep 23, 2021 8608       mapeters    Add {@link #sendMessageToQueue}, moved from
+ *                                     com.raytheon.uf.common.datastorage.ignite
+ * Jun 22, 2022 8865       mapeters    Update sendMessageToQueue to throw
+ *                                     exception on failure
  *
  * </pre>
  *
@@ -108,7 +110,7 @@ public class IgniteServerUtils {
      */
     public static void sendMessageToQueue(
             ConnectionFactory jmsConnectionFactory, String uri, Object message)
-            throws SerializationException {
+            throws SerializationException, JMSException {
         for (int attemptNum = 1; attemptNum <= JMS_NUM_ATTEMPTS; ++attemptNum) {
             /*
              * Suppressing squid:S2445. Using jmsConnectionFactory for
@@ -136,8 +138,8 @@ public class IgniteServerUtils {
                     String msg = "Error sending message to " + uri
                             + " queue on attempt " + attemptNum + "/"
                             + JMS_NUM_ATTEMPTS + ": " + message;
-                    logger.error(msg, e);
                     if (attemptNum < JMS_NUM_ATTEMPTS) {
+                        logger.error(msg, e);
                         try {
                             Thread.sleep(JMS_RETRY_INTERVAL_MS);
                         } catch (InterruptedException e1) {
@@ -145,6 +147,10 @@ public class IgniteServerUtils {
                                     "Interrupted while waiting to re-send JMS message",
                                     e1);
                         }
+                    } else {
+                        JMSException e2 = new JMSException(msg);
+                        e2.initCause(e);
+                        throw e2;
                     }
                 }
             }

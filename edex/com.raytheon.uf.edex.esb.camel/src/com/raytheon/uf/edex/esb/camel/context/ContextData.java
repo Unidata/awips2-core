@@ -46,6 +46,7 @@ import com.raytheon.uf.edex.core.EdexException;
  * ------------ ---------- ----------- --------------------------
  * Apr 10, 2014 2726       rjpeter     Initial creation.
  * Mar  4, 2021 8326       tgurney     Fixes for Camel 3 API changes
+ * Jun 28, 2022 8865       mapeters    Add getDefaultContext()
  *
  * </pre>
  *
@@ -162,8 +163,7 @@ public class ContextData {
      *
      * @return
      */
-    public Map<String, List<Route>> getContextRoutesByEndpointType()
-            throws ConfigurationException {
+    public Map<String, List<Route>> getContextRoutesByEndpointType() {
         Map<String, List<Route>> routesByType = new HashMap<>();
         for (CamelContext context : contexts) {
             List<Route> routes = context.getRoutes();
@@ -222,5 +222,18 @@ public class ContextData {
         }
 
         return route;
+    }
+
+    /**
+     * Get a default camel context to use for actions that don't need a specific
+     * one.
+     *
+     * @return the default camel context
+     */
+    public CamelContext getDefaultContext() {
+        if (!contexts.isEmpty()) {
+            return contexts.get(0);
+        }
+        return null;
     }
 }

@@ -37,13 +37,15 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * Sep 23, 2021 8608       mapeters    Initial creation
  * Feb 17, 2022 8608       mapeters    Rename from DataId, implement
  *                                     {@link IDataIdentifier}
+ * Jun 22, 2022 8865       mapeters    Fix class spelling (formerly
+ *                                     Hdf5DataIdentifer)
  *
  * </pre>
  *
  * @author mapeters
  */
 @DynamicSerialize
-public class Hdf5DataIdentifer implements IDataIdentifier {
+public class Hdf5DataIdentifier implements IDataIdentifier {
 
     private static final long serialVersionUID = 1L;
 
@@ -59,14 +61,14 @@ public class Hdf5DataIdentifer implements IDataIdentifier {
     @DynamicSerializeElement
     private Set<String> datasets;
 
-    public Hdf5DataIdentifer() {
+    public Hdf5DataIdentifier() {
     }
 
-    public Hdf5DataIdentifer(String traceId, String file, String group) {
+    public Hdf5DataIdentifier(String traceId, String file, String group) {
         this(traceId, file, group, new HashSet<>());
     }
 
-    public Hdf5DataIdentifer(String traceId, String file, String group,
+    public Hdf5DataIdentifier(String traceId, String file, String group,
             Set<String> datasets) {
         this.traceId = traceId;
         this.file = file;
@@ -118,7 +120,7 @@ public class Hdf5DataIdentifer implements IDataIdentifier {
 
     @Override
     public String toString() {
-        return "Hdf5DataIdentifer [traceId=" + traceId + ", file=" + file
+        return "Hdf5DataIdentifier [traceId=" + traceId + ", file=" + file
                 + ", group=" + group + ", datasets=" + datasets + "]";
     }
 }

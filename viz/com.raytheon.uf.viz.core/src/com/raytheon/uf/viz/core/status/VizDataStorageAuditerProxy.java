@@ -24,12 +24,10 @@ import com.raytheon.uf.common.datastorage.audit.AbstractDataStorageAuditerProxy;
 import com.raytheon.uf.common.datastorage.audit.DataStorageAuditEvent;
 import com.raytheon.uf.common.datastorage.audit.IDataStorageAuditer;
 import com.raytheon.uf.common.serialization.SerializationException;
-import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.UFStatus;
 
 /**
  * {@link IDataStorageAuditer} proxy implementation for sending data storage
- * events from a non-EDEX process (e.g. CAVE or ignite cache server).
+ * events from a CAVE process.
  *
  * <pre>
  *
@@ -38,6 +36,7 @@ import com.raytheon.uf.common.status.UFStatus;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Sep 23, 2021 8608       mapeters    Initial creation
+ * Jun 22, 2022 8865       mapeters    Let exceptions propagate in send()
  *
  * </pre>
  *
@@ -46,16 +45,9 @@ import com.raytheon.uf.common.status.UFStatus;
 public class VizDataStorageAuditerProxy
         extends AbstractDataStorageAuditerProxy {
 
-    private final IUFStatusHandler statusHandler = UFStatus
-            .getHandler(VizDataStorageAuditerProxy.class);
-
     @Override
-    protected void send(String uri, DataStorageAuditEvent event) {
-        try {
-            MessageSender.sendToQueue(uri, event);
-        } catch (JMSException | SerializationException e) {
-            statusHandler.error("Error sending event to " + uri + ": " + event,
-                    e);
-        }
+    protected void send(DataStorageAuditEvent event)
+            throws JMSException, SerializationException {
+        MessageSender.sendToQueue(URI, event);
     }
 }

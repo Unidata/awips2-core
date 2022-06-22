@@ -20,6 +20,7 @@
 package com.raytheon.uf.edex.esb.camel.context;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -73,6 +74,7 @@ import com.raytheon.uf.edex.core.IContextStateProcessor;
  *                                  DefaultContextStateManager
  * Jul 28, 2017  5570     rjpeter   Fix dependency generation on shutdown
  * Mar  4, 2021  8326     tgurney   Fixes for Camel 3 API changes
+ * Jun 28, 2022  8865     mapeters  Shut down default context after all others
  *
  * </pre>
  *
@@ -418,12 +420,32 @@ public class ContextManager
                 List<CamelContext> contexts = ctxData.getContexts();
                 List<Future<Pair<CamelContext, Boolean>>> callbacks = new LinkedList<>();
 
+                /*
+                 * Shut down all contexts except default, then shut down
+                 * default. Default is used for generic actions like sending
+                 * messages outside JVM in MessageProducer, which other contexts
+                 * may want to do during shutdown.
+                 */
+                CamelContext defaultContext = ctxData.getDefaultContext();
                 for (final CamelContext context : contexts) {
-                    callbacks.add(service.submit(new StopContext(context)));
+                    if (context != defaultContext) {
+                        callbacks.add(service.submit(new StopContext(context)));
+                    }
                 }
 
                 List<CamelContext> failures = waitForCallbacks(callbacks,
                         "Waiting for contexts to shutdown: ", 1000);
+
+                if (defaultContext != null) {
+                    Future<Pair<CamelContext, Boolean>> callback = service
+                            .submit(new StopContext(defaultContext));
+
+                    List<Future<Pair<CamelContext, Boolean>>> defaultCallbacks = new ArrayList<>(
+                            Arrays.asList(callback));
+                    failures.addAll(waitForCallbacks(defaultCallbacks,
+                            "Waiting for default contexts to shutdown: ",
+                            1000));
+                }
 
                 for (CamelContext failure : failures) {
                     statusHandler.error("Context [" + failure.getName()

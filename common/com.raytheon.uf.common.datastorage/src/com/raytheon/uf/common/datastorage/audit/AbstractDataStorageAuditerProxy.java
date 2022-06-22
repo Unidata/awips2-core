@@ -20,6 +20,9 @@ package com.raytheon.uf.common.datastorage.audit;
 
 import java.util.Map;
 
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
+
 /**
  * Abstract class for {@link IDataStorageAuditer} proxy implementations that
  * just send data storage events to the necessary JMS endpoints, where they'll
@@ -32,6 +35,7 @@ import java.util.Map;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Sep 23, 2021 8608       mapeters    Initial creation
+ * Jun 28, 2022 8865       mapeters    Consolidate exception handling
  *
  * </pre>
  *
@@ -39,6 +43,9 @@ import java.util.Map;
  */
 public abstract class AbstractDataStorageAuditerProxy
         implements IDataStorageAuditer {
+
+    protected final IUFStatusHandler statusHandler = UFStatus
+            .getHandler(getClass());
 
     @Override
     public void processDataIds(MetadataAndDataId[] dataIds) {
@@ -69,16 +76,21 @@ public abstract class AbstractDataStorageAuditerProxy
 
     @Override
     public void processEvent(DataStorageAuditEvent event) {
-        send(uri, event);
+        try {
+            send(event);
+        } catch (Exception e) {
+            statusHandler.error("Error sending event to " + URI + ": " + event,
+                    e);
+        }
     }
 
     /**
-     * Send the given audit event to the given uri.
+     * Send the given audit event to the appropriate queue.
      *
-     * @param uri
-     *            the URI to send to
      * @param event
      *            the audit event to send
+     * @throws Exception
+     *             if sending the event fails
      */
-    protected abstract void send(String uri, DataStorageAuditEvent event);
+    protected abstract void send(DataStorageAuditEvent event) throws Exception;
 }

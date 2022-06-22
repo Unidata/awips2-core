@@ -18,9 +18,6 @@
  **/
 package com.raytheon.uf.edex.database.health;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.raytheon.uf.common.datastorage.audit.AbstractDataStorageAuditerProxy;
 import com.raytheon.uf.common.datastorage.audit.DataStorageAuditEvent;
 import com.raytheon.uf.common.datastorage.audit.IDataStorageAuditer;
@@ -40,6 +37,7 @@ import com.raytheon.uf.edex.core.IMessageProducer;
  * ------------ ---------- ----------- --------------------------
  * Sep 23, 2021 8608       mapeters    Initial creation
  * Feb 23, 2022 8608       mapeters    Change queue to durable
+ * Jun 22, 2022 8865       mapeters    Let exceptions propagate in send()
  *
  * </pre>
  *
@@ -48,9 +46,9 @@ import com.raytheon.uf.edex.core.IMessageProducer;
 public class EdexDataStorageAuditerProxy
         extends AbstractDataStorageAuditerProxy {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
-
     private final IMessageProducer messageProducer;
+
+    private static final String FULL_URI = "jms-durable:queue:" + URI;
 
     private final boolean enabled = "ignite"
             .equals(System.getenv("DATASTORE_PROVIDER"));
@@ -60,16 +58,10 @@ public class EdexDataStorageAuditerProxy
     }
 
     @Override
-    public void send(String uri, DataStorageAuditEvent event) {
-        if (!enabled) {
-            return;
-        }
-
-        uri = "jms-durable:queue:" + uri;
-        try {
-            messageProducer.sendAsyncThriftUri(uri, event);
-        } catch (EdexException | SerializationException e) {
-            logger.error("Error sending event to " + uri + ": " + event, e);
+    public void send(DataStorageAuditEvent event)
+            throws EdexException, SerializationException {
+        if (enabled) {
+            messageProducer.sendAsyncThriftUri(FULL_URI, event);
         }
     }
 }

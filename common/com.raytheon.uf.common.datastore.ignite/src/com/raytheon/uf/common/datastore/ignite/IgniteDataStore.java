@@ -57,7 +57,7 @@ import com.raytheon.uf.common.datastorage.StorageProperties.Compression;
 import com.raytheon.uf.common.datastorage.StorageStatus;
 import com.raytheon.uf.common.datastorage.audit.DataStatus;
 import com.raytheon.uf.common.datastorage.audit.DataStorageAuditerContainer;
-import com.raytheon.uf.common.datastorage.audit.Hdf5DataIdentifer;
+import com.raytheon.uf.common.datastorage.audit.Hdf5DataIdentifier;
 import com.raytheon.uf.common.datastorage.audit.MetadataAndDataId;
 import com.raytheon.uf.common.datastorage.records.IDataRecord;
 import com.raytheon.uf.common.datastorage.records.IMetadataIdentifier;
@@ -203,9 +203,9 @@ public class IgniteDataStore implements IDataStore {
                     MetadataAndDataId metaAndDataId = traceIdToDataInfo
                             .computeIfAbsent(metaId.getTraceId(),
                                     traceId -> new MetadataAndDataId(metaId,
-                                            new Hdf5DataIdentifer(traceId, path,
-                                                    group)));
-                    ((Hdf5DataIdentifer) metaAndDataId.getDataId())
+                                            new Hdf5DataIdentifier(traceId,
+                                                    path, group)));
+                    ((Hdf5DataIdentifier) metaAndDataId.getDataId())
                             .addDataset(record.getName());
                 }
                 totalSizeInBytes += record.getSizeInBytes();

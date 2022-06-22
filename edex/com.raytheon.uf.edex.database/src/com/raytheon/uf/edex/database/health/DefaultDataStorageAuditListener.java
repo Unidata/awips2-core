@@ -34,7 +34,7 @@ import com.raytheon.uf.common.datastorage.IDataStore;
 import com.raytheon.uf.common.datastorage.StorageException;
 import com.raytheon.uf.common.datastorage.audit.DataStatus;
 import com.raytheon.uf.common.datastorage.audit.DataStorageInfo;
-import com.raytheon.uf.common.datastorage.audit.Hdf5DataIdentifer;
+import com.raytheon.uf.common.datastorage.audit.Hdf5DataIdentifier;
 import com.raytheon.uf.common.datastorage.audit.IDataStorageAuditListener;
 import com.raytheon.uf.common.datastorage.audit.MetadataStatus;
 import com.raytheon.uf.common.datastorage.records.DataUriMetadataIdentifier;
@@ -78,7 +78,7 @@ public class DefaultDataStorageAuditListener
     public void handleDataStorageResult(DataStorageInfo info,
             Map<String, DataStorageInfo> traceIdToInfo) {
         if (!(info.getMetaId() instanceof DataUriMetadataIdentifier)
-                || !(info.getDataId() instanceof Hdf5DataIdentifer)) {
+                || !(info.getDataId() instanceof Hdf5DataIdentifier)) {
             logger.debug(
                     "Ignoring data storage info with non-dataUri metadata identifier and/or non-hdf5 data identifier: {}",
                     info);
@@ -87,7 +87,7 @@ public class DefaultDataStorageAuditListener
 
         DataUriMetadataIdentifier metaId = (DataUriMetadataIdentifier) info
                 .getMetaId();
-        Hdf5DataIdentifer dataId = (Hdf5DataIdentifer) info.getDataId();
+        Hdf5DataIdentifier dataId = (Hdf5DataIdentifier) info.getDataId();
 
         MetadataStatus metaStatus = info.getMetaStatus();
         DataStatus dataStatus = info.getDataStatus();
@@ -175,7 +175,7 @@ public class DefaultDataStorageAuditListener
         }
     }
 
-    private void deleteData(Hdf5DataIdentifer dataId,
+    private void deleteData(Hdf5DataIdentifier dataId,
             MetadataSpecificity specificity)
             throws FileNotFoundException, StorageException {
         IDataStore store = DataStoreFactory

@@ -20,7 +20,6 @@
 
 package com.raytheon.edex.db.dao;
 
-import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.dataplugin.PluginException;
 import com.raytheon.uf.common.dataplugin.persist.IPersistable;
 import com.raytheon.uf.common.datastorage.IDataStore;
@@ -39,6 +38,8 @@ import com.raytheon.uf.edex.database.plugin.PluginDao;
  * ------------ ---------- ----------- --------------------------
  * 2/06/09      1990       bphillip    Initial creation
  * 2/17/22      8608       mapeters    Updates for data storage auditing
+ * Jun 22, 2022 8865       mapeters    Update populateDataStore to return boolean and
+ *                                     remove auditing since it's now done by calling code
  * </pre>
  *
  * @author bphillip
@@ -58,17 +59,9 @@ public class DefaultPluginDao extends PluginDao {
     }
 
     @Override
-    protected IDataStore populateDataStore(IDataStore dataStore,
-            IPersistable obj) throws Exception {
+    protected boolean populateDataStore(IDataStore dataStore, IPersistable obj)
+            throws Exception {
         // Default no op
-        if (obj instanceof PluginDataObject) {
-            /*
-             * This is a database-only record. For auditing, the data store
-             * route is what sends the metadata and data IDs so we have to send
-             * those as well as data status.
-             */
-            auditMissingPiecesForDatabaseOnlyPdos((PluginDataObject) obj);
-        }
-        return null;
+        return false;
     }
 }

@@ -75,6 +75,8 @@ import com.raytheon.uf.edex.core.IMessageProducer;
  * Sep 23, 2021 8608       mapeters    Initial creation
  * Feb 17, 2022 8608       mapeters    Prevent harmless warnings about duplicate data,
  *                                     persist state across EDEX restarts
+ * Jun 28, 2022 8865       mapeters    Ensure exceptions thrown by cleanup() are logged,
+ *                                     prevent methods from running when they shouldn't
  *
  *
  * </pre>
@@ -84,7 +86,8 @@ import com.raytheon.uf.edex.core.IMessageProducer;
 public class DataStorageAuditer
         implements IDataStorageAuditer, IContextStateProcessor {
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private static final Logger logger = LoggerFactory
+            .getLogger(DataStorageAuditer.class);
 
     /**
      * Path to persist state to, so that data storage routes that occur around
@@ -279,43 +282,66 @@ public class DataStorageAuditer
      * older than the cutoff times. Should be called on a cron.
      */
     public void cleanup() {
-        long currentTime = SimulatedTime.getSystemTime().getMillis();
-        long completedCutoff = currentTime - completedRetentionMillis;
-        long pendingCutoff = currentTime - pendingRetentionMillis;
-        synchronized (traceIdToInfo) {
-            logger.info(
-                    "Cleaning up expired data storage information from {} total operations...",
-                    traceIdToInfo.size());
-            Iterator<DataStorageInfo> iter = traceIdToInfo.values().iterator();
-            while (iter.hasNext()) {
-                DataStorageInfo info = iter.next();
-                long startTime = info.getStartTime();
-                if (info.isComplete()) {
-                    if (startTime < completedCutoff) {
-                        iter.remove();
-                    }
-                } else if (startTime < pendingCutoff) {
-                    iter.remove();
-                    if (info.hasDataStatusOnly()) {
-                        /*
-                         * This can happen somewhat commonly if a data storage
-                         * operation completes, the completed data storage info
-                         * expires from here, and then the data group is stored
-                         * again, and the trace ID hung around in the ignite
-                         * cache that whole time.
-                         */
-                        logger.info(
-                                "Expired data storage info only has data status: "
-                                        + info);
-                    } else {
-                        logger.warn(
-                                "Expired data storage info never completed: "
-                                        + info);
+        if (!enabled) {
+            return;
+        }
+
+        /*
+         * Wrap everything in try/catch since it seems like some errors thrown
+         * from here may be ignored based on some "Cleaning up" log messages not
+         * having corresponding "Retained info" messages.
+         */
+        try {
+            long currentTime = SimulatedTime.getSystemTime().getMillis();
+            long completedCutoff = currentTime - completedRetentionMillis;
+            long pendingCutoff = currentTime - pendingRetentionMillis;
+
+            synchronized (traceIdToInfo) {
+                logger.info(
+                        "Cleaning up expired data storage information from {} total operations...",
+                        traceIdToInfo.size());
+                Iterator<DataStorageInfo> iter = traceIdToInfo.values()
+                        .iterator();
+                while (iter.hasNext()) {
+                    DataStorageInfo info = iter.next();
+                    try {
+                        long startTime = info.getStartTime();
+                        if (info.isComplete()) {
+                            if (startTime < completedCutoff) {
+                                iter.remove();
+                            }
+                        } else if (startTime < pendingCutoff) {
+                            iter.remove();
+                            if (info.hasDataStatusOnly()) {
+                                /*
+                                 * This can happen somewhat commonly if a data
+                                 * storage operation completes, the completed
+                                 * data storage info expires from here, and then
+                                 * the data group is stored again, and the trace
+                                 * ID hung around in the ignite cache that whole
+                                 * time.
+                                 */
+                                logger.info(
+                                        "Expired data storage info only has data status: {}",
+                                        info);
+                            } else {
+                                logger.warn(
+                                        "Expired data storage info never completed: {}",
+                                        info);
+                            }
+                        }
+                    } catch (Exception e) {
+                        logger.error(
+                                "Error cleaning up expired data storage info: ",
+                                e);
                     }
                 }
+                logger.info("Retained info for {} data storage operations",
+                        traceIdToInfo.size());
             }
-            logger.info("Retained info for {} data storage operations",
-                    traceIdToInfo.size());
+        } catch (Throwable t) {
+            logger.error("Error cleaning up expired data storage info", t);
+            throw t;
         }
     }
 
@@ -336,6 +362,10 @@ public class DataStorageAuditer
 
     @Override
     public void preStart() {
+        if (!enabled) {
+            return;
+        }
+
         /*
          * This gets called twice for some reason, only load persisted state the
          * first time.
@@ -387,6 +417,19 @@ public class DataStorageAuditer
 
     @Override
     public void postStop() {
+        if (!enabled) {
+            return;
+        }
+
+        if (traceIdToInfo.isEmpty()) {
+            /*
+             * Primarily checking this because this method can be called on
+             * ingest JVMs that aren't running this auditer, and we don't want
+             * them overwriting the persisted state.
+             */
+            return;
+        }
+
         // Persist state to disk
         cleanup();
         logger.info("Persisting info for {} data storage operations",
