@@ -70,7 +70,8 @@ import com.raytheon.uf.viz.core.rsc.ResourceList.RemoveListener;
  * Oct 22, 2013  2491     bsteffen    Switch clone to ProcedureXmlManager
  * Dec 09, 2016  6027     bsteffen    Copy bounds in clone
  * Apr 18, 2017  6049     bsteffen    Fix race condition causing NPE
- * 
+ * Mar 20, 2018  6855     njensen     Rewrote calcPixelExtent(Rectangle)	
+ * Oct 02, 2019  69438    ksunil      add FRAME_NUM_IN_LOOP to the globals
  * </pre>
  * 
  * @author mschenke
@@ -188,8 +189,15 @@ public abstract class AbstractRenderableDisplay implements IRenderableDisplay {
     }
 
     @Override
-    public void calcPixelExtent(Rectangle clientArea) {
-        view.scaleToClientArea(clientArea, getDimensions());
+    public void calcPixelExtent(Rectangle clientArea) {	
+        double zoomLevel = view.getZoom();	
+        double[] c1 = view.getExtent().getCenter();	
+        this.view.scaleToClientArea(clientArea, getDimensions());	
+        double[] c2 = view.getExtent().getCenter();	
+        double deltaX = (c1[0] - c2[0]);	
+        double deltaY = (c1[1] - c2[1]);	
+        view.getExtent().shift(deltaX, deltaY);	
+        view.zoom(zoomLevel);	
     }
 
     @Override
@@ -476,10 +484,12 @@ public abstract class AbstractRenderableDisplay implements IRenderableDisplay {
     }
 
     @Override
-    public Map<String, Object> getGlobalsMap() {
-        globals.put(VizConstants.FRAME_COUNT_ID,
-                getDescriptor().getFramesInfo().getFrameCount());
-        return globals;
+    public Map<String, Object> getGlobalsMap() {	
+        globals.put(VizConstants.FRAME_COUNT_ID,	
+                getDescriptor().getFramesInfo().getFrameCount());	
+        globals.put(VizConstants.FRAME_NUM_IN_LOOP,	
+                getDescriptor().getFramesInfo().frameIndex);	
+        return globals;	
     }
 
     protected long getBlinkInterval() {

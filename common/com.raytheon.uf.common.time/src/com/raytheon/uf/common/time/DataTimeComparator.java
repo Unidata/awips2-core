@@ -35,6 +35,7 @@ import java.util.Comparator;
  * Aug 08, 2013  2245     bsteffen    Initial creation
  * Oct 14, 2013  2468     bsteffen    Use Date for validTime comparisons.
  * Jun 11, 2014  3265     bsteffen    Add support for null.
+ * Apr 26, 2022     srcarter@unidata  Added support for Reverse Forecast Time
  * 
  * </pre>
  * 
@@ -46,7 +47,7 @@ public class DataTimeComparator implements Comparator<DataTime> {
 
     /** Defines possible time sort keys */
     public static enum SortKey {
-        INITIAL_TIME, FORECAST_TIME, VALID_TIME
+        INITIAL_TIME, FORECAST_TIME, VALID_TIME, REV_FORECAST_TIME
     }
 
     /** The major sort key */
@@ -125,6 +126,8 @@ public class DataTimeComparator implements Comparator<DataTime> {
                     .getRefTime().getTime());
         case FORECAST_TIME:
             return integerCompare(time1.getFcstTime(), time2.getFcstTime());
+        case REV_FORECAST_TIME:
+        	return -integerCompare(time1.getFcstTime(), time2.getFcstTime());
         case VALID_TIME:
             return longCompare(time1.getValidTimeAsDate().getTime(), time2
                     .getValidTimeAsDate().getTime());
@@ -140,6 +143,8 @@ public class DataTimeComparator implements Comparator<DataTime> {
             return longCompare(time1.getMatchRef(), time2.getMatchRef());
         case FORECAST_TIME:
             return longCompare(time1.getMatchFcst(), time2.getMatchFcst());
+        case REV_FORECAST_TIME:
+            return -longCompare(time1.getMatchFcst(), time2.getMatchFcst());
         case VALID_TIME:
             return longCompare(time1.getMatchValid(), time2.getMatchValid());
         default:

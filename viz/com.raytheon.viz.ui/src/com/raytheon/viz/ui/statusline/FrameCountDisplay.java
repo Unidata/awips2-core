@@ -43,28 +43,36 @@ import com.raytheon.uf.viz.core.globals.VizGlobalsManager;
  * ------------ ---------- ----------- --------------------------
  * Dec 23, 2010            mschenke    Initial creation
  * Mar 24, 2016  5232      njensen     Fix label coloring for test mode
- *
+ * Oct 02, 2019  69438     ksunil      work to add current frame number in the label
  * </pre>
  *
  * @author mschenke
  */
 
-public class FrameCountDisplay extends ContributionItem implements
-        IGlobalChangedListener {
+public class FrameCountDisplay extends ContributionItem {
 
     private Label frameCountLabel;
 
     private Composite layout;
+    
+    private Number frameCount;
 
-    private Number currentCount;
+    private Number currentFrameNum;
 
     private IWorkbenchWindow window;
+    
+    private FrameNumberListener frameNumListener = new FrameNumberListener();
+
+    private FrameCountListener frameCountListener = new FrameCountListener();
 
     public FrameCountDisplay(IWorkbenchWindow window) {
         this.window = window;
-        currentCount = (Number) VizGlobalsManager.getInstance(window)
+        frameCount = (Number) VizGlobalsManager.getInstance(window)
                 .getPropery(VizConstants.FRAME_COUNT_ID);
-        VizGlobalsManager.addListener(VizConstants.FRAME_COUNT_ID, this);
+        VizGlobalsManager.addListener(VizConstants.FRAME_COUNT_ID,
+                frameCountListener);
+        VizGlobalsManager.addListener(VizConstants.FRAME_NUM_IN_LOOP,
+                frameNumListener);
     }
 
     @Override
@@ -97,11 +105,12 @@ public class FrameCountDisplay extends ContributionItem implements
 
     private void updateFrameText() {
         if (frameCountLabel != null) {
-            if (currentCount != null) {
-                frameCountLabel.setText(""
-                        + Math.max(currentCount.intValue(), 1));
+            if (frameCount != null && currentFrameNum != null) {
+                frameCountLabel
+                        .setText(Math.max(currentFrameNum.intValue() + 1, 1)
+                                + "/" + Math.max(frameCount.intValue(), 1));
             } else {
-                frameCountLabel.setText("1");
+                frameCountLabel.setText("1/1");
             }
             window.getShell().layout(true, true);
             frameCountLabel.pack();
@@ -111,14 +120,26 @@ public class FrameCountDisplay extends ContributionItem implements
     @Override
     public void dispose() {
         super.dispose();
-        VizGlobalsManager.removeListener(VizConstants.FRAME_COUNT_ID, this);
+        VizGlobalsManager.removeListener(VizConstants.FRAME_COUNT_ID,
+                frameCountListener);
+        VizGlobalsManager.removeListener(VizConstants.FRAME_NUM_IN_LOOP,
+                frameNumListener);
     }
-
-    @Override
-    public void updateValue(IWorkbenchWindow changedWindow, Object value) {
-        if (changedWindow == window) {
-            currentCount = (Number) value;
+    
+    private class FrameNumberListener implements IGlobalChangedListener {
+        public void updateValue(IWorkbenchWindow changedWindow, Object value) {
+            currentFrameNum = (Number) value;
             update();
         }
     }
+    
+    private class FrameCountListener implements IGlobalChangedListener {
+        public void updateValue(IWorkbenchWindow changedWindow, Object value) {
+            if (changedWindow == window) {
+                frameCount = (Number) value;
+                update();
+            }
+        }
+    }
+
 }
