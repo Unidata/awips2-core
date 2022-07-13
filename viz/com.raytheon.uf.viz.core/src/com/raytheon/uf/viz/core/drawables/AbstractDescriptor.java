@@ -52,6 +52,7 @@ import com.raytheon.uf.viz.core.AbstractTimeMatcher;
 import com.raytheon.uf.viz.core.IDisplayPane;
 import com.raytheon.uf.viz.core.IDisplayPaneContainer;
 import com.raytheon.uf.viz.core.IExtent;
+import com.raytheon.uf.viz.core.VizApp;
 import com.raytheon.uf.viz.core.VizConstants;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.globals.VizGlobalsManager;
@@ -82,7 +83,11 @@ import com.raytheon.uf.viz.core.time.TimeMatchingJob;
  * Nov 03, 2016  5976     bsteffen    Remove unused deprecated methods.
  * Jun 12, 2017  6297     bsteffen    Make listeners thread safe.
  * Jan 04, 2018  6753     bsteffen    Remove unneccesary time matcher operations.
- * 
+ * Oct 01, 2019  69438    ksunil      When the frame changes, notify frame number	
+ *                                    listener.	
+ * Dec 02, 2019  71868    tjensen     Change updateUI call in notifyFrameChanged()	
+ *                                    to be async
+ *                                  
  * </pre>
  * 
  * @author chammack
@@ -498,10 +503,17 @@ public abstract class AbstractDescriptor extends ResourceGroup
      * @param oldTime
      * @param newTime
      */
-    protected void notifyFrameChanged(DataTime oldTime, DataTime newTime) {
-        for (IFrameChangedListener listener : listeners) {
-            listener.frameChanged(this, oldTime, newTime);
-        }
+    protected void notifyFrameChanged(DataTime oldTime, DataTime newTime) {	
+        for (IFrameChangedListener listener : listeners) {	
+            listener.frameChanged(this, oldTime, newTime);	
+        }	
+        VizApp.runAsync(new Runnable() {	
+            @Override	
+            public void run() {	
+                VizGlobalsManager.getCurrentInstance()	
+                        .updateUI(getRenderableDisplay().getContainer());	
+            }	
+        });	
     }
 
     @Override
@@ -526,8 +538,8 @@ public abstract class AbstractDescriptor extends ResourceGroup
                 error = "Index must be positive when frames are provided";
             }
             if (times != null) {
-                for (int i = 0; i < times.length; i++) {
-                    if (times[i] == null) {
+                for (DataTime time : times) {
+                    if (time == null) {
                         error = "Descriptor should not contain null times";
                         break;
                     }
