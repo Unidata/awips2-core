@@ -21,8 +21,10 @@ package com.raytheon.uf.edex.ingest;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -59,6 +61,7 @@ import com.raytheon.uf.edex.database.plugin.PluginFactory;
  * Dec 17, 2015 5166       kbisanz     Update logging to use SLF4J
  * Apr 25, 2016 5604       rjpeter     Added dupElim checking by dataURI.
  * Feb 17, 2022 8608       mapeters    Use DataStorageAuditUtils
+ * Jul 21, 2022 8897       njensen     Optimize check for discardedPdos
  *
  * </pre>
  *
@@ -116,16 +119,19 @@ public class PersistSrv {
              * complaining about uncompleted data storage routes, report any
              * that were discarded like this.
              */
-            List<PluginDataObject> discardedPdos = new ArrayList<>();
-            for (PluginDataObject pdo : pdos) {
-                boolean discarded = pdoSet.stream().noneMatch(
-                        possiblyReturnedPdo -> possiblyReturnedPdo == pdo);
-                if (discarded) {
-                    discardedPdos.add(pdo);
+            if (pdos.length != pdoSet.size()) {
+                List<PluginDataObject> discardedPdos = new ArrayList<>();
+                Set<PluginDataObject> identitySet = Collections
+                        .newSetFromMap(new IdentityHashMap<>(pdoSet.size()));
+                identitySet.addAll(pdoSet);
+                for (PluginDataObject pdo : pdos) {
+                    if (!identitySet.contains(pdo)) {
+                        discardedPdos.add(pdo);
+                    }
                 }
+                DataStorageAuditUtils.auditMetadataStatuses(MetadataStatus.NA,
+                        discardedPdos);
             }
-            DataStorageAuditUtils.auditMetadataStatuses(MetadataStatus.NA,
-                    discardedPdos);
 
             if (se != null) {
                 Map<PluginDataObject, StorageException> pdosThatFailed = new HashMap<>(
