@@ -66,6 +66,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * 10/16/2014   3454       bphillip    Upgrading to Hibernate 4
  * Jul 31, 2016 4360       rferrel     Made stationId, latitude and longitude non-nullable.
  * Feb 26, 2019 6140       tgurney     Hibernate 5 GeometryType fix
+ * Aug 10, 2022 8892       tjensen     Update indexes for Hibernate 5
  *
  * </pre>
  *
@@ -94,7 +95,6 @@ public class SurfaceObsLocation implements ISpatialObject, Cloneable {
 
     // Id of the station making this observation.
     @Column(length = 48, nullable = false)
-    // @Index(name = "%TABLE%_stationIndex")
     @DataURI(position = 0)
     @NullString
     @XmlAttribute

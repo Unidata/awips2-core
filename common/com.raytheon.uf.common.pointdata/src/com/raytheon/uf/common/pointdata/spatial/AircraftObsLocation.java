@@ -25,7 +25,10 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
-import org.hibernate.annotations.Index;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Point;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 import com.raytheon.uf.common.dataplugin.annotations.DataURI;
@@ -36,10 +39,6 @@ import com.raytheon.uf.common.geospatial.MapUtil;
 import com.raytheon.uf.common.geospatial.adapter.GeometryAdapter;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.Point;
 
 /**
  * AircraftObsLocation represents an observation point above the surface of the
@@ -59,6 +58,7 @@ import org.locationtech.jts.geom.Point;
  * 10/16/2014   3454       bphillip    Upgrading to Hibernate 4
  * Jul 20, 2015 4360       rferrel     Made flightLevel, stationId, latitude and longitude non-nullable.
  * Feb 26, 2019 6140       tgurney     Hibernate 5 GeometryType fix
+ * Aug 11, 2022 8892       tjensen     Update indexes for Hibernate 5
  *
  * </pre>
  *
@@ -82,7 +82,6 @@ public class AircraftObsLocation implements ISpatialObject {
     @DataURI(position = 0)
     @NullString
     @DynamicSerializeElement
-    @Index(name = "%TABLE%_stationIndex")
     private String stationId;
 
     // Default to mobile. If defined the base location data has been retrieved
