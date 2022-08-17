@@ -3,7 +3,7 @@
     xsi:schemaLocation="http://www.springframework.org/schema/beans
     http://www.springframework.org/schema/beans/spring-beans.xsd">
 
-    <bean class="com.raytheon.uf.edex.pointdata.ignite.IgnitePointDataCacheConfigurator">
+    <bean id="ignitePointDataCacheConfigurator" class="com.raytheon.uf.edex.pointdata.ignite.IgnitePointDataCacheConfigurator">
         <constructor-arg ref="pluginRegistry"/>
         <constructor-arg ref="ignitePluginRegistry"/>
         <constructor-arg value="pointDataStore"/>
