@@ -44,6 +44,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  *                                     the connection factory. Add serialization
  *                                     annotations
  * May 27, 2021 8469       dgilling    Add servicePort field.
+ * Aug 16, 2022 8916       njensen     Added copy constructor
  *
  * </pre>
  *
@@ -86,6 +87,14 @@ public class JMSConnectionInfo {
         this.vhost = vhost;
         this.servicePort = servicePort;
         this.parameters = parameters;
+    }
+
+    public JMSConnectionInfo(JMSConnectionInfo toCopy) {
+        this.host = toCopy.host;
+        this.port = toCopy.port;
+        this.vhost = toCopy.vhost;
+        this.servicePort = toCopy.servicePort;
+        this.parameters = new HashMap<>(toCopy.parameters);
     }
 
     public Map<String, String> getParameters() {
