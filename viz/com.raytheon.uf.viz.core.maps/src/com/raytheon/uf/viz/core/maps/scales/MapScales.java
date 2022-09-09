@@ -82,6 +82,9 @@ public class MapScales {
         @XmlAttribute
         private String fileName;
 
+        @XmlAttribute
+        private Boolean areaScale;
+        
         private PartId[] partIds;
 
         public MapScale() {
@@ -112,6 +115,11 @@ public class MapScales {
         public void setPartIds(PartId[] partIds) {
             this.partIds = partIds;
         }
+
+		public Boolean getAreaScale() {
+			return areaScale;
+		}
+	
     }
 
     private MapScale[] scales;
