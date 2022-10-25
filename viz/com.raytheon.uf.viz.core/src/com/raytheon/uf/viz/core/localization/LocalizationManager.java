@@ -69,7 +69,6 @@ import com.raytheon.uf.common.localization.msgs.ListUtilityResponse;
 import com.raytheon.uf.common.localization.msgs.PrivilegedUtilityRequestMessage;
 import com.raytheon.uf.common.localization.msgs.UtilityRequestMessage;
 import com.raytheon.uf.common.localization.msgs.UtilityResponseMessage;
-import com.raytheon.uf.common.localization.region.RegionLookup;
 import com.raytheon.uf.common.python.PyCacheUtil;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
@@ -112,11 +111,13 @@ import com.raytheon.uf.viz.core.requests.ThriftClient;
  * Jan 11, 2016 5242       kbisanz     Replaced calls to deprecated LocalizationFile methods
  * Jun 13, 2016 4907       mapeters    Added retrieveToFile()
  * Jun 22, 2017 6339       njensen     Use fileExtension in ListUtilityCommands
+ * Jun 25, 2017            mjames@ucar Always run alertviz
  * Jun 30, 2017 6316       njensen     Improved regions.xml debug message
  * Jul 18, 2017 6316       njensen     Log setting site localization
  * Sep 12, 2019 7917       tgurney     Update handling of pyc files for Python 3
  * Oct 16, 2019 7724       tgurney     Replace connection string with a
  *                                     {@link JMSConnectionInfo} object
+ * Oct 24, 2022          srcarter@ucar Delete REGION and WORKSTATION levels
  *
  * </pre>
  *
@@ -167,8 +168,7 @@ public class LocalizationManager implements IPropertyChangeListener {
     private final LocalizationRestConnector restConnect;
 
     /** Was the alert server launched within cave? */
-    public static final boolean internalAlertServer = ProgramArguments
-            .getInstance().getBoolean("-alertviz");
+    public static final boolean internalAlertServer = true;
 
     private static Map<LocalizationLevel, String> contextMap = new HashMap<>();
 
@@ -190,9 +190,9 @@ public class LocalizationManager implements IPropertyChangeListener {
             statusHandler.handle(Priority.CRITICAL,
                     "Error initializing localization store", e);
         }
-        registerContextName(LocalizationLevel.USER, getCurrentUser());
-        registerContextName(LocalizationLevel.WORKSTATION,
-                VizApp.getHostName());
+//        String userWorkstation = getCurrentUser() + "@" + VizApp.getHostName();
+        String userWorkstation = "something";
+        registerContextName(LocalizationLevel.USER, userWorkstation);
         registerContextName(LocalizationLevel.BASE, null);
         /*
          * look for current site, only do site/region/configured if current site
@@ -202,13 +202,6 @@ public class LocalizationManager implements IPropertyChangeListener {
         if (currentSite != null && !currentSite.isEmpty()) {
             registerContextName(LocalizationLevel.SITE, currentSite);
             registerContextName(LocalizationLevel.CONFIGURED, currentSite);
-            String region = RegionLookup.getWfoRegion(getCurrentSite());
-            if (region != null) {
-                registerContextName(LocalizationLevel.REGION, region);
-            } else {
-                statusHandler.debug("Site " + getCurrentSite()
-                        + " is not in regions.xml file, region localization level will be ignored");
-            }
         }
 
         this.restConnect = new LocalizationRestConnector(this.adapter);
@@ -268,14 +261,6 @@ public class LocalizationManager implements IPropertyChangeListener {
             this.currentSite = currentSite;
             registerContextName(LocalizationLevel.SITE, this.currentSite);
             registerContextName(LocalizationLevel.CONFIGURED, this.currentSite);
-            String region = RegionLookup.getWfoRegion(this.currentSite);
-            if (region != null) {
-                registerContextName(LocalizationLevel.REGION, region);
-            } else {
-                statusHandler.warn("Unable to find " + this.currentSite
-                        + " in regions.xml file");
-                contextMap.remove(LocalizationLevel.REGION);
-            }
             if (!overrideSite) {
                 localizationStore.putValue(
                         LocalizationConstants.P_LOCALIZATION_SITE_NAME,
