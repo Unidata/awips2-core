@@ -1,61 +1,164 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-    <!--
-        This_software_was_developed_and_/_or_modified_by_Raytheon_Company,
-        pursuant_to_Contract_DG133W-05-CQ-1067_with_the_US_Government.
-        
-        U.S._EXPORT_CONTROLLED_TECHNICAL_DATA
-        This_software_product_contains_export-restricted_data_whose
-        export/transfer/disclosure_is_restricted_by_U.S._law._Dissemination
-        to_non-U.S._persons_whether_in_the_United_States_or_abroad_requires
-        an_export_license_or_other_authorization.
-        
-        Contractor_Name:________Raytheon_Company
-        Contractor_Address:_____6825_Pine_Street,_Suite_340
-        ________________________Mail_Stop_B8
-        ________________________Omaha,_NE_68106
-        ________________________402.291.0100
-        
-        See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
-        further_licensing_information.
-    -->
-    <!-- 
-        This is an absolute override file, indicating that a higher priority version
-        of the file will completely replace a lower priority version of the file. 
-    -->
 <mapScales>
-    <mapScale displayName="N. Hemisphere" fileName="NHemisphere.xml">
-        <partId id="com.raytheon.uf.viz.d2d.ui.map.SideView:sideView1" />
-    </mapScale>
-    <mapScale displayName="North American" fileName="NorthAmerican.xml">
-        <partId id="com.raytheon.uf.viz.d2d.ui.map.SideView:sideView2" />
-    </mapScale>
-    <mapScale displayName="CONUS" fileName="CONUS.xml">
-        <partId view="false" id="com.raytheon.viz.ui.glmap.GLMapEditor" />
-    </mapScale>
-    <mapScale displayName="Regional" fileName="Regional.xml">
-        <partId id="com.raytheon.uf.viz.d2d.ui.map.SideView:sideView3" />
-    </mapScale>
-    <mapScale displayName="State(s)" fileName="States.xml">
-        <partId id="com.raytheon.uf.viz.d2d.ui.map.SideView:sideView4" />
-    </mapScale>
-    <mapScale displayName="WFO" fileName="WFO.xml" />
-    <mapScale displayName="Puerto Rico" fileName="Puerto_Rico.xml"/>
-    <mapScale displayName="Alaska" fileName="Alaska_Reg.xml"/>
-    <mapScale displayName="Hawaii" fileName="Hawaii_state.xml"/>
-    <mapScale displayName="Hawaii Regional" fileName="Hawaii_regional.xml"/>
-    <mapScale displayName="Pacific" fileName="Pacific.xml"/>
-    <mapScale displayName="Atlantic" fileName="Atlantic.xml"/>
-    <mapScale displayName="Euro-Africa" fileName="EuroAfrica.xml"/>
-    <mapScale displayName="Asia-Pacific" fileName="AsiaPacific.xml"/>
-    <mapScale displayName="The World" fileName="World.xml"/>
-    <mapScale displayName="DSS/IMET Northeast Reg" fileName="NorthEast_Reg.xml"/>
-    <mapScale displayName="DSS/IMET Mid-Atlantic Reg" fileName="Mid-Atlantic_Reg.xml"/>
-    <mapScale displayName="DSS/IMET Southeast Reg" fileName="SouthEast_Reg.xml"/>
-    <mapScale displayName="DSS/IMET Gulf Coast Reg" fileName="GulfCoast_Reg.xml"/>
-    <mapScale displayName="DSS/IMET Great Lakes Reg" fileName="GreatLakes_Reg.xml"/>
-    <mapScale displayName="DSS/IMET Ozark-Tenn Valley Reg" fileName="OzarkTennV_Reg.xml"/>
-    <mapScale displayName="DSS/IMET Northern Plains Reg" fileName="NrnPlains_Reg.xml"/>
-    <mapScale displayName="DSS/IMET Southern Plains Reg" fileName="SrnPlains_Reg.xml"/>
-    <mapScale displayName="DSS/IMET Northwest Reg" fileName="NorthWest_Reg.xml"/>
-    <mapScale displayName="DSS/IMET Southwest Reg" fileName="SouthWest_Reg.xml"/>
+	<mapScale displayName="N. Hemisphere" fileName="NHemisphere.xml" areaScale="false"/>
+	<mapScale displayName="CONUS" fileName="CONUS.xml" areaScale="false">
+		<partId view="false" id="com.raytheon.viz.ui.glmap.GLMapEditor"/>
+		<partId id="com.raytheon.uf.viz.d2d.ui.map.SideView:sideView1"/>
+		<partId id="com.raytheon.uf.viz.d2d.ui.map.SideView:sideView2"/>
+		<partId id="com.raytheon.uf.viz.d2d.ui.map.SideView:sideView3"/>
+		<partId id="com.raytheon.uf.viz.d2d.ui.map.SideView:sideView4"/>
+	</mapScale>
+	<mapScale displayName="WFO" fileName="WFO.xml" areaScale="false"/>
+	<mapScale displayName="Regional" fileName="Regional.xml" areaScale="false"/>
+	<mapScale displayName="GOES East Full Disk" fileName="GOESEastFullDisk.xml" areaScale="false"/>
+	<mapScale displayName="GOES West Full Disk" fileName="GOESWestFullDisk.xml" areaScale="false"/>
+    <mapScale displayName="US Regional - Northwest" fileName="NorthWest_Reg.xml" areaScale="false"/>
+    <mapScale displayName="US Regional - Southwest" fileName="SouthWest_Reg.xml" areaScale="false"/>
+    <mapScale displayName="US Regional - Northern Plains" fileName="NrnPlains_Reg.xml" areaScale="false"/>
+    <mapScale displayName="US Regional - Southern Plains" fileName="SrnPlains_Reg.xml" areaScale="false"/>
+    <mapScale displayName="US Regional - Great Lakes" fileName="GreatLakes_Reg.xml" areaScale="false"/>
+    <mapScale displayName="US Regional - Ozark-Tennessee Valley" fileName="OzarkTennV_Reg.xml" areaScale="false"/>
+    <mapScale displayName="US Regional - Gulf Coast" fileName="GulfCoast_Reg.xml" areaScale="false"/>
+    <mapScale displayName="US Regional - Northeast" fileName="NorthEast_Reg.xml" areaScale="false"/>
+    <mapScale displayName="US Regional - Mid-Atlanic" fileName="Mid-Atlantic_Reg.xml" areaScale="false"/>
+    <mapScale displayName="US Regional - Southeast" fileName="SouthEast_Reg.xml" areaScale="false"/>
+    <mapScale displayName="US Regional - Alaska" fileName="Alaska_Reg.xml" areaScale="false"/>
+    <mapScale displayName="US Regional - Hawaii" fileName="Hawaii_state.xml" areaScale="false"/>
+	<mapScale displayName="World - Mercator" fileName="WorldMercator.xml" areaScale="false"/>
+	<mapScale displayName="World - CED" fileName="World.xml" areaScale="false"/>
+	<mapScale displayName="World - Mollweide" fileName="WorldMollweide.xml" areaScale="true"/>
+	<mapScale displayName="World Regional - Africa" fileName="Africa.xml" areaScale="false"/>
+	<mapScale displayName="World Regional - Antarctica" fileName="Antarctic.xml" areaScale="true"/>
+	<mapScale displayName="World Regional - Arctic" fileName="Arctic.xml" areaScale="true"/>
+	<mapScale displayName="World Regional - Australia,New Zealand" fileName="AustraliaNZ.xml" areaScale="false"/>
+	<mapScale displayName="World Regional - Europe" fileName="Europe.xml" areaScale="false"/>
+	<mapScale displayName="World Regional - North America" fileName="NorthAmerican.xml" areaScale="true"/>
+	<mapScale displayName="World Regional - South America" fileName="SouthAmerica.xml" areaScale="true"/>
+	<mapScale displayName="World Regional - Atlantic Ocean" fileName="Atlantic.xml" areaScale="true"/>
+	<mapScale displayName="World Regional - Pacific Ocean" fileName="Pacific.xml" areaScale="true"/>
+	<mapScale displayName="World Regional - Puerto Rico" fileName="Puerto_Rico.xml" areaScale="true"/>
+	<mapScale displayName="World Regional - Guam" fileName="Guam.xml" areaScale="false"/>
+    <mapScale displayName="WFO/ABQ" fileName="WFO/ABQ.xml"/>
+    <mapScale displayName="WFO/ABR" fileName="WFO/ABR.xml"/>
+    <mapScale displayName="WFO/AFC" fileName="WFO/AFC.xml"/>
+    <mapScale displayName="WFO/AFG" fileName="WFO/AFG.xml"/>
+    <mapScale displayName="WFO/AJK" fileName="WFO/AJK.xml"/>
+    <mapScale displayName="WFO/AKQ" fileName="WFO/AKQ.xml"/>
+    <mapScale displayName="WFO/ALY" fileName="WFO/ALY.xml"/>
+    <mapScale displayName="WFO/AMA" fileName="WFO/AMA.xml"/>
+    <mapScale displayName="WFO/APX" fileName="WFO/APX.xml"/>
+    <mapScale displayName="WFO/ARX" fileName="WFO/ARX.xml"/>
+    <mapScale displayName="WFO/BGM" fileName="WFO/BGM.xml"/>
+    <mapScale displayName="WFO/BIS" fileName="WFO/BIS.xml"/>
+    <mapScale displayName="WFO/BMX" fileName="WFO/BMX.xml"/>
+    <mapScale displayName="WFO/BOI" fileName="WFO/BOI.xml"/>
+    <mapScale displayName="WFO/BOU" fileName="WFO/BOU.xml"/>
+    <mapScale displayName="WFO/BOX" fileName="WFO/BOX.xml"/>
+    <mapScale displayName="WFO/BRO" fileName="WFO/BRO.xml"/>
+    <mapScale displayName="WFO/BTV" fileName="WFO/BTV.xml"/>
+    <mapScale displayName="WFO/BUF" fileName="WFO/BUF.xml"/>
+    <mapScale displayName="WFO/BYZ" fileName="WFO/BYZ.xml"/>
+    <mapScale displayName="WFO/CAE" fileName="WFO/CAE.xml"/>
+    <mapScale displayName="WFO/CAR" fileName="WFO/CAR.xml"/>
+    <mapScale displayName="WFO/CHS" fileName="WFO/CHS.xml"/>
+    <mapScale displayName="WFO/CLE" fileName="WFO/CLE.xml"/>
+    <mapScale displayName="WFO/CRP" fileName="WFO/CRP.xml"/>
+    <mapScale displayName="WFO/CTP" fileName="WFO/CTP.xml"/>
+    <mapScale displayName="WFO/CYS" fileName="WFO/CYS.xml"/>
+    <mapScale displayName="WFO/DDC" fileName="WFO/DDC.xml"/>
+    <mapScale displayName="WFO/DLH" fileName="WFO/DLH.xml"/>
+    <mapScale displayName="WFO/DMX" fileName="WFO/DMX.xml"/>
+    <mapScale displayName="WFO/DTX" fileName="WFO/DTX.xml"/>
+    <mapScale displayName="WFO/DVN" fileName="WFO/DVN.xml"/>
+    <mapScale displayName="WFO/EAX" fileName="WFO/EAX.xml"/>
+    <mapScale displayName="WFO/EKA" fileName="WFO/EKA.xml"/>
+    <mapScale displayName="WFO/EPZ" fileName="WFO/EPZ.xml"/>
+    <mapScale displayName="WFO/EWX" fileName="WFO/EWX.xml"/>
+    <mapScale displayName="WFO/FFC" fileName="WFO/FFC.xml"/>
+    <mapScale displayName="WFO/FGF" fileName="WFO/FGF.xml"/>
+    <mapScale displayName="WFO/FGZ" fileName="WFO/FGZ.xml"/>
+    <mapScale displayName="WFO/FSD" fileName="WFO/FSD.xml"/>
+    <mapScale displayName="WFO/FWD" fileName="WFO/FWD.xml"/>
+    <mapScale displayName="WFO/GGW" fileName="WFO/GGW.xml"/>
+    <mapScale displayName="WFO/GID" fileName="WFO/GID.xml"/>
+    <mapScale displayName="WFO/GJT" fileName="WFO/GJT.xml"/>
+    <mapScale displayName="WFO/GLD" fileName="WFO/GLD.xml"/>
+    <mapScale displayName="WFO/GRB" fileName="WFO/GRB.xml"/>
+    <mapScale displayName="WFO/GRR" fileName="WFO/GRR.xml"/>
+    <mapScale displayName="WFO/GSP" fileName="WFO/GSP.xml"/>
+    <mapScale displayName="WFO/GUM" fileName="WFO/GUM.xml"/>
+    <mapScale displayName="WFO/GYX" fileName="WFO/GYX.xml"/>
+    <mapScale displayName="WFO/HFO" fileName="WFO/HFO.xml"/>
+    <mapScale displayName="WFO/HGX" fileName="WFO/HGX.xml"/>
+    <mapScale displayName="WFO/HNX" fileName="WFO/HNX.xml"/>
+    <mapScale displayName="WFO/HUN" fileName="WFO/HUN.xml"/>
+    <mapScale displayName="WFO/ICT" fileName="WFO/ICT.xml"/>
+    <mapScale displayName="WFO/ILM" fileName="WFO/ILM.xml"/>
+    <mapScale displayName="WFO/ILN" fileName="WFO/ILN.xml"/>
+    <mapScale displayName="WFO/ILX" fileName="WFO/ILX.xml"/>
+    <mapScale displayName="WFO/IND" fileName="WFO/IND.xml"/>
+    <mapScale displayName="WFO/IWX" fileName="WFO/IWX.xml"/>
+    <mapScale displayName="WFO/JAN" fileName="WFO/JAN.xml"/>
+    <mapScale displayName="WFO/JAX" fileName="WFO/JAX.xml"/>
+    <mapScale displayName="WFO/JKL" fileName="WFO/JKL.xml"/>
+    <mapScale displayName="WFO/KEY" fileName="WFO/KEY.xml"/>
+    <mapScale displayName="WFO/LBF" fileName="WFO/LBF.xml"/>
+    <mapScale displayName="WFO/LCH" fileName="WFO/LCH.xml"/>
+    <mapScale displayName="WFO/LIX" fileName="WFO/LIX.xml"/>
+    <mapScale displayName="WFO/LKN" fileName="WFO/LKN.xml"/>
+    <mapScale displayName="WFO/LMK" fileName="WFO/LMK.xml"/>
+    <mapScale displayName="WFO/LOT" fileName="WFO/LOT.xml"/>
+    <mapScale displayName="WFO/LOX" fileName="WFO/LOX.xml"/>
+    <mapScale displayName="WFO/LSX" fileName="WFO/LSX.xml"/>
+    <mapScale displayName="WFO/LUB" fileName="WFO/LUB.xml"/>
+    <mapScale displayName="WFO/LWX" fileName="WFO/LWX.xml"/>
+    <mapScale displayName="WFO/LZK" fileName="WFO/LZK.xml"/>
+    <mapScale displayName="WFO/MAF" fileName="WFO/MAF.xml"/>
+    <mapScale displayName="WFO/MEG" fileName="WFO/MEG.xml"/>
+    <mapScale displayName="WFO/MFL" fileName="WFO/MFL.xml"/>
+    <mapScale displayName="WFO/MFR" fileName="WFO/MFR.xml"/>
+    <mapScale displayName="WFO/MHX" fileName="WFO/MHX.xml"/>
+    <mapScale displayName="WFO/MKX" fileName="WFO/MKX.xml"/>
+    <mapScale displayName="WFO/MLB" fileName="WFO/MLB.xml"/>
+    <mapScale displayName="WFO/MOB" fileName="WFO/MOB.xml"/>
+    <mapScale displayName="WFO/MPX" fileName="WFO/MPX.xml"/>
+    <mapScale displayName="WFO/MQT" fileName="WFO/MQT.xml"/>
+    <mapScale displayName="WFO/MRX" fileName="WFO/MRX.xml"/>
+    <mapScale displayName="WFO/MSO" fileName="WFO/MSO.xml"/>
+    <mapScale displayName="WFO/MTR" fileName="WFO/MTR.xml"/>
+    <mapScale displayName="WFO/OAX" fileName="WFO/OAX.xml"/>
+    <mapScale displayName="WFO/OHX" fileName="WFO/OHX.xml"/>
+    <mapScale displayName="WFO/OKX" fileName="WFO/OKX.xml"/>
+    <mapScale displayName="WFO/OTX" fileName="WFO/OTX.xml"/>
+    <mapScale displayName="WFO/OUN" fileName="WFO/OUN.xml"/>
+    <mapScale displayName="WFO/PAH" fileName="WFO/PAH.xml"/>
+    <mapScale displayName="WFO/PBZ" fileName="WFO/PBZ.xml"/>
+    <mapScale displayName="WFO/PDT" fileName="WFO/PDT.xml"/>
+    <mapScale displayName="WFO/PHI" fileName="WFO/PHI.xml"/>
+    <mapScale displayName="WFO/PIH" fileName="WFO/PIH.xml"/>
+    <mapScale displayName="WFO/PQR" fileName="WFO/PQR.xml"/>
+    <mapScale displayName="WFO/PSR" fileName="WFO/PSR.xml"/>
+    <mapScale displayName="WFO/PUB" fileName="WFO/PUB.xml"/>
+    <mapScale displayName="WFO/RAH" fileName="WFO/RAH.xml"/>
+    <mapScale displayName="WFO/REV" fileName="WFO/REV.xml"/>
+    <mapScale displayName="WFO/RIW" fileName="WFO/RIW.xml"/>
+    <mapScale displayName="WFO/RLX" fileName="WFO/RLX.xml"/>
+    <mapScale displayName="WFO/RNK" fileName="WFO/RNK.xml"/>
+    <mapScale displayName="WFO/SEW" fileName="WFO/SEW.xml"/>
+    <mapScale displayName="WFO/SGF" fileName="WFO/SGF.xml"/>
+    <mapScale displayName="WFO/SGX" fileName="WFO/SGX.xml"/>
+    <mapScale displayName="WFO/SHV" fileName="WFO/SHV.xml"/>
+    <mapScale displayName="WFO/SJT" fileName="WFO/SJT.xml"/>
+    <mapScale displayName="WFO/SJU" fileName="WFO/SJU.xml"/>
+    <mapScale displayName="WFO/SLC" fileName="WFO/SLC.xml"/>
+    <mapScale displayName="WFO/STO" fileName="WFO/STO.xml"/>
+    <mapScale displayName="WFO/TAE" fileName="WFO/TAE.xml"/>
+    <mapScale displayName="WFO/TBW" fileName="WFO/TBW.xml"/>
+    <mapScale displayName="WFO/TFX" fileName="WFO/TFX.xml"/>
+    <mapScale displayName="WFO/TOP" fileName="WFO/TOP.xml"/>
+    <mapScale displayName="WFO/TSA" fileName="WFO/TSA.xml"/>
+    <mapScale displayName="WFO/TWC" fileName="WFO/TWC.xml"/>
+    <mapScale displayName="WFO/UNR" fileName="WFO/UNR.xml"/>
+    <mapScale displayName="WFO/VEF" fileName="WFO/VEF.xml"/>
 </mapScales>
+

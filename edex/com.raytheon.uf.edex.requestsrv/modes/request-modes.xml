@@ -26,5 +26,7 @@
 	<mode name="request">
 		<include>.*request.*</include>
 		<include>.*common.*</include>
+                <exclude>.*ogc.*</exclude>
+                <exclude>.*ohd.*</exclude>
 	</mode>
 </edexModes>

@@ -27,7 +27,27 @@
                 <exclude>ebxml.*\.xml</exclude>
                 <exclude>.*datadelivery.*</exclude>
 		<exclude>.*request.*</exclude>
+ 		<exclude>.*ohd*.</exclude>
+ 		<exclude>.*ogc*.</exclude>
+ 		<exclude>.*mpe*.</exclude>
+                <exclude>.*bandwidth.*</exclude>
+                <exclude>.*sbn-simulator.*</exclude>
+                <exclude>.*(dpa|taf|nctext).*</exclude>
+                <exclude>hydrodualpol-ingest.xml</exclude>
+                <exclude>grid-metadata.xml</exclude>
+                <exclude>obs-ingest-metarshef.xml</exclude>
+                <exclude>ffmp-ingest.xml</exclude>
+                <exclude>scan-ingest.xml</exclude>
+                <exclude>cwat-ingest.xml</exclude>
+                <exclude>fog-ingest.xml</exclude>
+                <exclude>vil-ingest.xml</exclude>
+                <exclude>purge-spring.xml</exclude>
+                <exclude>preciprate-ingest.xml</exclude>
+                <exclude>qpf-ingest.xml</exclude>
+                <exclude>fssobs-ingest.xml</exclude>
+                <exclude>cpgsrv-spring.xml</exclude>
 		<exclude>edex-security.xml</exclude>
 		<exclude>webservices.xml</exclude>
+                <exclude>satpre-spring.xml</exclude>
 	</mode>
 </edexModes>
