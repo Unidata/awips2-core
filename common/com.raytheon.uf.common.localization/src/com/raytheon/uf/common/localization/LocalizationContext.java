@@ -66,6 +66,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeTypeAdap
  * Feb 06, 2014 2761       mnash       Add region localization level
  * Aug 08, 2016 5744       mapeters    Deprecate LocalizationType.EDEX_STATIC
  * Feb 21, 2017 3440       njensen     Safely synchronize on LocalizationLevel.typeMap
+ * Oct 24, 2022          srcarter@ucar Remove REGION and WORKSTATION levels
  * 
  * </pre>
  * 
@@ -256,17 +257,11 @@ public class LocalizationContext implements Cloneable {
         public static final LocalizationLevel BASE = createLevel("BASE", 0,
                 true);
 
-        public static final LocalizationLevel REGION = createLevel("REGION",
-                150);
-
         public static final LocalizationLevel CONFIGURED = createLevel(
                 "CONFIGURED",
                 250, true);
 
         public static final LocalizationLevel SITE = createLevel("SITE", 500);
-
-        public static final LocalizationLevel WORKSTATION = createLevel(
-                "WORKSTATION", 750);
 
         public static final LocalizationLevel USER = createLevel("USER", 1000);
 
