@@ -73,9 +73,6 @@
         <include>.*\.ghg.*</include>
         <include>.*GHG.*</include>
     </filterPattern>
-    <filterPattern name="WORKSTATION">
-        <include></include>
-    </filterPattern>
     <filterPattern name="DEFAULT">
         <include></include>
     </filterPattern>

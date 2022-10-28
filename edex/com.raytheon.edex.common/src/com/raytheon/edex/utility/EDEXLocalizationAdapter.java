@@ -140,13 +140,14 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
 
                 this.contexts.put(type, ctx);
             }
-            // return a copy for safety in case someone messes with references
-            // to the returned values
-            LocalizationContext[] cloned = new LocalizationContext[ctx.length];
-            for (int i = 0; i < ctx.length; i++) {
-                cloned[i] = (LocalizationContext) ctx[i].clone();
-            }
-            return cloned;
+            return ctx;
+//            // return a copy for safety in case someone messes with references
+//            // to the returned values
+//            LocalizationContext[] cloned = new LocalizationContext[ctx.length];
+//            for (int i = 0; i < ctx.length; i++) {
+//                cloned[i] = (LocalizationContext) ctx[i].clone();
+//            }
+//            return cloned;
         }
     }
 
