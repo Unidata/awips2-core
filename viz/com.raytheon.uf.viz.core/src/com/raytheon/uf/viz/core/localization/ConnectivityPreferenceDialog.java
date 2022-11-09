@@ -30,6 +30,8 @@ import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StyledText;
+import org.eclipse.swt.events.ModifyEvent;
+import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
@@ -85,8 +87,12 @@ import com.raytheon.uf.viz.core.comm.IConnectivityCallback;
  *                                  org.eclipse.swt.widgets.Dialog
  * Feb 17, 2016  5281     tjensen   Fix Dialog centering
  * Apr 07, 2016  5281     tjensen   Clear details if status is good.
+ * Sep 12, 2016        mjames@ucar  Clean formatted server name.
+ * Mar 25, 2016        mjames@ucar  Cleaner formatted server name
  * Aug 25, 2020  8219     randerso  Prevent status from overrunning the status
  *                                  area.
+ * Feb 22, 2022      srcarter@ucar  Added checkbox for resolving IP address
+ * Nov 08, 2022      srcarter@ucar  Updated initial status & made details wrap
  *
  * </pre>
  *
@@ -147,13 +153,21 @@ public class ConnectivityPreferenceDialog {
 
     private boolean alertVizGood = true;
 
-    private boolean siteGood = false;
+    private boolean siteGood = true;
 
-    private String site = "";
+    private String site = LocalizationConstants.DEFAULT_LOCALIZATION_SITE;
+    
+    private String prefix = LocalizationConstants.LOCALIZATION_SERVER_PREFIX;
+    
+    private String suffix = LocalizationConstants.LOCALIZATION_SERVER_SUFFIX;
 
     protected Text siteText;
 
     private Text statusText;
+    
+    private Button ipBtn;
+    
+    private boolean resolveIP = false;
 
     private boolean canceled = false;
 
@@ -175,10 +189,14 @@ public class ConnectivityPreferenceDialog {
     protected String details;
 
     public ConnectivityPreferenceDialog(boolean checkAlertViz, String title) {
-        this.title = title;
+        this.title = "Unidata AWIPS";
         localization = LocalizationManager.getInstance()
                 .getLocalizationServer();
         site = LocalizationManager.getInstance().getSite();
+        if(site.equals("")) {
+            site = LocalizationConstants.DEFAULT_LOCALIZATION_SITE;
+            LocalizationManager.getInstance().setCurrentSite(site);
+        }
         if (checkAlertViz) {
             alertVizServer = LocalizationManager.getInstance()
                     .getLocalizationStore()
@@ -230,7 +248,12 @@ public class ConnectivityPreferenceDialog {
             int y = bounds.y + ((bounds.height - size.y) / 2);
 
             shell.setLocation(x, y);
+            status = "Server not yet validated";
+            details = "The server has not yet been validated.\n"
+                    + "This can be done by either pressing the 'Validate' button, or simply pressing"
+                    + "the 'Start' button as validation is run when starting CAVE.";
             updateStatus(false, status, details);
+
 
             shell.open();
             if (prompt) {
@@ -319,6 +342,7 @@ public class ConnectivityPreferenceDialog {
                 SWT.BORDER | SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL);
         detailsText.setText("");
         detailsText.setLayoutData(gd);
+        detailsText.setWordWrap(true);
 
         /*
          * Hide the composite
@@ -329,23 +353,51 @@ public class ConnectivityPreferenceDialog {
 
     protected void createTextBoxes(Composite textBoxComp) {
         localizationLabel = new Label(textBoxComp, SWT.RIGHT);
-        localizationLabel.setText("Localization Server:");
+        localizationLabel.setText("EDEX Server:");
         GridData gd = new GridData(SWT.RIGHT, SWT.CENTER, false, true);
         gd.horizontalIndent = 20;
         localizationLabel.setLayoutData(gd);
-
-        String[] pastOptions = getServerOptions();
+        String unidataEDEXUrl = "edex-cloud.unidata.ucar.edu";
+        
+        String[] pastOptions = {
+                        unidataEDEXUrl,
+                        "localhost"
+                        };
+        
         localizationSrv = new TextOrCombo(textBoxComp, SWT.BORDER, pastOptions);
         gd = new GridData(SWT.FILL, SWT.CENTER, true, true);
         gd.minimumWidth = 300;
         localizationSrv.widget.setLayoutData(gd);
-        localizationSrv.setText(localization == null ? "" : localization);
-        localizationSrv.widget.setBackground(getTextColor(localizationGood));
+        localization = shortServerName(localization);
+        localizationSrv.addModifyListener(new ModifyListener() {
+            
+            @Override
+            public void modifyText(ModifyEvent e) {
+                // if the ipbtn hasn't been created yet, don't do anything
+                if(ipBtn == null) {
+                    return;
+                }
+                //set and disable ip resolution if connecting to unidata
+                if(localizationSrv.getText().toLowerCase().contains("unidata.ucar.edu")) {
+                    ipBtn.setSelection(false);
+                    ipBtn.setEnabled(false);
+                }
+                else {
+                    ipBtn.setEnabled(true);
+                }
+            }
+        });
         localizationSrv.addSelectionListener(new SelectionListener() {
             @Override
             public void widgetSelected(SelectionEvent e) {
-                // user clicked an option from combo
-                validate();
+                // set and disable ip resolution if connecting to unidata
+                if(localizationSrv.getText().toLowerCase().contains("unidata.ucar.edu")) {
+                    ipBtn.setSelection(false);
+                    ipBtn.setEnabled(false);
+                }
+                else {
+                    ipBtn.setEnabled(true);
+                }
             }
 
             @Override
@@ -354,9 +406,10 @@ public class ConnectivityPreferenceDialog {
                 performOk();
             }
         });
+        localizationSrv.setText(localization == null || localization.equals("") ? unidataEDEXUrl : localization);
 
         Label label = new Label(textBoxComp, SWT.RIGHT);
-        label.setText("Site:");
+        label.setText("Site");
         gd = new GridData(SWT.RIGHT, SWT.CENTER, false, true);
         gd.horizontalIndent = 20;
         label.setLayoutData(gd);
@@ -379,7 +432,7 @@ public class ConnectivityPreferenceDialog {
         gd.minimumWidth = 300;
         siteText.setLayoutData(gd);
         siteText.setText(site == null ? "" : site);
-        siteText.setBackground(getTextColor(siteGood));
+        siteText.setForeground(getTextColor(siteGood));
 
         if (alertVizServer != null) {
             label = new Label(textBoxComp, SWT.RIGHT);
@@ -393,7 +446,7 @@ public class ConnectivityPreferenceDialog {
             gd.minimumWidth = 300;
             alertVizText.setLayoutData(gd);
             alertVizText.setText(alertVizServer);
-            alertVizText.setBackground(getTextColor(alertVizGood));
+            alertVizText.setForeground(getTextColor(alertVizGood));
         }
     }
 
@@ -410,10 +463,24 @@ public class ConnectivityPreferenceDialog {
 
     private void createBottomButtons() {
         Composite centeredComp = new Composite(shell, SWT.NONE);
-        GridLayout gl = new GridLayout(3, false);
+        GridLayout gl = new GridLayout(4, false);
         centeredComp.setLayout(gl);
         GridData gd = new GridData(SWT.RIGHT, SWT.DEFAULT, true, false);
         centeredComp.setLayoutData(gd);
+        
+        gd = new GridData(150, SWT.DEFAULT);
+        ipBtn = new Button(centeredComp, SWT.CHECK);
+        //should be unselected by default
+        ipBtn.setSelection(resolveIP);
+        ipBtn.setEnabled(false);
+        ipBtn.setText("Resolve EDEX IP");
+        ipBtn.setLayoutData(gd);
+        ipBtn.addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent event) {
+                resolveIP = ipBtn.getSelection();
+            }
+        });
 
         gd = new GridData(80, SWT.DEFAULT);
         Button validateBtn = new Button(centeredComp, SWT.NONE);
@@ -428,7 +495,7 @@ public class ConnectivityPreferenceDialog {
 
         gd = new GridData(80, SWT.DEFAULT);
         Button okBtn = new Button(centeredComp, SWT.NONE);
-        okBtn.setText("OK");
+        okBtn.setText("Start");
         okBtn.setLayoutData(gd);
         okBtn.addSelectionListener(new SelectionAdapter() {
             @Override
@@ -527,12 +594,12 @@ public class ConnectivityPreferenceDialog {
         details = null;
         if (localizationSrv != null && !localizationSrv.widget.isDisposed()
                 && localizationSrv.widget.isEnabled()) {
-            String localization = localizationSrv.getText().trim();
+            String localization = fullServerName(localizationSrv.getText().trim());
             if (!localizationGood || !this.localization.equals(localization)) {
                 this.localization = localization;
                 validateLocalization();
                 localizationSrv.widget
-                        .setBackground(getTextColor(localizationGood));
+                        .setForeground(getTextColor(localizationGood));
             }
         } else {
             validateLocalization();
@@ -544,7 +611,7 @@ public class ConnectivityPreferenceDialog {
             if (!alertVizGood || !this.alertVizServer.equals(alertVizServer)) {
                 this.alertVizServer = alertVizServer;
                 validateAlertviz();
-                alertVizText.setBackground(getTextColor(alertVizGood));
+                alertVizText.setForeground(getTextColor(alertVizGood));
             }
         } else {
             validateAlertviz();
@@ -554,7 +621,7 @@ public class ConnectivityPreferenceDialog {
             if (!siteGood || !this.site.equals(site)) {
                 this.site = site;
                 validateSite();
-                siteText.setBackground(getTextColor(siteGood));
+                siteText.setForeground(getTextColor(siteGood));
             }
         } else {
             validateSite();
@@ -567,7 +634,7 @@ public class ConnectivityPreferenceDialog {
 
     private void validateLocalization() {
         ConnectivityManager.checkLocalizationServer(localization,
-                localizationCallback);
+                localizationCallback, resolveIP);
     }
 
     protected void validateAlertviz() {
@@ -586,22 +653,13 @@ public class ConnectivityPreferenceDialog {
         }
     }
 
-    protected Color getTextColor(boolean isGood) {
-        if (isGood) {
-            // need to return null so it will fall back to the default
-            return null;
-        } else {
-            return display.getSystemColor(SWT.COLOR_RED);
-        }
-    }
-
     /**
      * Gets the color for the status label
      *
      * @param isGood
      * @return
      */
-    protected Color getForegroundColor(boolean isGood) {
+    protected Color getTextColor(boolean isGood) {
         if (isGood) {
             return display.getSystemColor(SWT.COLOR_DARK_GREEN);
         } else {
@@ -760,7 +818,7 @@ public class ConnectivityPreferenceDialog {
     protected void updateStatus(boolean good, String status, String details) {
         if (statusText != null && !statusText.isDisposed()
                 && detailsText != null && !detailsText.isDisposed()) {
-            statusText.setForeground(getForegroundColor(good));
+            statusText.setForeground(getTextColor(good));
 
             // If everything is good, we don't need to worry about the details.
             if (good) {
@@ -776,6 +834,16 @@ public class ConnectivityPreferenceDialog {
                 }
             }
         }
+    }
+    
+    protected String fullServerName(String server) {
+        return prefix + server + suffix;
+    }
+    
+    protected String shortServerName(String server) {
+        server = server.startsWith(prefix) ? server.substring(prefix.length()) : server;
+        server = server.endsWith(suffix) ? server.split(suffix)[0] : server;
+        return server;
     }
 
     /**
