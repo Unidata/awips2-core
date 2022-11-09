@@ -35,6 +35,7 @@ import com.raytheon.uf.common.localization.msgs.GetServersRequest;
 import com.raytheon.uf.common.localization.msgs.GetServersResponse;
 import com.raytheon.uf.common.util.app.AppInfo;
 import com.raytheon.uf.viz.core.exception.VizException;
+import com.raytheon.uf.viz.core.localization.LocalizationConstants;
 import com.raytheon.uf.viz.core.requests.ThriftClient;
 
 /**
@@ -64,6 +65,8 @@ import com.raytheon.uf.viz.core.requests.ThriftClient;
  * Dec 10, 2019 7993       tgurney     Forbid connection to incompatible servers
  *                                     (determined by checking for null JMS
  *                                     connection info in the GetServersResponse)
+ * Feb 22, 2022          srcarter@ucar Add functionality for overridding the IP resolution
+ *                                     for the EDEX connection
  *
  * </pre>
  *
@@ -123,16 +126,29 @@ public class ConnectivityManager {
 
     /**
      * Checks the connectivity of the given localization server
-     *
-     * @param server
-     *            server to check
+     * with default behavior (allows resolution of addresses
+     * for the pypies, http, and server connection based on EDEX's
+     * environment)
+     * @param server The server to check
      */
     public static void checkLocalizationServer(String server,
             IConnectivityCallback callback) {
+        checkLocalizationServer(server, callback, true);
+    }
+    
+    /**
+     * Checks the connectivity of the given localization server
+     * @param server  server to check
+     * @param resolveIP  if true, then allow edex to resolve the
+     * pypies, http, and server locations based on the environment
+     * in EDEX.  If false, force the use of the defined @param server
+     */
+    public static void checkLocalizationServer(String server,
+            IConnectivityCallback callback, boolean resolveIP) {
         boolean good = false;
         Exception exc = null;
         try {
-            good = checkLocalizationServer(server, true) != null;
+            good = checkLocalizationServer(server, true, resolveIP) != null;
         } catch (Exception e) {
             exc = e;
         }
@@ -145,8 +161,21 @@ public class ConnectivityManager {
      * result is returned, otherwise the localization server is contacted to get
      * the response.
      */
-    public static GetServersResponse checkLocalizationServer(String server,
-            boolean force) throws VizException {
+    public static GetServersResponse checkLocalizationServer(String server, boolean force) throws VizException{ 
+        return checkLocalizationServer(server, force, true);    
+    }   
+    
+    /** 
+     * Returns a GetServersResponse for the provided server. If force is false  
+     * and this localization server has already been contacted then a cached    
+     * result is returned, otherwise the localization server is contacted to get    
+     * the response.    
+     *  
+     * If resolve IP is false, then override the returned result for the server 
+     * localization addresses and use the specified server string as the connection 
+     */ 
+    public static GetServersResponse checkLocalizationServer(String server, 
+        boolean force, boolean resolveIP) throws VizException {
         if (!force) {
             GetServersResponse resp = getServersResponseCache.get(server);
             if (resp != null) {
@@ -166,6 +195,16 @@ public class ConnectivityManager {
                             + AppInfo.getInstance().getName());
         }
         getServersResponseCache.put(server, resp);
+        
+        // If not resolving the IP address, then overwrite the http, pypis
+        // and server locations with the original server string
+        if(!resolveIP) {
+            //trim the suffix off the server
+            String serverShortName = server.split(LocalizationConstants.LOCALIZATION_SERVER_SUFFIX)[0];
+            resp.setHttpServer(server);
+            resp.setPypiesServer(serverShortName+":9582");
+            resp.getServerLocations().put("request.server", server);
+        }
         return resp;
     }
 
