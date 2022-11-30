@@ -19,6 +19,7 @@
 ##
 
 from numpy import multiply
+from functools import reduce
 import Vector
 
 def execute(*args):
