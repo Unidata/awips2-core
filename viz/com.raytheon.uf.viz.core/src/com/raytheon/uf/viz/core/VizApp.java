@@ -207,8 +207,8 @@ public final class VizApp {
 
     public static void setJmsConnectionInfo(
             JMSConnectionInfo jmsConnectionInfo) {
-        jmsConnectionInfo.getParameters().put("jms.clientID",
-                SystemUtil.getClientID(Platform.getProduct().getName()));
+        //jmsConnectionInfo.getParameters().put("jms.clientID",
+        //        SystemUtil.getClientID(Platform.getProduct().getName()));
         JMSConnection.getInstance().setConnectionInfo(jmsConnectionInfo);
     }
 
