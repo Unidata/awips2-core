@@ -46,7 +46,7 @@ import com.raytheon.uf.viz.application.component.IStandaloneComponent;
  * Nov 27, 2013            mschenke    Removed ProgramArguments to make dependencies cleaner
  * Jan 23, 2014            njensen     Added shutdown hook and printout
  * Jun 26, 2017 3613       njensen     Log component specified
- * 
+ * 12/2/2022               tiffanym@ucar.edu    Default to thinclient component (mjames 6/25/17)
  * </pre>
  * 
  * @author chammack
@@ -78,8 +78,8 @@ public class VizApplication implements IApplication {
         String dateString = sdf.format(new Date());
         if (appToRun == null) {
             System.out.println(dateString
-                    + " No component specified, defaulting to 'viz'");
-            appToRun = "viz";
+                    + " No component specified, defaulting to 'thinclient'");
+            appToRun = "thinclient";
         } else {
             System.out.println(
                     dateString + " Component " + appToRun + " specified");
