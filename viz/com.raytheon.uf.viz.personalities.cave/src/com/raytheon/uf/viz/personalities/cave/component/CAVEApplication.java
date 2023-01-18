@@ -117,7 +117,6 @@ public class CAVEApplication implements IStandaloneComponent {
                 .addLogListener(getEclipseLogListener());
 
         UnitRegistrar.registerUnits();
-        //CAVEMode.performStartupDuties();
 
         // Get the display
         this.applicationDisplay = createDisplay();

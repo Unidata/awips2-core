@@ -80,6 +80,9 @@ public class VizApplication implements IApplication {
             System.out.println(dateString
                     + " No component specified, defaulting to 'thinclient'");
             appToRun = "thinclient";
+        } else {
+            System.out.println(
+                    dateString + " Component " + appToRun + " specified");
         }
 
         try {
