@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
 
 import org.geotools.coverage.grid.GeneralGridGeometry;
 import org.geotools.coverage.grid.GridGeometry2D;
@@ -80,6 +80,7 @@ import com.raytheon.viz.core.gl.SharedCoordMap.SharedCoordinates;
  * Oct 25, 2017  6387     bsteffen  implement IGLMesh
  * Feb 05, 2018  7209     bsteffen  Remove unreasonably large triangles.
  * Aug 30, 2018  7440     bsteffen  Add texture wrapping for worldwide grids.
+ * Jan 18, 2023		  srcarter@ucar Bring over MJ changes for GL2
  * 
  * </pre>
  * 
@@ -197,29 +198,29 @@ public abstract class AbstractGLMesh implements IGLMesh, IGridMesh {
             if (internalState == State.CALCULATED) {
                 // We finished calculating the mesh, compile it
                 sharedTextureCoords = SharedCoordMap.get(key, glTarget);
-                vertexCoords.compile(glTarget.getGl());
+                vertexCoords.compile(glTarget.getGl().getGL2());
                 if (wwcTextureCoords != null && wwcVertexCoords != null) {
-                    wwcTextureCoords.compile(glTarget.getGl());
-                    wwcVertexCoords.compile(glTarget.getGl());
+                    wwcTextureCoords.compile(glTarget.getGl().getGL2());
+                    wwcVertexCoords.compile(glTarget.getGl().getGL2());
                 }
                 this.internalState = internalState = State.COMPILED;
             }
 
             if (internalState == State.COMPILED) {
                 if (wrapTexture) {
-                    GL gl = glTarget.getGl();
-                    gl.glActiveTexture(GL.GL_TEXTURE0);
-                    gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S,
-                            GL.GL_REPEAT);
+                    GL2 gl = glTarget.getGl().getGL2();
+                    gl.glActiveTexture(GL2.GL_TEXTURE0);
+                    gl.glTexParameteri(GL2.GL_TEXTURE_2D, GL2.GL_TEXTURE_WRAP_S,
+                            GL2.GL_REPEAT);
                 }
 
-                GLGeometryPainter.paintGeometries(glTarget.getGl(),
+                GLGeometryPainter.paintGeometries(glTarget.getGl().getGL2(),
                         vertexCoords, sharedTextureCoords.getTextureCoords());
                 if (wwcTextureCoords != null && wwcVertexCoords != null) {
-                    glTarget.getGl().glColor3f(1.0f, 0.0f, 0.0f);
-                    GLGeometryPainter.paintGeometries(glTarget.getGl(),
+                    glTarget.getGl().getGL2().glColor3f(1.0f, 0.0f, 0.0f);
+                    GLGeometryPainter.paintGeometries(glTarget.getGl().getGL2(),
                             wwcVertexCoords, wwcTextureCoords);
-                    glTarget.getGl().glColor3f(0.0f, 1.0f, 0.0f);
+                    glTarget.getGl().getGL2().glColor3f(0.0f, 1.0f, 0.0f);
                 }
                 return PaintStatus.PAINTED;
             } else if (internalState == State.CALCULATING) {
@@ -275,7 +276,7 @@ public abstract class AbstractGLMesh implements IGLMesh, IGridMesh {
             double[][][] worldCoordinates = generateWorldCoords(imageGeometry,
                     imageCRSToLatLon);
             vertexCoords = new GLGeometryObject2D(
-                    new GLGeometryObjectData(geometryType, GL.GL_VERTEX_ARRAY));
+                    new GLGeometryObjectData(geometryType, GL2.GL_VERTEX_ARRAY));
             vertexCoords.allocate(
                     worldCoordinates.length * worldCoordinates[0].length);
             UnreasonablyLargeTriangleFilter filter = new UnreasonablyLargeTriangleFilter(
@@ -367,9 +368,9 @@ public abstract class AbstractGLMesh implements IGLMesh, IGridMesh {
         }
         if (wwcTextureCoords == null || wwcVertexCoords == null) {
             wwcVertexCoords = new GLGeometryObject2D(new GLGeometryObjectData(
-                    GL.GL_TRIANGLE_STRIP, GL.GL_VERTEX_ARRAY));
+                    GL2.GL_TRIANGLE_STRIP, GL2.GL_VERTEX_ARRAY));
             wwcTextureCoords = new GLGeometryObject2D(new GLGeometryObjectData(
-                    GL.GL_TRIANGLE_STRIP, GL.GL_TEXTURE_COORD_ARRAY));
+                    GL2.GL_TRIANGLE_STRIP, GL2.GL_TEXTURE_COORD_ARRAY));
         }
         // at this point triangle abc is a triangle in which sides ab and ac
         // are cut by the inverse central meridian. We need to find the two

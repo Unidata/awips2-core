@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
 
 /**
  * 
@@ -43,6 +43,7 @@ import javax.media.opengl.GL;
  * Feb 17, 2012            bsteffen     Initial creation
  * Aug 13, 2014 3510       bclement     changed autoDisposers to map, 
  *                                       remove auto if dispose called with disposer
+ * Jan 18, 2023			srcarter@ucar   Brought over changes from MJ to use GL2
  * 
  * </pre>
  * 
@@ -95,7 +96,7 @@ public class GLDisposalManager {
      * 
      * @param gl
      */
-    public static void performDispose(GL gl) {
+    public static void performDispose(GL2 gl) {
         GLDisposer disposer = disposeQueue.poll();
         while (disposer != null) {
             disposer.dispose(gl);
@@ -110,7 +111,7 @@ public class GLDisposalManager {
     }
 
     public static abstract class GLDisposer {
-        protected abstract void dispose(GL gl);
+        protected abstract void dispose(GL2 gl);
 
         final public void dispose() {
             GLDisposalManager.dispose(this);

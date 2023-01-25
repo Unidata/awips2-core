@@ -22,7 +22,7 @@ package com.raytheon.viz.core.gl.ext.imaging;
 import java.nio.ByteBuffer;
 
 import javax.measure.Unit;
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
 
 import com.raytheon.uf.common.colormap.image.ColorMapData;
 import com.raytheon.uf.common.colormap.image.ColorMapData.ColorMapDataType;
@@ -65,6 +65,7 @@ import com.raytheon.viz.core.gl.objects.GLTextureObject;
  * Nov 20, 2013  2492     bsteffen    Mosaic in image units.
  * Aug 21, 2014  DR 17313 jgerth      Support for true color 
  * Nov 01, 2016  5957     bsteffen    Do not interpolate alpha
+ * Jan 18, 2023			srcarter@ucar Bring over MJ changes for GL2
  * 
  * </pre>
  * 
@@ -91,7 +92,7 @@ public class GLColormappedImageExtension extends AbstractGLSLImagingExtension
         GLColormappedImageExtensionData data = null;
         if (image instanceof AbstractGLColormappedImage) {
             data = new GLColormappedImageExtensionData();
-            GL gl = target.getGl();
+            GL2 gl = target.getGl().getGL2();
             AbstractGLColormappedImage glImage = (AbstractGLColormappedImage) image;
             // First see if the colormap has been loaded
             ColorMapParameters usedColorMapParameters = ((IColormappedImage) glImage)
@@ -105,27 +106,27 @@ public class GLColormappedImageExtension extends AbstractGLSLImagingExtension
             GLTextureObject cmapTexture = target
                     .getColorMapTexture(usedColorMapParameters);
 
-            gl.glActiveTexture(GL.GL_TEXTURE1);
-            cmapTexture.bind(gl, GL.GL_TEXTURE_1D);
+            gl.glActiveTexture(GL2.GL_TEXTURE1);
+            cmapTexture.bind(gl, GL2.GL_TEXTURE_1D);
 
             if (usedColorMapParameters.isInterpolate()) {
-                gl.glTexParameteri(GL.GL_TEXTURE_1D, GL.GL_TEXTURE_MIN_FILTER,
-                        GL.GL_LINEAR);
-                gl.glTexParameteri(GL.GL_TEXTURE_1D, GL.GL_TEXTURE_MAG_FILTER,
-                        GL.GL_LINEAR);
+                gl.glTexParameteri(GL2.GL_TEXTURE_1D, GL2.GL_TEXTURE_MIN_FILTER,
+                        GL2.GL_LINEAR);
+                gl.glTexParameteri(GL2.GL_TEXTURE_1D, GL2.GL_TEXTURE_MAG_FILTER,
+                        GL2.GL_LINEAR);
             } else {
-                gl.glTexParameteri(GL.GL_TEXTURE_1D, GL.GL_TEXTURE_MIN_FILTER,
-                        GL.GL_NEAREST);
-                gl.glTexParameteri(GL.GL_TEXTURE_1D, GL.GL_TEXTURE_MAG_FILTER,
-                        GL.GL_NEAREST);
+                gl.glTexParameteri(GL2.GL_TEXTURE_1D, GL2.GL_TEXTURE_MIN_FILTER,
+                        GL2.GL_NEAREST);
+                gl.glTexParameteri(GL2.GL_TEXTURE_1D, GL2.GL_TEXTURE_MAG_FILTER,
+                        GL2.GL_NEAREST);
             }
 
             if (usedColorMapParameters.isUseMask()) {
-                data.alphaMask = setupAlphaMasking(gl, GL.GL_TEXTURE2,
+                data.alphaMask = setupAlphaMasking(gl, GL2.GL_TEXTURE2,
                         usedColorMapParameters.getAlphaMask());
             }
 
-            setupDataMapping(gl, glImage, GL.GL_TEXTURE3, GL.GL_TEXTURE4);
+            setupDataMapping(gl, glImage, GL2.GL_TEXTURE3, GL2.GL_TEXTURE4);
         }
         return data;
     }
@@ -141,7 +142,7 @@ public class GLColormappedImageExtension extends AbstractGLSLImagingExtension
      *         texture failed to initialize
      * @throws VizException
      */
-    public static GLCMTextureData setupAlphaMasking(GL gl, int maskTexBinding,
+    public static GLCMTextureData setupAlphaMasking(GL2 gl, int maskTexBinding,
             byte[] mask) throws VizException {
         GLBufferCMTextureData maskData = new GLBufferCMTextureData(
                 new ColorMapData(ByteBuffer.wrap(mask),
@@ -152,10 +153,10 @@ public class GLColormappedImageExtension extends AbstractGLSLImagingExtension
             gl.glBindTexture(maskData.getTextureStorageType(),
                     maskData.getTexId());
 
-            gl.glTexParameteri(GL.GL_TEXTURE_1D, GL.GL_TEXTURE_MIN_FILTER,
-                    GL.GL_NEAREST);
-            gl.glTexParameteri(GL.GL_TEXTURE_1D, GL.GL_TEXTURE_MAG_FILTER,
-                    GL.GL_NEAREST);
+            gl.glTexParameteri(GL2.GL_TEXTURE_1D, GL2.GL_TEXTURE_MIN_FILTER,
+                    GL2.GL_NEAREST);
+            gl.glTexParameteri(GL2.GL_TEXTURE_1D, GL2.GL_TEXTURE_MAG_FILTER,
+                    GL2.GL_NEAREST);
         } else {
             maskData.dispose();
             maskData = null;
@@ -173,7 +174,7 @@ public class GLColormappedImageExtension extends AbstractGLSLImagingExtension
      * @param colorMappedTexBinding
      * @throws VizException
      */
-    public static void setupDataMapping(GL gl,
+    public static void setupDataMapping(GL2 gl,
             AbstractGLColormappedImage glImage, int dataMappedTexBinding,
             int colorMappedTexBinding) throws VizException {
         setupDataMapping(gl, glImage, glImage.getColorMapParameters()
@@ -191,7 +192,7 @@ public class GLColormappedImageExtension extends AbstractGLSLImagingExtension
      * @param colorMappedTexBinding
      * @throws VizException
      */
-    public static void setupDataMapping(GL gl,
+    public static void setupDataMapping(GL2 gl,
             AbstractGLColormappedImage glImage, Unit<?> colorMapUnit,
             int dataMappedTexBinding, int colorMappedTexBinding)
             throws VizException {
@@ -239,23 +240,23 @@ public class GLColormappedImageExtension extends AbstractGLSLImagingExtension
     public void postImageRender(PaintProperties paintProps,
             AbstractGLImage image, Object data) throws VizException {
         GLColormappedImageExtensionData imageData = (GLColormappedImageExtensionData) data;
-        GL gl = target.getGl();
+        GL2 gl = target.getGl().getGL2();
 
-        gl.glActiveTexture(GL.GL_TEXTURE1);
-        gl.glBindTexture(GL.GL_TEXTURE_1D, 0);
+        gl.glActiveTexture(GL2.GL_TEXTURE1);
+        gl.glBindTexture(GL2.GL_TEXTURE_1D, 0);
 
         if (imageData.alphaMask != null) {
-            gl.glActiveTexture(GL.GL_TEXTURE2);
+            gl.glActiveTexture(GL2.GL_TEXTURE2);
             gl.glBindTexture(imageData.alphaMask.getTextureStorageType(), 0);
 
             imageData.alphaMask.dispose();
         }
 
-        gl.glActiveTexture(GL.GL_TEXTURE3);
-        gl.glBindTexture(GL.GL_TEXTURE_1D, 0);
+        gl.glActiveTexture(GL2.GL_TEXTURE3);
+        gl.glBindTexture(GL2.GL_TEXTURE_1D, 0);
 
-        gl.glActiveTexture(GL.GL_TEXTURE4);
-        gl.glBindTexture(GL.GL_TEXTURE_1D, 0);
+        gl.glActiveTexture(GL2.GL_TEXTURE4);
+        gl.glBindTexture(GL2.GL_TEXTURE_1D, 0);
     }
 
     @Override

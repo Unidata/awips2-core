@@ -19,7 +19,7 @@
  **/
 package com.raytheon.viz.core.gl.images;
 
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
 
 import com.raytheon.uf.common.colormap.image.ColorMapData.ColorMapDataType;
 import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
@@ -28,7 +28,7 @@ import com.raytheon.uf.viz.core.drawables.ext.IImagingExtension;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.viz.core.gl.dataformat.AbstractGLColorMapDataFormat;
 import com.raytheon.viz.core.gl.ext.imaging.GLDataMappingFactory.GLDataMapping;
-import com.sun.opengl.util.texture.TextureCoords;
+import com.jogamp.opengl.util.texture.TextureCoords;
 
 /**
  * Base implementation of a gl colormapped image.
@@ -42,7 +42,8 @@ import com.sun.opengl.util.texture.TextureCoords;
  * Oct 16, 2013  2333     mschenke  Initial creation
  * Nov  4, 2013  2492     mschenke  Reworked to use GLSL Data mapping
  * May 29, 2015  4507     bsteffen  Implemented setClearColor().
- * 
+ * Jun 16, 2016           mjames    Refactor for jogamp 2/GL2
+ *
  * </pre>
  * 
  * @author mschenke
@@ -93,7 +94,7 @@ public abstract class AbstractGLColormappedImage extends AbstractGLImage
      * .GLContext)
      */
     @Override
-    public void loadTexture(GL gl) throws VizException {
+    public void loadTexture(GL2 gl) throws VizException {
         if (data.loadTexture(gl)) {
             // Add to texture cache
             setStatus(Status.LOADED);
@@ -105,7 +106,7 @@ public abstract class AbstractGLColormappedImage extends AbstractGLImage
     /**
      * Return the texture's data type
      * 
-     * Example: GL.GL_FLOAT
+     * Example: GL2.GL_FLOAT
      * 
      * @return the data type of the texture
      * 
@@ -121,7 +122,7 @@ public abstract class AbstractGLColormappedImage extends AbstractGLImage
     /**
      * Return the texture's format
      * 
-     * Example: GL.GL_LUMINANCE
+     * Example: GL2.GL_LUMINANCE
      * 
      * @return the texture format
      */
@@ -134,7 +135,7 @@ public abstract class AbstractGLColormappedImage extends AbstractGLImage
      * 
      * This is the format of the texture after driver manipulation
      * 
-     * Example: GL.GL_LUMINANCE8
+     * Example: GL2.GL_LUMINANCE8
      * 
      * @return the texture internal format
      */
@@ -306,7 +307,7 @@ public abstract class AbstractGLColormappedImage extends AbstractGLImage
     }
 
     @Override
-    protected void setClearColor(GL gl) {
+    protected void setClearColor(GL2 gl) {
         AbstractGLColorMapDataFormat dataFormat = getDataFormat();
         if (dataFormat.isScaled()) {
             /*

@@ -22,7 +22,7 @@ package com.raytheon.viz.core.gl.dataformat;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
 
 /**
  * GL Byte data format
@@ -34,6 +34,7 @@ import javax.media.opengl.GL;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Nov 21, 2011            mschenke     Initial creation
+ * Jan 18, 2023			srcarter@ucar   Bring over MJ changes for GL2
  * 
  * </pre>
  * 
@@ -52,7 +53,7 @@ public class GLByteDataFormat extends AbstractGLColorMapDataFormat {
      */
     @Override
     public int getTextureType() {
-        return GL.GL_UNSIGNED_BYTE;
+        return GL2.GL_UNSIGNED_BYTE;
     }
 
     /*
@@ -63,7 +64,7 @@ public class GLByteDataFormat extends AbstractGLColorMapDataFormat {
      */
     @Override
     public int getTextureInternalFormat() {
-        return GL.GL_LUMINANCE8;
+        return GL2.GL_LUMINANCE8;
     }
 
     /*
@@ -111,7 +112,7 @@ public class GLByteDataFormat extends AbstractGLColorMapDataFormat {
      */
     @Override
     public Short getValue(int x, int y, GLColorMapData data, Buffer dataBuffer) {
-        if (data.getTextureType() != GL.GL_UNSIGNED_BYTE) {
+        if (data.getTextureType() != GL2.GL_UNSIGNED_BYTE) {
             throw new IllegalArgumentException(
                     "Cannot process texture of type " + data.getTextureType());
         } else if (!(dataBuffer instanceof ByteBuffer)) {

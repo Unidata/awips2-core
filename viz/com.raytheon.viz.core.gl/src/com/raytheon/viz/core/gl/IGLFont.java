@@ -22,7 +22,7 @@ package com.raytheon.viz.core.gl;
 import org.eclipse.swt.graphics.Point;
 
 import com.raytheon.uf.viz.core.drawables.IFont;
-import com.sun.opengl.util.j2d.TextRenderer;
+import com.jogamp.opengl.util.awt.TextRenderer;
 
 /**
  * Interface for gl font
@@ -35,6 +35,7 @@ import com.sun.opengl.util.j2d.TextRenderer;
  * ------------ ---------- ----------- --------------------------
  * Oct 19, 2010            mschenke    Initial creation
  * Nov 04, 2015   5070     randerso    Added DPI font scaling
+ * Jan 18, 2023			srcarter@ucar  Brought over small change from MJ to use jogamp
  * 
  * </pre>
  * 

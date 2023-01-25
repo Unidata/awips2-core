@@ -22,7 +22,7 @@ package com.raytheon.viz.core.gl.dataformat;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
 
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
 
 /**
  * GL Signed Byte data format
@@ -34,6 +34,7 @@ import javax.media.opengl.GL;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Nov 21, 2011            mschenke     Initial creation
+ * Jan 18, 2023			srcarter@ucar	Bring over MJ changes for GL2
  * 
  * </pre>
  * 
@@ -61,10 +62,10 @@ public class GLSignedByteDataFormat extends GLByteDataFormat {
         ByteBuffer buffer = (ByteBuffer) dataBuffer;
         byte value = buffer.get(index);
         switch (data.getTextureType()) {
-        case GL.GL_BYTE:
+        case GL2.GL_BYTE:
             // Raw data returned from this preparer
             return (short) value;
-        case GL.GL_UNSIGNED_BYTE:
+        case GL2.GL_UNSIGNED_BYTE:
             // Data copied back from gl.
             return (short) ((byte) (value + Byte.MIN_VALUE));
         default:
@@ -103,7 +104,7 @@ public class GLSignedByteDataFormat extends GLByteDataFormat {
      */
     @Override
     public int getTextureType() {
-        return GL.GL_BYTE;
+        return GL2.GL_BYTE;
     }
 
     /*
@@ -114,7 +115,7 @@ public class GLSignedByteDataFormat extends GLByteDataFormat {
      */
     @Override
     public int getCopyBackTextureType() {
-        return GL.GL_UNSIGNED_BYTE;
+        return GL2.GL_UNSIGNED_BYTE;
     }
 
 }

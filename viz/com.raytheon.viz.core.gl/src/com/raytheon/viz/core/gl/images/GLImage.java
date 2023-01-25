@@ -26,7 +26,8 @@ import java.awt.image.RenderedImage;
 import java.awt.image.WritableRaster;
 import java.util.Hashtable;
 
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
+import com.jogamp.opengl.GLProfile;
 
 import com.raytheon.uf.viz.core.data.IRenderedImageCallback;
 import com.raytheon.uf.viz.core.drawables.ext.IImagingExtension;
@@ -34,10 +35,10 @@ import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.viz.core.gl.internal.cache.IImageCacheable;
 import com.raytheon.viz.core.gl.internal.cache.ImageCache;
 import com.raytheon.viz.core.gl.internal.cache.ImageCache.CacheType;
-import com.sun.opengl.util.texture.Texture;
-import com.sun.opengl.util.texture.TextureCoords;
-import com.sun.opengl.util.texture.TextureData;
-import com.sun.opengl.util.texture.TextureIO;
+import com.jogamp.opengl.util.texture.Texture;
+import com.jogamp.opengl.util.texture.TextureCoords;
+import com.jogamp.opengl.util.texture.TextureData;
+import com.jogamp.opengl.util.texture.awt.AWTTextureIO;
 
 /**
  * Represents a GL "RenderedImage"
@@ -50,6 +51,8 @@ import com.sun.opengl.util.texture.TextureIO;
  * ------------- -------- --------- -----------------------------------------
  * Jul 01, 2006           chammack  Initial Creation.
  * May 27, 2014  3196     bsteffen  Remove jai.
+ * May 10, 2015           mjames@ucar Refactor for jogl 2.3.2
+ * Dec 21, 2015			  mjames@ucar Mute theTexture.destroy
  * Jan 21, 2020  73572    tjensen   Add sizeManagement arg to disposeTexture
  *
  * </pre>
@@ -107,7 +110,7 @@ public class GLImage extends AbstractGLImage implements IImageCacheable {
 
             if (getStatus() == Status.LOADED) {
                 if (theTexture != null) {
-                    theTexture.dispose();
+                    //theTexture.dispose();
                     theTexture = null;
                 }
                 if (theStagedData != null) {
@@ -140,16 +143,16 @@ public class GLImage extends AbstractGLImage implements IImageCacheable {
      * @throws VizException
      */
     @Override
-    public void loadTexture(GL gl) throws VizException {
+    public void loadTexture(GL2 gl) throws VizException {
         synchronized (this) {
-            Texture tex = TextureIO.newTexture(theStagedData);
+            Texture tex = AWTTextureIO.newTexture(theStagedData);
 
             theTexture = tex;
 
-            tex.setTexParameteri(GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST);
-            tex.setTexParameteri(GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST);
-            tex.setTexParameteri(GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP_TO_EDGE);
-            tex.setTexParameteri(GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP_TO_EDGE);
+            tex.setTexParameteri(gl, GL2.GL_TEXTURE_MIN_FILTER, GL2.GL_NEAREST);
+	        tex.setTexParameteri(gl, GL2.GL_TEXTURE_MAG_FILTER, GL2.GL_NEAREST);
+	        tex.setTexParameteri(gl, GL2.GL_TEXTURE_WRAP_S, GL2.GL_CLAMP_TO_EDGE);
+	        tex.setTexParameteri(gl, GL2.GL_TEXTURE_WRAP_T, GL2.GL_CLAMP_TO_EDGE);
 
             setStatus(Status.LOADED);
 
@@ -172,14 +175,14 @@ public class GLImage extends AbstractGLImage implements IImageCacheable {
         if (rendImg == null) {
             return false;
         }
-
+        GLProfile glp = GLProfile.getDefault();
         if (rendImg instanceof BufferedImage) {
-            theStagedData = TextureIO.newTextureData((BufferedImage) rendImg,
+            theStagedData = AWTTextureIO.newTextureData(glp, (BufferedImage) rendImg,
                     false);
         } else {
             // convert to buf img
-            theStagedData = TextureIO
-                    .newTextureData(fromRenderedToBuffered(rendImg), false);
+            theStagedData = AWTTextureIO
+                    .newTextureData(glp, fromRenderedToBuffered(rendImg), false);
         }
 
         this.size = rendImg.getHeight() * rendImg.getWidth() * 4;

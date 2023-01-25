@@ -9,7 +9,7 @@ Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-ActivationPolicy: lazy
 Require-Bundle: org.eclipse.ui,
  org.eclipse.core.runtime,
- javax.media.opengl;visibility:=reexport,
+ com.jogamp.jogl;bundle-version="2.3.2",
  com.raytheon.uf.common.colormap,
  com.raytheon.uf.viz.core,
  com.raytheon.uf.common.util,

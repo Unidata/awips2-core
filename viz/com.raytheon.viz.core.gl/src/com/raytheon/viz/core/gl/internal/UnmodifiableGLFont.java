@@ -26,7 +26,7 @@ import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.viz.core.drawables.IFont;
 import com.raytheon.viz.core.gl.IGLFont;
-import com.sun.opengl.util.j2d.TextRenderer;
+import com.jogamp.opengl.util.awt.TextRenderer;
 
 /**
  * GLFont that does not support modifying it, used for shared font (default
@@ -40,6 +40,7 @@ import com.sun.opengl.util.j2d.TextRenderer;
  * ------------ ---------- ----------- --------------------------
  * Oct 18, 2010            mschenke    Initial creation
  * Nov 04, 2015   5070     randerso    Added DPI font scaling
+ * Jan 18, 2023			srcarter@ucar  MJ change for jogamp
  * 
  * </pre>
  * 

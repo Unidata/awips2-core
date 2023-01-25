@@ -26,7 +26,7 @@ import java.util.Map;
 
 import javax.measure.Unit;
 import javax.measure.UnitConverter;
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
 
 import com.raytheon.uf.common.colormap.image.ColorMapData;
 import com.raytheon.uf.common.units.UnitConv;
@@ -49,6 +49,7 @@ import com.raytheon.viz.core.gl.images.GLCMTextureData;
  * Aug 29, 2014  3543     bsteffen  Fixes for NaN unit conversions
  * Nov 05, 2015  5094     bsteffen  Map values between colors instead of on
  *                                  colors
+ * Jan 18, 2023		  srcarter@ucar Bring over MJ changes for GL2 
  * 
  * </pre>
  * 
@@ -339,7 +340,7 @@ public class GLDataMappingFactory {
      * @param colorMapSize
      * @return
      */
-    public static GLDataMapping constructGLDataMapping(GL gl, Unit<?> dataUnit,
+    public static GLDataMapping constructGLDataMapping(GL2 gl, Unit<?> dataUnit,
             Unit<?> colorMapUnit, float colorMapMin, float colorMapMax,
             int colorMapSize) {
         GLDataMapping mapping;

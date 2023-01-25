@@ -21,7 +21,7 @@ package com.raytheon.viz.core.gl;
 
 import java.nio.IntBuffer;
 
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
 
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
@@ -39,6 +39,7 @@ import com.raytheon.viz.core.gl.internal.GLTarget;
  * ------------- -------- ----------- --------------------------
  * Jun 06, 2011           mschenke    Initial creation
  * Apr 08, 2014  2950     bsteffen    Add max texture size.
+ * May 07, 2015           mjames      Refactor GL for jogamp 2
  * Oct 25, 2017  6387     bsteffen    Use IUFStatusHandler instead of System.out
  *                                    and disable shaders when float textures
  *                                    aren't available.
@@ -51,7 +52,7 @@ public class GLCapabilities {
 
     private static GLCapabilities caps = null;
 
-    public static synchronized GLCapabilities getInstance(GL gl) {
+    public static synchronized GLCapabilities getInstance(GL2 gl) {
         if (caps == null) {
             caps = new GLCapabilities(gl);
         }
@@ -66,9 +67,9 @@ public class GLCapabilities {
 
     public final int maxTextureSize;
 
-    private GLCapabilities(GL gl) {
+    private GLCapabilities(GL2 gl) {
         IUFStatusHandler logger = UFStatus.getHandler(GLCapabilities.class);
-        String openGlVersion = gl.glGetString(GL.GL_VERSION);
+        String openGlVersion = gl.glGetString(GL2.GL_VERSION);
         float glVersion = Float.parseFloat(openGlVersion.substring(0, 3));
 
         if (glVersion >= 1.4f) {
@@ -92,7 +93,7 @@ public class GLCapabilities {
         logger.debug("Shader supported: " + cardSupportsShaders);
 
         IntBuffer ib = IntBuffer.allocate(1);
-        gl.glGetIntegerv(GL.GL_MAX_TEXTURE_SIZE, ib);
+        gl.glGetIntegerv(GL2.GL_MAX_TEXTURE_SIZE, ib);
         ib.rewind();
         maxTextureSize = ib.get();
     }

@@ -27,7 +27,7 @@ import org.eclipse.swt.graphics.Point;
 import com.raytheon.uf.viz.core.drawables.AbstractAWTDeviceFont;
 import com.raytheon.uf.viz.core.drawables.IFont;
 import com.raytheon.viz.core.gl.IGLFont;
-import com.sun.opengl.util.j2d.TextRenderer;
+import com.jogamp.opengl.util.awt.TextRenderer;
 
 /**
  * 
@@ -40,6 +40,7 @@ import com.sun.opengl.util.j2d.TextRenderer;
  * May 7, 2007             chammack    Initial Creation.
  * Jul 24, 2013       2189 mschenke    Refactored to share common awt font code
  * Nov 04, 2015       5070 randerso    Added DPI font scaling
+ * Jan 18, 2023			srcarter@ucar  Bring over MJ changes for jogamp
  * 
  * </pre>
  * 

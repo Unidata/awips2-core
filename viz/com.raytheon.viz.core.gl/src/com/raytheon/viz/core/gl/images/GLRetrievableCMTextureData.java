@@ -23,8 +23,8 @@ import java.nio.Buffer;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.media.opengl.GL;
-import javax.media.opengl.glu.GLU;
+import com.jogamp.opengl.GL2;
+import com.jogamp.opengl.glu.gl2.GLUgl2;
 
 import com.raytheon.uf.common.colormap.image.ColorMapData;
 import com.raytheon.uf.viz.core.data.IColorMapDataRetrievalCallback;
@@ -50,6 +50,7 @@ import com.raytheon.viz.core.gl.internal.cache.ImageCache.CacheType;
  * Jun 24, 2013           mschenke  Initial creation
  * Oct 23, 2013  2492     mschenke  Extracted Buffer backing into super class
  * Jan 21, 2020  73572    tjensen   Add sizeManagement arg to disposeTexture
+ * Jan 18, 2023		  srcarter@ucar Bring in MJ changes for GL2
  *
  * </pre>
  *
@@ -127,7 +128,7 @@ public class GLRetrievableCMTextureData extends GLBufferCMTextureData
     }
 
     @Override
-    public synchronized boolean loadTexture(GL gl) throws VizException {
+    public synchronized boolean loadTexture(GL2 gl) throws VizException {
         if (super.loadTexture(gl)) {
             ImageCache.getInstance(CacheType.TEXTURE).put(this);
             return true;
@@ -206,16 +207,16 @@ public class GLRetrievableCMTextureData extends GLBufferCMTextureData
     public void restageTexture(GLBufferColorMapData data) {
         if (!isStaged() && isLoaded()) {
             GLContextBridge.makeMasterContextCurrent();
-            GL gl = GLU.getCurrentGL();
+            GL2 gl = GLUgl2.getCurrentGL().getGL2();
             int textureStorageType = getTextureStorageType();
             int copybackTextureType = data.getCopyBackTextureType();
             Buffer copybackBuffer = data.getCopybackBuffer();
             gl.glEnable(textureStorageType);
-            gl.glActiveTexture(GL.GL_TEXTURE0);
+            gl.glActiveTexture(GL2.GL_TEXTURE0);
             tex.bind(gl, textureStorageType);
             gl.glGetTexImage(textureStorageType, 0, getTextureFormat(),
                     copybackTextureType, copybackBuffer.rewind());
-            gl.glActiveTexture(GL.GL_TEXTURE0);
+            gl.glActiveTexture(GL2.GL_TEXTURE0);
             gl.glBindTexture(textureStorageType, 0);
             gl.glDisable(textureStorageType);
 

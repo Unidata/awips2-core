@@ -22,7 +22,7 @@ package com.raytheon.viz.core.gl.dataformat;
 import java.nio.Buffer;
 import java.nio.ShortBuffer;
 
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
 
 /**
  * GL Short data format
@@ -34,6 +34,7 @@ import javax.media.opengl.GL;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Nov 21, 2011            mschenke     Initial creation
+ * Jan 18, 2023			srcarter@ucar   Bring over MJ changes for GL2
  * 
  * </pre>
  * 
@@ -44,12 +45,12 @@ import javax.media.opengl.GL;
 public class GLShortDataFormat extends AbstractGLColorMapDataFormat {
     @Override
     public int getTextureInternalFormat() {
-        return GL.GL_LUMINANCE16;
+        return GL2.GL_LUMINANCE16;
     }
 
     @Override
     public int getTextureType() {
-        return GL.GL_SHORT;
+        return GL2.GL_SHORT;
     }
 
     @Override
@@ -59,7 +60,7 @@ public class GLShortDataFormat extends AbstractGLColorMapDataFormat {
 
     @Override
     public int getCopyBackTextureType() {
-        return GL.GL_UNSIGNED_SHORT;
+        return GL2.GL_UNSIGNED_SHORT;
     }
 
     /*
@@ -116,10 +117,10 @@ public class GLShortDataFormat extends AbstractGLColorMapDataFormat {
         ShortBuffer buffer = (ShortBuffer) dataBuffer;
         short value = buffer.get(index);
         switch (data.getTextureType()) {
-        case GL.GL_SHORT:
+        case GL2.GL_SHORT:
             // Raw data returned from this preparer
             return value;
-        case GL.GL_UNSIGNED_SHORT:
+        case GL2.GL_UNSIGNED_SHORT:
             // Data copied back from gl.
             return (short) (value + Short.MIN_VALUE);
         default:
