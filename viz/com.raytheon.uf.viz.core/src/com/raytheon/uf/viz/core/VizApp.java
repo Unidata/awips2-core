@@ -60,6 +60,7 @@ import com.raytheon.uf.viz.core.localization.LocalizationManager;
  * Dec 09, 2019  7724     tgurney      Delegate JMS connection info to {@link
  *                                     JMSConnection}
  * Jun 29, 2020           randerso     Set jms.clientID to SystemUtil.getClientID()
+ * Jan 18, 2023      tiffanym@ucar.edu Remove getParameters for JMSConnectionInfo
  *
  * </pre>
  *
@@ -207,8 +208,6 @@ public final class VizApp {
 
     public static void setJmsConnectionInfo(
             JMSConnectionInfo jmsConnectionInfo) {
-        jmsConnectionInfo.getParameters().put("jms.clientID",
-                SystemUtil.getClientID(Platform.getProduct().getName()));
         JMSConnection.getInstance().setConnectionInfo(jmsConnectionInfo);
     }
 

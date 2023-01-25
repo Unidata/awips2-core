@@ -35,6 +35,7 @@ package com.raytheon.uf.common.comm;
  * Jul 06, 2015  4614      njensen      Add gzipEnabled
  * Dec 07, 2015  4834      njensen      Changed for rename of IHttpsHandler to HttpAuthHandler
  * Mar 24, 2017  DR 19830  D. Friedman  Add retryDelay
+ * Jan 1, 2022		   tiffanym@ucar.edu	increase maxConnections from 10 to 1000
  * 
  * </pre>
  * 
@@ -47,7 +48,7 @@ public class HttpClientConfigBuilder {
 
     private int connectionTimeout = 10000;
 
-    private int maxConnections = 10;
+    private int maxConnections = 1000;
 
     private HttpAuthHandler httpAuthHandler;
 
