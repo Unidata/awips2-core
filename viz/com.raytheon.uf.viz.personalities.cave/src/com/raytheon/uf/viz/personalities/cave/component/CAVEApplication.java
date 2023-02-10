@@ -171,9 +171,9 @@ public class CAVEApplication implements IStandaloneComponent {
                         this.applicationDisplay, workbenchAdvisor);
             }
         } catch (Throwable t) {
-            statusHandler.fatal(
-                    "Error instantiating workbench: " + t.getLocalizedMessage(),
-                    t);
+            t.printStackTrace();
+            MessageDialog.openError(null,
+                        "Error!", "Error instantiating workbench: " + t.getMessage());
         } finally {
             cleanup();
         }
