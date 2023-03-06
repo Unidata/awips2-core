@@ -190,7 +190,7 @@ public class LocalizationManager implements IPropertyChangeListener {
             statusHandler.handle(Priority.CRITICAL,
                     "Error initializing localization store", e);
         }
-        String userWorkstation = getCurrentUser() + ":" + VizApp.getHostName();
+        String userWorkstation = getCurrentUser() + "_" + VizApp.getHostName();
         registerContextName(LocalizationLevel.USER, userWorkstation);
         registerContextName(LocalizationLevel.BASE, null);
         /*
