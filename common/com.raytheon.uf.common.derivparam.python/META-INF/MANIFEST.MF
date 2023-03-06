@@ -4,7 +4,7 @@ Bundle-Name: Derived Parameter Python Plug-in
 Bundle-SymbolicName: com.raytheon.uf.common.derivparam.python
 Bundle-Version: 1.14.0.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-RequiredExecutionEnvironment: JavaSE-11
 Bundle-ActivationPolicy: lazy
 Require-Bundle: com.raytheon.uf.common.python,
  com.raytheon.uf.common.python.concurrent,
