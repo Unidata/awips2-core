@@ -4,7 +4,7 @@ Bundle-Name: Contour Generation and Display
 Bundle-SymbolicName: com.raytheon.viz.core.contours
 Bundle-Version: 1.15.2.qualifier
 Bundle-Vendor: Raytheon
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-11
 Bundle-ActivationPolicy: lazy
 Require-Bundle: com.raytheon.uf.viz.core,
  org.eclipse.core.runtime,
