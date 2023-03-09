@@ -4,7 +4,7 @@ Bundle-Name: Datastorage Plug-in
 Bundle-SymbolicName: com.raytheon.uf.common.datastorage
 Bundle-Version: 1.15.2.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-11
 Export-Package: com.raytheon.uf.common.datastorage,
  com.raytheon.uf.common.datastorage.audit,
  com.raytheon.uf.common.datastorage.records
