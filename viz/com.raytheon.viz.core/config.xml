@@ -19,6 +19,7 @@
         further_licensing_information.
     -->
 <configuration>
+<defaultGraphicColor>white</defaultGraphicColor>
 <defaultGraphicColor>green</defaultGraphicColor>
 <defaultGraphicColor>coral</defaultGraphicColor>
 <defaultGraphicColor>cyan</defaultGraphicColor>
