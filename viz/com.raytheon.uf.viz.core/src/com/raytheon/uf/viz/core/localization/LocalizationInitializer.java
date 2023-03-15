@@ -58,6 +58,7 @@ import com.raytheon.uf.viz.core.exception.VizException;
  * Feb 04, 2014 2704       njensen     Pass connectivity dialog title
  * Oct 16, 2019 7724       tgurney     Replace connection string with a
  *                                     {@link JMSConnectionInfo} object
+ * Dec 11, 2017            mjames      Less logging (re-implemented 3/15/23)                                    
  *
  * </pre>
  *
@@ -109,8 +110,6 @@ public class LocalizationInitializer {
                 }
             }
         }
-        perfLog.logDuration("Setup CAVE_CONFIG",
-                System.currentTimeMillis() - t0);
     }
 
     protected void setupServers() throws VizException {

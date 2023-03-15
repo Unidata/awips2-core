@@ -38,6 +38,7 @@ import org.osgi.framework.BundleContext;
  * May 23, 2013 2005       njensen      Added springSuccess flag
  * Nov 12, 2013 2361       njensen      Print out time spent on each spring context
  * Jun 27, 2017 6316       njensen      Track bundle start time
+ * Dec 11, 2017            mjames      Less logging (re-implemented 3/15/23)
  * 
  * 
  * </pre>
@@ -158,9 +159,6 @@ public class Activator implements BundleActivator {
                             appCtx = new OSGIXmlApplicationContext(
                                     files.toArray(new String[0]), bundle);
                         }
-                        System.out.println("Spring init of plugin "
-                                + bundle.getSymbolicName() + " took: "
-                                + (System.currentTimeMillis() - t0) + " ms");
                     } catch (Throwable t) {
                         // No access to the statusHandler yet, so print the
                         // stack trace to the console. By catching this, we also

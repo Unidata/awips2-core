@@ -53,20 +53,20 @@
    <logger name="ProductEditorLogger" level="all">
    </logger>
 
-   <logger name="com.raytheon" level="info"/>
+   <logger name="com.raytheon" level="warn"/>
    
-   <logger name="mx4j" level="error" />
-   <logger name="org.apache" level="info" />
+   <logger name="mx4j" level="warn" />
+   <logger name="org.apache" level="warn" />
    <logger name="org.apache.commons.beanutils" level="warn" />
    <logger name="org.apache.qpid" level="warn" />
    <logger name="org.geotools" level="warn" />
    <logger name="org.apache.xbean.spring" level="warn" />
 
    <!-- Silence viz spring startup info messages -->
-   <logger name="org.springframework" level="error" />
+   <logger name="org.springframework" level="warn" />
    <logger name="com.raytheon.uf.viz.spring" level="warn" />
 
-   <root level="info"> 
+   <root level="warn"> 
       <appender-ref ref="console"/> 
       <appender-ref ref="errConsole"/>
    </root> 
