@@ -36,7 +36,7 @@
     <bean id="httpClientConfigBuilder" class="com.raytheon.uf.common.comm.HttpClientConfigBuilder">
        <property name="socketTimeout" value="330000"/>
        <property name="connectionTimeout" value="10000"/>
-       <property name="maxConnections" value="10"/>
+       <property name="maxConnections" value="1000"/>
        <property name="httpAuthHandler" ref="caveCredentialHandler" />
     </bean>
 
