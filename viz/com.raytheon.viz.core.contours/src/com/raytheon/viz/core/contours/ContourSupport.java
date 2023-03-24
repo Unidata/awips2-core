@@ -126,6 +126,7 @@ import com.raytheon.viz.core.interval.XFormFunctions;
  *                                     performance log.
  * Mar 19, 2015  4292     nabowle      Add contour range using A1 configuration
  *                                     rules.
+ * Dec 20, 2017            mjames      Less logging (re-implemented 3/15/23)                                    
  * Apr 30, 2018  6697     bsteffen     Support zoomLock.
  * May 07, 2019  65510    ksunil       multiple changes to support customized contour support
  * Jun 27, 2019  65510    ksunil       refactor smoothData
@@ -143,9 +144,6 @@ public class ContourSupport {
 
     private static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(ContourSupport.class);
-
-    private static final transient IPerformanceStatusHandler perfLog = PerformanceStatus
-            .getHandler("ContourSupport:");
 
     /*
      * By default contour any data source that is passed in. This is much more
@@ -403,7 +401,6 @@ public class ContourSupport {
             subgridCache.put(key, env);
         }
         long tsg1 = System.currentTimeMillis();
-        perfLog.logDuration("Calculating sub grid", tsg1 - tsg0);
 
         // Step 3: Get the actual data
 
@@ -625,7 +622,6 @@ public class ContourSupport {
                         "Unable to create contours. Possible empty contourLabeling in XML");
             }
             long t1 = System.currentTimeMillis();
-            perfLog.logDuration("Contouring", t1 - t0);
 
             float contourValue = 0;
 
@@ -804,9 +800,6 @@ public class ContourSupport {
                     }
                 }
 
-                perfLog.logDuration("Min/Max processing", tMinMaxAccum);
-                perfLog.logDuration("Labeling", tLabelAccum);
-                perfLog.logDuration("Transformation", tTransformAccum);
             } catch (Throwable e) {
                 statusHandler.handle(Priority.PROBLEM,
                         "Error postprocessing contours", e);
@@ -1226,7 +1219,6 @@ public class ContourSupport {
             }
 
             long t1 = System.currentTimeMillis();
-            perfLog.logDuration("Contouring", t1 - t0);
 
             double levelOffset = Math.pow(2, (level - 1));
 
@@ -1389,9 +1381,6 @@ public class ContourSupport {
                         }
                     }
                 }
-                perfLog.logDuration("Min/Max processing", tMinMaxAccum);
-                perfLog.logDuration("Labeling", tLabelAccum);
-                perfLog.logDuration("Transformation", tTransformAccum);
             } catch (Exception e) {
                 throw new VizException("Error postprocessing contours", e);
             }
@@ -1514,7 +1503,6 @@ public class ContourSupport {
                     e1);
         }
         long t1 = System.currentTimeMillis();
-        perfLog.logDuration("Contouring", t1 - t0);
 
         long tAccum = 0;
 
@@ -1542,7 +1530,6 @@ public class ContourSupport {
                 contourGroup.posValueShape.addLineSegment(valsArr);
             }
 
-            perfLog.logDuration("Streamline transformation", tAccum);
         } catch (Throwable e) {
             throw new VizException("Error postprocessing contours", e);
         }
@@ -1764,7 +1751,6 @@ public class ContourSupport {
 
         long tZ1 = System.currentTimeMillis();
 
-        perfLog.logDuration("Checking world wrapping", tZ1 - tZ0);
     }
 
     private static void correctWorldWrappingStreamLine(
@@ -1824,7 +1810,6 @@ public class ContourSupport {
 
         long tZ1 = System.currentTimeMillis();
 
-        perfLog.logDuration("Checking world wrapping", tZ1 - tZ0);
     }
 
     private static float[] convertSLPointListToFloatArray(
