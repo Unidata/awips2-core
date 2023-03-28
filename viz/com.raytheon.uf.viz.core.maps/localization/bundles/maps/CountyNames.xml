@@ -33,7 +33,7 @@
                             <capability xsi:type="colorableCapability"
                                 colorAsString="#9b9b9b" />
                             <capability xsi:type="labelableCapability"
-                                labelField="name" />
+                                labelField="countyname" />
                             <capability xsi:type="pointCapability"
                                 pointStyle="NONE" />
                             <capability xsi:type="densityCapability"
@@ -45,7 +45,7 @@
                             minDisplayWidth="0" />
                     </properties>
                     <resourceData xsi:type="dbPointMapResourceData">
-                        <table>mapdata.county_names</table>
+                        <table>mapdata.county</table>
                         <mapName>County Names</mapName>
                     </resourceData>
                 </resource>
