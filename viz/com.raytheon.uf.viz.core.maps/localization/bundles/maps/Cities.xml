@@ -30,12 +30,11 @@
                 <resource>
                     <loadProperties>
                         <capabilities>
-                            <capability xsi:type="colorableCapability"
-                                colorAsString="#9b9b9b" />
-                            <capability xsi:type="labelableCapability"
-                                labelField="name" />
-                            <capability xsi:type="outlineCapability"
-                                lineStyle="SOLID" />
+                            <capability xsi:type="colorableCapability" colorAsString="#ffffff" />
+                            <capability xsi:type="labelableCapability" labelField="name" />
+                            <capability xsi:type="outlineCapability" lineStyle="SOLID" />
+                            <capability xsi:type="densityCapability" density="0.5" />
+                            <capability xsi:type="magnificationCapability" magnification="1.2" />
                         </capabilities>
                     </loadProperties>
                     <properties isMapLayer="true" />
