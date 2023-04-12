@@ -193,12 +193,18 @@ public class LocalizationManager implements IPropertyChangeListener {
             statusHandler.handle(Priority.CRITICAL,
                     "Error initializing localization store", e);
         }
+        
         String userWorkstation = getCurrentUser();
         try {
             userWorkstation = getCurrentUser() + "_" + InetAddress.getLocalHost().getHostName();
+            
+            if(userWorkstation.contains(":")) {
+                userWorkstation = userWorkstation.replace(":","-");
+            }
         } catch (UnknownHostException e) {
             e.printStackTrace();
         }
+        
         registerContextName(LocalizationLevel.USER, userWorkstation);
         registerContextName(LocalizationLevel.BASE, null);
         /*
