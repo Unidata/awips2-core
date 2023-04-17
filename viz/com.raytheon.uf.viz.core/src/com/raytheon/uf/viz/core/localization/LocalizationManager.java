@@ -23,6 +23,8 @@ package com.raytheon.uf.viz.core.localization;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -118,6 +120,7 @@ import com.raytheon.uf.viz.core.requests.ThriftClient;
  * Oct 16, 2019 7724       tgurney     Replace connection string with a
  *                                     {@link JMSConnectionInfo} object
  * Oct 24, 2022          srcarter@ucar Delete REGION and WORKSTATION levels
+ * Apr 11, 2023          tiffanym@ucar Change how to retrieve hostname, fix for IPv6 
  *
  * </pre>
  *
@@ -190,7 +193,18 @@ public class LocalizationManager implements IPropertyChangeListener {
             statusHandler.handle(Priority.CRITICAL,
                     "Error initializing localization store", e);
         }
-        String userWorkstation = getCurrentUser() + "_" + VizApp.getHostName();
+        
+        String userWorkstation = getCurrentUser();
+        try {
+            userWorkstation = getCurrentUser() + "_" + InetAddress.getLocalHost().getHostName();
+            
+            if(userWorkstation.contains(":")) {
+                userWorkstation = userWorkstation.replace(":","-");
+            }
+        } catch (UnknownHostException e) {
+            e.printStackTrace();
+        }
+        
         registerContextName(LocalizationLevel.USER, userWorkstation);
         registerContextName(LocalizationLevel.BASE, null);
         /*
