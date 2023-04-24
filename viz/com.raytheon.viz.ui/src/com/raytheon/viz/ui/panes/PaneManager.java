@@ -77,6 +77,7 @@ import org.locationtech.jts.geom.Coordinate;
  *                                  that causes problems when switching windows.
  * Feb 11, 2016  5351     bsteffen  Use only visible panes as active panes when
  *                                  possible
+ * Apr 20, 2016           mjames    Add two-column configuration.
  * Mar 02, 2017  6153     bsteffen  Reset descriptor on shared maps when
  *                                  removing a pane.
  * Jun 26, 2017  6331     bsteffen  Add null check before reseting shared maps.
