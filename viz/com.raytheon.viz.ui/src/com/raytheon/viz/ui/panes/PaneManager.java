@@ -77,6 +77,7 @@ import org.locationtech.jts.geom.Coordinate;
  *                                  that causes problems when switching windows.
  * Feb 11, 2016  5351     bsteffen  Use only visible panes as active panes when
  *                                  possible
+ * Apr 20, 2016           mjames    Add two-column configuration.
  * Mar 02, 2017  6153     bsteffen  Reset descriptor on shared maps when
  *                                  removing a pane.
  * Jun 26, 2017  6331     bsteffen  Add null check before reseting shared maps.
@@ -232,8 +233,8 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
         if (composite == null || composite.isDisposed()) {
             return;
         }
-        int numColums = (int) Math.sqrt(paneCount);
-        int numRows = (int) Math.ceil(paneCount / (double) numColums);
+        int numRows = (int) Math.sqrt(paneCount);
+        int numColums = (int) Math.ceil(paneCount / (double) numRows);
         GridLayout gl = new GridLayout(numColums, true);
         int width = composite.getBounds().width;
         int height = composite.getBounds().height;
@@ -374,6 +375,10 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
         }
         int numColums = (int) Math.sqrt(displayedPaneCount);
         int numRows = (int) Math.ceil(displayedPaneCount / (double) numColums);
+        if(displayedPaneCount == 2) {
+            numColums=displayedPaneCount;
+            numRows=1;
+        }
 
         BufferedImage[] screens = screenshots();
         BufferedImage retval = new BufferedImage(
