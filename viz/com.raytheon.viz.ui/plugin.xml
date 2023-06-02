@@ -471,12 +471,12 @@
          locationURI="menu:export">
       <command
              commandId="com.raytheon.viz.ui.saveBundle"
-             label="Editor Display..."
+             label="Display Locally"
              style="push">
        </command>
        <command
              commandId="com.raytheon.viz.ui.saveProcedure"
-             label="Perspective Displays..."
+             label="Display"
              style="push">
        </command>
    </menuContribution>
