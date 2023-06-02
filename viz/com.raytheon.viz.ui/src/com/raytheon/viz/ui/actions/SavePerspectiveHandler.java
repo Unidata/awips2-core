@@ -104,7 +104,7 @@ public class SavePerspectiveHandler
         if (this.saveAsDlg == null || this.saveAsDlg.getShell() == null
                 || this.saveAsDlg.isDisposed()) {
             saveAsDlg = new PerspectiveFileListDlg(
-                    "Save As...", shell,
+                    "Save Display As...", shell,
                     VizLocalizationFileListDlg.Mode.SAVE, PERSPECTIVES_DIR);
             saveAsDlg.addCloseCallback(new ICloseCallback() {
 
