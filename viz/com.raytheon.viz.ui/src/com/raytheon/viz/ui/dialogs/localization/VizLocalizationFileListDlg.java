@@ -52,6 +52,7 @@ import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationUtil;
 import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.viz.core.VizApp;
+import com.raytheon.viz.ui.actions.SavePerspectiveHandler;
 import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
 import com.raytheon.viz.ui.widgets.FilterDelegate;
 
@@ -98,6 +99,7 @@ import com.raytheon.viz.ui.widgets.FilterDelegate;
  * Jul 25, 2018  6748     randerso     Improved grammar in file overwrite
  *                                     message. Change to use ViewerComparator
  *                                     to eliminate deprecation warning.
+ * Jul 05, 2023         srcarter@ucar  Increase default width for perspective dialogs
  *
  * </pre>
  *
@@ -335,7 +337,11 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
         }
 
         gd = new GridData(SWT.FILL, SWT.FILL, true, true);
-        gd.widthHint = 325;
+        if(localizationDirectory.equals(SavePerspectiveHandler.PERSPECTIVES_DIR)) {
+            gd.widthHint = 550;
+        }else {
+            gd.widthHint = 325;
+        }
         gd.heightHint = 170;
 
         treeViewer = new TreeViewer(textComp, SWT.SINGLE | SWT.BORDER);
