@@ -78,7 +78,7 @@ import com.raytheon.viz.ui.statusline.VizActionBarAdvisor;
  * Mar 31, 2016 5519       bsteffen    Fix coolbar update on eclipse 4.
  * May 03, 2016 3292       bsteffen    Preserve editor order in getActiveDisplayMap.
  * Mar 12, 2018 6757       njensen     Copy active editor's loop properties for new editor
- * Sep 25, 2023          srcarter@ucar Multipanel windows open in new editor (from MJ)
+ * Sep 25, 2023          srcarter@ucar Open multipanel windows in new editor (from MJ)
  * 
  * </pre>
  * 
@@ -440,7 +440,6 @@ public class UiUtil {
 
         // If we get here, the editor isn't there, or has a different number of
         // panes... construct it
-//        new Exception().printStackTrace();
         return createEditor(windowToLoadTo, editorName, loopProps, displays);
     }
 
@@ -513,7 +512,6 @@ public class UiUtil {
         if (loopProps == null) {
             loopProps = new LoopProperties();
         }
-        
         EditorInput cont = new EditorInput(loopProps, displays);
         try {
             IWorkbenchPage activePage = windowToLoadTo.getActivePage();
