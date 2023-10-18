@@ -33,13 +33,13 @@
                             <capability xsi:type="outlineCapability"
                                 lineStyle="SOLID" />
                             <capability xsi:type="colorableCapability"
-                                colorAsString="#9b9b9b" />
+                                colorAsString="#1E90FF" />
                         </capabilities>
                     </loadProperties>
                     <properties isMapLayer="true" />
                     <resourceData xsi:type="dbMapResourceData">
-                        <table>mapdata.artcc</table>
-                        <mapName>ARTCC Areas</mapName>
+                        <table>mapdata.lowaltitude</table>
+                        <mapName>Low Altitude Routes</mapName>
                     </resourceData>
                 </resource>
             </descriptor>

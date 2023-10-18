@@ -33,13 +33,13 @@
                             <capability xsi:type="outlineCapability"
                                 lineStyle="SOLID" />
                             <capability xsi:type="colorableCapability"
-                                colorAsString="#9b9b9b" />
+                                colorAsString="#FFA54F" />
                         </capabilities>
                     </loadProperties>
                     <properties isMapLayer="true" />
                     <resourceData xsi:type="dbMapResourceData">
-                        <table>mapdata.mexico</table>
-                        <mapName>Mexico</mapName>
+                        <table>mapdata.highaltitude</table>
+                        <mapName>High Altitude Routes</mapName>
                     </resourceData>
                 </resource>
             </descriptor>
