@@ -39,7 +39,7 @@
                     <properties isMapLayer="true" />
                     <resourceData xsi:type="dbMapResourceData">
                         <table>mapdata.artcc</table>
-                        <mapName>Air Route Traffic Control Areas</mapName>
+                        <mapName>Air Route Traffic Control Centers (ARTCC)</mapName>
                     </resourceData>
                 </resource>
             </descriptor>
