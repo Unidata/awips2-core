@@ -38,8 +38,8 @@
                     </loadProperties>
                     <properties isMapLayer="true" />
                     <resourceData xsi:type="dbMapResourceData">
-                        <table>mapdata.states</table>
-                        <mapName>State Boundaries</mapName>
+                        <table>mapdata.canada</table>
+                        <mapName>Canada</mapName>
                     </resourceData>
                 </resource>
             </descriptor>
