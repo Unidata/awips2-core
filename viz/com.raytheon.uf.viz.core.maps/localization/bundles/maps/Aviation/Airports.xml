@@ -30,16 +30,16 @@
                 <resource>
                     <loadProperties>
                         <capabilities>
-                            <capability xsi:type="outlineCapability"
-                                lineStyle="SOLID" />
                             <capability xsi:type="colorableCapability"
                                 colorAsString="#9b9b9b" />
+                            <capability xsi:type="labelableCapability"
+                                labelField="name" />
                         </capabilities>
                     </loadProperties>
                     <properties isMapLayer="true" />
-                    <resourceData xsi:type="dbMapResourceData">
-                        <table>mapdata.highaltitude</table>
-                        <mapName>High Altitude Routes</mapName>
+                    <resourceData xsi:type="lpiResourceData">
+                        <filename>airport.lpi</filename>
+                        <mapName>Airport Locations</mapName>
                     </resourceData>
                 </resource>
             </descriptor>
