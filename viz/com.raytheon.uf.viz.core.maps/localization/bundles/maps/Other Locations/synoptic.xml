@@ -47,7 +47,7 @@
                     </properties>
                     <resourceData xsi:type="spiResourceData">
                         <filename>basemaps/synoptic.spi</filename>
-                        <mapName>Synoptic Station Locations</mapName>
+                        <mapName>Synoptic Stations</mapName>
                     </resourceData>
                 </resource>
             </descriptor>

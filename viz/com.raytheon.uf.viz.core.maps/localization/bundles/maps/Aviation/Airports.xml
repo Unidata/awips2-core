@@ -39,7 +39,7 @@
                     <properties isMapLayer="true" />
                     <resourceData xsi:type="lpiResourceData">
                         <filename>airport.lpi</filename>
-                        <mapName>Airport Locations</mapName>
+                        <mapName>All Airports</mapName>
                     </resourceData>
                 </resource>
             </descriptor>

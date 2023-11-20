@@ -47,7 +47,7 @@
                     </properties>
                     <resourceData xsi:type="spiResourceData">
                         <filename>basemaps/airports.spi</filename>
-                        <mapName>ACARS Airport Locations</mapName>
+                        <mapName>ACARS Airports</mapName>
                     </resourceData>
                 </resource>
             </descriptor>

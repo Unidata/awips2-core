@@ -47,7 +47,7 @@
                     </properties>
                     <resourceData xsi:type="spiResourceData">
                         <filename>basemaps/goesBufr.spi</filename>
-                        <mapName>GOES BUFR Locations</mapName>
+                        <mapName>GOES BUFR</mapName>
                     </resourceData>
                 </resource>
             </descriptor>
