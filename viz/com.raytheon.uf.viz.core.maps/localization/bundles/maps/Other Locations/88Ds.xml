@@ -42,7 +42,7 @@
                     </properties>
                     <resourceData xsi:type="lpiResourceData">
                         <filename>88D.lpi</filename>
-                        <mapName>NEXRAD Radar Locations</mapName>
+                        <mapName>NEXRAD Radars</mapName>
                     </resourceData>
                 </resource>
             </descriptor>

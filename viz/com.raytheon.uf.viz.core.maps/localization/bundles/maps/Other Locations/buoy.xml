@@ -47,7 +47,7 @@
                     </properties>
                     <resourceData xsi:type="spiResourceData">
                         <filename>basemaps/BUOY.spi</filename>
-                        <mapName>Fixed Buoy Locations</mapName>
+                        <mapName>Fixed Buoys</mapName>
                     </resourceData>
                 </resource>
             </descriptor>
