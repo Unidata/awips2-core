@@ -47,7 +47,7 @@
                     </properties>
                     <resourceData xsi:type="spiResourceData">
                         <filename>basemaps/raob.spi</filename>
-                        <mapName>RAOB Station Locations</mapName>
+                        <mapName>RAOB Stations</mapName>
                     </resourceData>
                 </resource>
             </descriptor>

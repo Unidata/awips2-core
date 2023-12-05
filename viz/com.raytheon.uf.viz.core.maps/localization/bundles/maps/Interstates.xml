@@ -30,12 +30,10 @@
                 <resource>
                     <loadProperties>
                         <capabilities>
-                            <capability xsi:type="outlineCapability"
-                                lineStyle="SOLID" />
-                            <capability xsi:type="colorableCapability"
-                                colorAsString="#9b9b9b" />
-                            <capability xsi:type="labelableCapability"
-                                labelField="route" />
+                            <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true"
+                                outlineWidth="2" />
+                            <capability xsi:type="colorableCapability" colorAsString="#cc5000" />
+                            <capability xsi:type="densityCapability" density="0.2"/>
                         </capabilities>
                     </loadProperties>
                     <properties isMapLayer="true" />

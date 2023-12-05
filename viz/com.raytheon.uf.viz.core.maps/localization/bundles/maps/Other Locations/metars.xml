@@ -47,7 +47,7 @@
                     </properties>
                     <resourceData xsi:type="spiResourceData">
                         <filename>basemaps/MTR.spi</filename>
-                        <mapName>METAR Station Locations</mapName>
+                        <mapName>METAR Stations</mapName>
                     </resourceData>
                 </resource>
             </descriptor>

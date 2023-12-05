@@ -18,7 +18,7 @@
                     </properties>
                     <resourceData xsi:type="lpiResourceData">
                         <filename>TDWR.lpi</filename>
-                        <mapName>TDWR Radar Locations</mapName>
+                        <mapName>TDWR Radars</mapName>
                     </resourceData>
                 </resource>
             </descriptor>
