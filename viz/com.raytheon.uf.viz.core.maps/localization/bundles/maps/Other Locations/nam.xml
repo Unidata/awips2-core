@@ -47,7 +47,7 @@
                     </properties>
                     <resourceData xsi:type="spiResourceData">
                         <filename>basemaps/modelBufr.spi</filename>
-                        <mapName>NAM BUFR Locations</mapName>
+                        <mapName>NAM BUFR</mapName>
                     </resourceData>
                 </resource>
             </descriptor>

@@ -42,7 +42,7 @@
                     </properties>
                     <resourceData xsi:type="lpiResourceData">
                         <filename>volcanoes.lpi</filename>
-                        <mapName>Volcano Locations</mapName>
+                        <mapName>Volcanos</mapName>
                     </resourceData>
                 </resource>
             </descriptor>
