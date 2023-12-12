@@ -358,7 +358,7 @@ public class ConnectivityPreferenceDialog {
         gd.horizontalIndent = 20;
         localizationLabel.setLayoutData(gd);
         //TODO: change this back when we're finished with beta and ready for production
-        String unidataEDEXUrl = "edex-beta.unidata.ucar.edu";
+        String unidataEDEXUrl = "edex-cloud.unidata.ucar.edu";
         
         String[] pastOptions = {
                         unidataEDEXUrl,
