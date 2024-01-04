@@ -49,7 +49,7 @@
     <Method name="Alias">
         <Field abbreviation="PC" />
     </Method>
-    <Method name="Or" models="GFS215 GFS217 GFS20-PAC GFS20-PRICO">
+    <Method name="Or" models="GFS20 GFS215 GFS217 GFS20-PAC GFS20-PRICO">
         <Field abbreviation="TP3hr" />
         <Field abbreviation="TP6hr" />
     </Method>
