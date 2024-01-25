@@ -1,7 +1,7 @@
 <project name="deploy.ignite" default="main"  basedir=".">
     <property name="build.product" value="ignite" />
     
-    <property name="build.edex.dir" location="../../../AWIPS2_baseline/edexOsgi/build.edex" />
+    <property name="build.edex.dir" location="../../../AWIPS2_Dev_Baseline/edexOsgi/build.edex" />
     <target name="main">
         <ant antfile="${build.edex.dir}/deploy-install.xml" dir="${build.edex.dir}" />
     </target>

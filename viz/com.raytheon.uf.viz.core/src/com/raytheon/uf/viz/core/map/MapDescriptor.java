@@ -44,6 +44,7 @@ import com.raytheon.uf.common.geospatial.MapUtil;
 import com.raytheon.uf.viz.core.IExtent;
 import com.raytheon.uf.viz.core.PixelCoverage;
 import com.raytheon.uf.viz.core.drawables.AbstractDescriptor;
+import com.raytheon.uf.viz.core.drawables.IDescriptor;
 import com.raytheon.uf.viz.core.exception.VizException;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
@@ -62,6 +63,7 @@ import org.locationtech.jts.geom.Envelope;
  * Dec 22, 2009  3348     bsteffen    Moved getter/setters for numberOfFrames down to AbstractDescriptor
  * Oct 22, 2013  2491     bsteffen    Remove ISerializableObject
  * Oct 12, 2015  4932     njensen     Removed unnecessary exception declarations
+ * Sep 27, 2023  2036075  smoorthy    Add override for compatibility test
  * 
  * </pre>
  * 
@@ -430,6 +432,11 @@ public class MapDescriptor extends AbstractDescriptor implements IMapDescriptor 
     @Override
     public int getMapWidth() {
         return this.mapWidth;
+    }
+
+    @Override
+    public boolean isCompatible(IDescriptor other) {
+        return other instanceof MapDescriptor;
     }
 
 }

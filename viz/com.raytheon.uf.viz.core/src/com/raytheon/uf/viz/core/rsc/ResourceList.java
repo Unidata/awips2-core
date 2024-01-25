@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -27,9 +27,11 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.Predicate;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -50,11 +52,11 @@ import com.raytheon.uf.viz.core.rsc.capabilities.AbstractCapability;
 
 /**
  * ResourceList implements a list that contains resources
- * 
+ *
  * <pre>
- * 
+ *
  *    SOFTWARE HISTORY
- *   
+ *
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- --------------------------
  * Sep 05, 2007           chammack    Initial Creation.
@@ -64,12 +66,12 @@ import com.raytheon.uf.viz.core.rsc.capabilities.AbstractCapability;
  * Oct 22, 2013  2491     bsteffen    Remove ISerializableObject
  * Jan 17, 2013  2651     bsteffen    Synchronize removeRsc for slightly better
  *                                    thread safety.
- * Sep 28, 2017  DR 20316 D. Friemdan Refresh on reorder.
- * 
+ * Sep 28, 2017  DR 20316 D. Friedman Refresh on reorder.
+ * Dec 20, 2023  2036519  mapeters    Override removeIf
+ *
  * </pre>
- * 
+ *
  * @author chammack
- * @version 1
  */
 @XmlAccessorType(XmlAccessType.NONE)
 public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
@@ -82,31 +84,27 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
 
     private static final int LOWEST = RenderingOrderFactory.ResourceOrder.LOWEST.value;
 
-    private static final Comparator<ResourcePair> INSTANTIATION_ORDERER = new Comparator<ResourcePair>() {
-
-        @Override
-        public int compare(ResourcePair rp1, ResourcePair rp2) {
-            if (rp1.getProperties().isSystemResource()) {
-                if (rp2.getProperties().isSystemResource()) {
-                    return 0;
-                } else {
-                    return -1;
-                }
-            } else if (rp2.getProperties().isSystemResource()) {
-                return 1;
+    private static final Comparator<ResourcePair> INSTANTIATION_ORDERER = (rp1,
+            rp2) -> {
+        if (rp1.getProperties().isSystemResource()) {
+            if (rp2.getProperties().isSystemResource()) {
+                return 0;
+            } else {
+                return -1;
             }
-            if (rp1.getProperties().isMapLayer()) {
-                if (rp2.getProperties().isMapLayer()) {
-                    return 0;
-                } else {
-                    return -1;
-                }
-            } else if (rp2.getProperties().isMapLayer()) {
-                return 1;
-            }
-            return 0;
+        } else if (rp2.getProperties().isSystemResource()) {
+            return 1;
         }
-
+        if (rp1.getProperties().isMapLayer()) {
+            if (rp2.getProperties().isMapLayer()) {
+                return 0;
+            } else {
+                return -1;
+            }
+        } else if (rp2.getProperties().isMapLayer()) {
+            return 1;
+        }
+        return 0;
     };
 
     private final transient Set<AddListener> preAddListeners;
@@ -117,48 +115,32 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
 
     private final transient Set<RemoveListener> postRemoveListeners;
 
-    private final List<ResourcePair> resourcesToInstantiate = new LinkedList<ResourcePair>();
+    private final List<ResourcePair> resourcesToInstantiate = new LinkedList<>();
 
     private final String uniqueID = UUID.randomUUID().toString();
 
     /**
      * Defines the move operations that can be performed by the moveResource
      * method
-     * 
+     *
      */
     public enum MoveOperation {
         Up, Down, ToTop, ToBottom
-    };
-
-    public ResourceList() {
-        preAddListeners = new LinkedHashSet<AddListener>();
-        postAddListeners = new LinkedHashSet<AddListener>();
-        preRemoveListeners = new LinkedHashSet<RemoveListener>();
-        postRemoveListeners = new LinkedHashSet<RemoveListener>();
-
-        addPostAddListener(new AddListener() {
-            @Override
-            public void notifyAdd(ResourcePair rp) throws VizException {
-                // Register with catalog
-                ResourceCatalog.getInstance().addResource(rp.getResource(),
-                        uniqueID);
-            }
-        });
-
-        addPostRemoveListener(new RemoveListener() {
-            @Override
-            public void notifyRemove(ResourcePair rp) throws VizException {
-                ResourceCatalog.getInstance().removeResource(rp.getResource(),
-                        uniqueID);
-            }
-        });
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.util.List#add(int, java.lang.Object)
-     */
+    public ResourceList() {
+        preAddListeners = new LinkedHashSet<>();
+        postAddListeners = new LinkedHashSet<>();
+        preRemoveListeners = new LinkedHashSet<>();
+        postRemoveListeners = new LinkedHashSet<>();
+
+        addPostAddListener(rp -> ResourceCatalog.getInstance()
+                .addResource(rp.getResource(), uniqueID));
+
+        addPostRemoveListener(rp -> ResourceCatalog.getInstance()
+                .removeResource(rp.getResource(), uniqueID));
+    }
+
     @Override
     public void add(int index, ResourcePair element) {
         throw new UnsupportedOperationException();
@@ -166,7 +148,7 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
 
     /**
      * Add a resource with a default resource properties (convenience method)
-     * 
+     *
      * @param vr
      *            the resource
      * @return true if the add succeeds
@@ -177,7 +159,7 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
 
     /**
      * Add a resource with a specified resource properties
-     * 
+     *
      * @param vr
      *            the resource
      * @param props
@@ -195,22 +177,17 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
      * Function for determining if the {@link ResourcePair} can be added to the
      * list. Default checks if the pair is already in the list and returns false
      * if so
-     * 
+     *
      * @param e
      * @return
      */
     protected boolean canAdd(ResourcePair e) {
-        return contains(e) == false;
+        return !contains(e);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.util.List#add(java.lang.Object)
-     */
     @Override
     public boolean add(ResourcePair e) {
-        if (e == null || canAdd(e) == false) {
+        if (e == null || !canAdd(e)) {
             return false;
         }
 
@@ -251,7 +228,7 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
     private void fireAddListeners(ResourcePair e,
             Collection<AddListener> listeners) throws VizException {
         try {
-            List<AddListener> copy = new ArrayList<AddListener>();
+            List<AddListener> copy = new ArrayList<>();
             synchronized (listeners) {
                 copy.addAll(listeners);
             }
@@ -259,9 +236,9 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
                 al.notifyAdd(e);
             }
         } catch (VizException e1) {
-            statusHandler
-                    .handle(Priority.PROBLEM, "Error notifying add listener: "
-                            + e1.getLocalizedMessage(), e1);
+            statusHandler.handle(Priority.PROBLEM,
+                    "Error notifying add listener: " + e1.getLocalizedMessage(),
+                    e1);
             throw e1;
         }
     }
@@ -269,7 +246,7 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
     private void fireRemoveListeners(ResourcePair e,
             Collection<RemoveListener> listeners) throws VizException {
         try {
-            List<RemoveListener> copy = new ArrayList<RemoveListener>();
+            List<RemoveListener> copy = new ArrayList<>();
             synchronized (listeners) {
                 copy.addAll(listeners);
             }
@@ -277,10 +254,10 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
                 al.notifyRemove(e);
             }
         } catch (VizException e1) {
-            statusHandler.handle(
-                    Priority.PROBLEM,
+            statusHandler.handle(Priority.PROBLEM,
                     "Error notifying remove listener: "
-                            + e1.getLocalizedMessage(), e1);
+                            + e1.getLocalizedMessage(),
+                    e1);
             throw e1;
         }
     }
@@ -308,7 +285,7 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
         }
 
         synchronized (this) {
-            if (canAdd(e) == false) {
+            if (!canAdd(e)) {
                 return false;
             }
 
@@ -328,15 +305,10 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
         return true;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.util.List#addAll(java.util.Collection)
-     */
     @Override
     public boolean addAll(Collection<? extends ResourcePair> c) {
         Validate.notNull(c);
-        List<ResourcePair> toAdd = new ArrayList<ResourcePair>(c.size());
+        List<ResourcePair> toAdd = new ArrayList<>(c.size());
         synchronized (this) {
             for (ResourcePair rp : c) {
                 Validate.notNull(rp);
@@ -381,24 +353,14 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
         return anyModified;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.util.List#addAll(int, java.util.Collection)
-     */
     @Override
     public boolean addAll(int index, Collection<? extends ResourcePair> c) {
         throw new UnsupportedOperationException();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.util.List#clear()
-     */
     @Override
     public void clear() {
-        List<ResourcePair> copy = new ArrayList<ResourcePair>(this);
+        List<ResourcePair> copy = new ArrayList<>(this);
         // Notify listeners of all items being removed
         for (ResourcePair rp : copy) {
             try {
@@ -423,11 +385,6 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.util.List#remove(int)
-     */
     @Override
     public ResourcePair remove(int index) {
         ResourcePair rp = get(index);
@@ -461,13 +418,9 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
         return rp;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.util.List#remove(java.lang.Object)
-     */
     @Override
     public boolean remove(Object o) {
+        // Overridden to use our remove(int) method that notifies listeners
         Validate.notNull(o);
         Validate.isTrue(o instanceof ResourcePair);
 
@@ -481,13 +434,9 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
         return true;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.util.List#removeAll(java.util.Collection)
-     */
     @Override
     public boolean removeAll(Collection<?> c) {
+        // Overridden to use our remove(int) method that notifies listeners
         Validate.notNull(c);
 
         for (Object o : c) {
@@ -500,11 +449,20 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
         return true;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.util.List#retainAll(java.util.Collection)
-     */
+    @Override
+    public boolean removeIf(Predicate<? super ResourcePair> filter) {
+        // Overridden to use our remove(int) method that notifies listeners
+        Objects.requireNonNull(filter);
+        boolean anyRemoved = false;
+        for (ResourcePair rp : this) {
+            if (filter.test(rp)) {
+                remove(rp);
+                anyRemoved = true;
+            }
+        }
+        return anyRemoved;
+    }
+
     @Override
     public boolean retainAll(Collection<?> c) {
         throw new UnsupportedOperationException();
@@ -512,7 +470,7 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
 
     /**
      * Return the ResourceProperties for a specified resource
-     * 
+     *
      * @param rsc
      *            the resource
      * @return the resource properties
@@ -543,7 +501,7 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
 
     /**
      * Add a pre-add listener
-     * 
+     *
      * @param al
      */
     public void addPreAddListener(AddListener al) {
@@ -555,7 +513,7 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
 
     /**
      * Add a post-add listener
-     * 
+     *
      * @param al
      */
     public void addPostAddListener(AddListener al) {
@@ -567,7 +525,7 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
 
     /**
      * Add a pre-remove listener
-     * 
+     *
      * @param rl
      */
     public void addPreRemoveListener(RemoveListener rl) {
@@ -579,7 +537,7 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
 
     /**
      * Add a post-remove listener
-     * 
+     *
      * @param rl
      */
     public void addPostRemoveListener(RemoveListener rl) {
@@ -591,7 +549,7 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
 
     /**
      * Add a pre-add listener
-     * 
+     *
      * @param al
      */
     public void removePreAddListener(AddListener al) {
@@ -602,7 +560,7 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
 
     /**
      * Add a post-add listener
-     * 
+     *
      * @param al
      */
     public void removePostAddListener(AddListener al) {
@@ -613,7 +571,7 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
 
     /**
      * Add a pre-remove listener
-     * 
+     *
      * @param rl
      */
     public void removePreRemoveListener(RemoveListener rl) {
@@ -624,7 +582,7 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
 
     /**
      * Add a post-remove listener
-     * 
+     *
      * @param rl
      */
     public void removePostRemoveListener(RemoveListener rl) {
@@ -635,13 +593,13 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
 
     /**
      * Add Listener
-     * 
+     *
      * Defines the interface that is used to notify on additions
      */
-    public static interface AddListener {
+    public interface AddListener {
         /**
          * Notify the implementer of an add operation
-         * 
+         *
          * @param rp
          *            the resource pair that was added
          * @throws VizException
@@ -651,13 +609,13 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
 
     /**
      * Remove Listener
-     * 
+     *
      * Defines the interface that is used to notify on removals
      */
-    public static interface RemoveListener {
+    public interface RemoveListener {
         /**
          * Notify the implementer of a removal
-         * 
+         *
          * @param rp
          *            the resource pair that was removed
          * @throws VizException
@@ -681,9 +639,9 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
      * This method moves an element within the list. It assumes the requested
      * move is legal (doesn't break any business rules) and valid (both from and
      * to are within the range of the list).
-     * 
+     *
      * It is the caller's responsibility to ensure these assumptions are true.
-     * 
+     *
      * @param from
      *            original position
      * @param to
@@ -740,7 +698,7 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
 
     /**
      * Move a requested resource to a specified location
-     * 
+     *
      * @param resource
      * @param operation
      */
@@ -763,7 +721,7 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
                     do {
                         newIdx--;
                     } while (newIdx >= 0
-                            && get(newIdx).getProperties().isSystemResource() == true);
+                            && get(newIdx).getProperties().isSystemResource());
                 }
                 break;
 
@@ -776,7 +734,7 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
                     do {
                         newIdx++;
                     } while (newIdx < size()
-                            && get(newIdx).getProperties().isSystemResource() == true);
+                            && get(newIdx).getProperties().isSystemResource());
                 }
                 break;
 
@@ -785,8 +743,8 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
                 break;
 
             default:
-                throw new UnsupportedOperationException(operation.name()
-                        + " is not a supported operation");
+                throw new UnsupportedOperationException(
+                        operation.name() + " is not a supported operation");
             }
 
             if (newIdx < 0) {
@@ -798,14 +756,14 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
             }
 
             // ensure newIdx doesn't move above a HIGHEST
-            while (newIdx > 0
-                    && get(newIdx).getProperties().getRenderingOrder() == HIGHEST) {
+            while (newIdx > 0 && get(newIdx).getProperties()
+                    .getRenderingOrder() == HIGHEST) {
                 newIdx--;
             }
 
             // ensure newIdx doesn't move below a LOWEST
-            while (newIdx < size()
-                    && get(newIdx).getProperties().getRenderingOrder() == LOWEST) {
+            while (newIdx < size() && get(newIdx).getProperties()
+                    .getRenderingOrder() == LOWEST) {
                 newIdx++;
             }
 
@@ -837,7 +795,7 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
 
     @Override
     public String toString() {
-        StringBuffer s = new StringBuffer("ResourceList[");
+        StringBuilder s = new StringBuilder("ResourceList[");
 
         if (size() > 0) {
             s.append("\n\t");
@@ -854,11 +812,6 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
         return s.toString();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#finalize()
-     */
     @Override
     protected void finalize() throws Throwable {
         super.clear();
@@ -889,7 +842,7 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
         }
 
         synchronized (this) {
-            List<ResourcePair> copy = new ArrayList<ResourcePair>(this);
+            List<ResourcePair> copy = new ArrayList<>(this);
             Collections.sort(copy, new RenderingOrderComparator());
             super.clear();
             super.addAll(copy);
@@ -899,10 +852,10 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
     /**
      * Instantiate (realize) all resources from their resource data that have
      * not already been instantiated.
-     * 
+     *
      * Performs a sort after the instantiation now that all sort orders are
      * available.
-     * 
+     *
      * @param descriptor
      * @param fireListeners
      */
@@ -910,19 +863,19 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
             boolean fireListeners) {
         List<ResourcePair> orderedList = null;
         synchronized (resourcesToInstantiate) {
-            orderedList = new ArrayList<ResourcePair>(resourcesToInstantiate);
+            orderedList = new ArrayList<>(resourcesToInstantiate);
             resourcesToInstantiate.removeAll(orderedList);
         }
 
         Collections.sort(orderedList, INSTANTIATION_ORDERER);
         if (descriptor.getTimeMatcher() != null) {
-            orderedList = new ArrayList<ResourcePair>(descriptor
-                    .getTimeMatcher().getResourceLoadOrder(orderedList));
+            orderedList = new ArrayList<>(descriptor.getTimeMatcher()
+                    .getResourceLoadOrder(orderedList));
         }
 
         Iterator<ResourcePair> iterator = orderedList.iterator();
-        List<ResourcePair> noTimes = new ArrayList<ResourcePair>();
-        List<ResourcePair> successful = new ArrayList<ResourcePair>();
+        List<ResourcePair> noTimes = new ArrayList<>();
+        List<ResourcePair> successful = new ArrayList<>();
         while (iterator.hasNext()) {
             ResourcePair rp = iterator.next();
             AbstractVizResource<?, ?> rsc = rp.getResource();
@@ -950,23 +903,21 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
                     super.remove(rp);
                 } catch (NoDataAvailableException e) {
                     super.remove(rp);
-                    statusHandler
-                            .handle(Priority.PROBLEM,
-                                    "No data available for resource "
-                                            + rp.getResourceData().getClass()
-                                                    .getName(), e);
+                    statusHandler.handle(Priority.PROBLEM,
+                            "No data available for resource "
+                                    + rp.getResourceData().getClass().getName(),
+                            e);
 
                 } catch (IllegalArgumentException e) {
                     super.remove(rp);
-                    statusHandler.handle(
-                            Priority.PROBLEM,
+                    statusHandler.handle(Priority.PROBLEM,
                             "Unable to add invalid resource: "
-                                    + e.getLocalizedMessage(), e);
+                                    + e.getLocalizedMessage(),
+                            e);
                 } catch (VizException e) {
-                    statusHandler
-                            .handle(Priority.SIGNIFICANT,
-                                    "Error instantiating resource, this resource will likely be inoperable",
-                                    e);
+                    statusHandler.handle(Priority.SIGNIFICANT,
+                            "Error instantiating resource, this resource will likely be inoperable",
+                            e);
                 }
             } else {
                 // set the resource for the properties
@@ -987,8 +938,8 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
                 message.append(" resources");
                 for (ResourcePair pair : noTimes) {
                     message.append("\n");
-                    message.append(pair.getResourceData().getClass()
-                            .getSimpleName());
+                    message.append(
+                            pair.getResourceData().getClass().getSimpleName());
                 }
             }
             statusHandler.handle(priority, message.toString());
@@ -997,7 +948,8 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
         sort();
     }
 
-    private class RenderingOrderComparator implements Comparator<ResourcePair> {
+    private static class RenderingOrderComparator
+            implements Comparator<ResourcePair> {
 
         @Override
         public int compare(ResourcePair o1, ResourcePair o2) {
@@ -1010,13 +962,13 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
     /**
      * Get a list of resources that implement or extend the class passed in
      * already casted to the type
-     * 
+     *
      * @param clazz
      * @return
      */
     @SuppressWarnings("unchecked")
     public <T extends Object> List<T> getResourcesByTypeAsType(Class<T> clazz) {
-        List<T> resources = new ArrayList<T>();
+        List<T> resources = new ArrayList<>();
         if (clazz != null) {
             for (ResourcePair rp : this) {
                 AbstractVizResource<?, ?> rsc = rp.getResource();
@@ -1030,14 +982,14 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
 
     /**
      * Get a list of resources that implement or extend the class passed in
-     * 
-     * 
+     *
+     *
      * @param clazz
      * @return
      */
     public <T extends Object> List<AbstractVizResource<?, ?>> getResourcesByType(
             Class<T> clazz) {
-        List<AbstractVizResource<?, ?>> resources = new ArrayList<AbstractVizResource<?, ?>>();
+        List<AbstractVizResource<?, ?>> resources = new ArrayList<>();
         if (clazz != null) {
             for (ResourcePair rp : this) {
                 AbstractVizResource<?, ?> rsc = rp.getResource();
@@ -1051,13 +1003,13 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
 
     /**
      * Get the list of resources with the capability class passed in
-     * 
+     *
      * @param clazz
      * @return
      */
     public <T extends AbstractCapability> List<AbstractVizResource<?, ?>> getResourcesByCapability(
             Class<T> clazz) {
-        List<AbstractVizResource<?, ?>> resources = new ArrayList<AbstractVizResource<?, ?>>();
+        List<AbstractVizResource<?, ?>> resources = new ArrayList<>();
         for (ResourcePair rp : this) {
             AbstractVizResource<?, ?> rsc = rp.getResource();
             if (rsc != null && rsc.hasCapability(clazz)) {

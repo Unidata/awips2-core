@@ -412,7 +412,7 @@ public class PythonFileGenerator {
 
     public static String getHeaderInfo() throws IOException {
         File file = new File(
-                "../../../AWIPS2_baseline/cave/build/tools/headup/AWIPS/awipsHeader.txt");
+                "../../../AWIPS2_Dev_Baseline/cave/build/tools/headup/AWIPS/awipsHeader.txt");
         if (!file.exists()) {
             System.out.println(
                     "Unable to determine header information, skipping header");

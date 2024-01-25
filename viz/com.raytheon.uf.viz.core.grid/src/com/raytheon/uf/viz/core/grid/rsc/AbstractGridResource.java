@@ -188,6 +188,7 @@ import tech.units.indriya.quantity.Quantities;
  *                                     from private to protected
  * Dec 06, 2021  8341     randerso     Added use of getResourceId for contour
  *                                     logging
+ * Dec 20, 2023  2036519  mapeters     Prevent keeping unnecessary data in memory
  *
  * </pre>
  *
@@ -314,6 +315,9 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
      * @param pdo
      */
     protected void addDataObject(PluginDataObject pdo) {
+        if (getStatus() == ResourceStatus.DISPOSED) {
+            return;
+        }
         DataTime time = pdo.getDataTime();
         if (this.resourceData instanceof AbstractRequestableResourceData) {
             AbstractRequestableResourceData resourceData = (AbstractRequestableResourceData) this.resourceData;
@@ -796,17 +800,38 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
             List<PluginDataObject> pdos) throws VizException;
 
     public List<GeneralGridData> requestData(DataTime time) {
+        return requestData(time, false);
+    }
+
+    /**
+     * Request data for the given time.
+     *
+     * @param time
+     *            the time to request data for
+     * @param fromCacheOnly
+     *            true to only get the data if it's already cached and to do
+     *            nothing otherwise, false to trigger a request for the data if
+     *            it's not yet cached
+     * @return the data if it's immediately available, otherwise null
+     */
+    protected List<GeneralGridData> requestData(DataTime time,
+            boolean fromCacheOnly) {
         synchronized (requestRunner) {
             List<GeneralGridData> data = this.dataMap.get(time);
             if (data == null) {
-                data = requestRunner.requestData(time, pdoMap.get(time));
+                data = requestRunner.requestData(time, pdoMap.get(time),
+                        fromCacheOnly);
                 if (data != null) {
                     data = mergeData(data);
-                    this.dataMap.put(time, data);
+                    cacheData(time, data);
                 }
             }
             return data;
         }
+    }
+
+    protected void cacheData(DataTime time, List<GeneralGridData> data) {
+        this.dataMap.put(time, data);
     }
 
     /**
@@ -1173,12 +1198,11 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
     }
 
     /**
-     * Reset renderables and any other data caches, data will be rerequested
+     * Reset renderables and any other data caches, data will be re-requested
      * next time it is needed.
-     *
      */
     protected void clearRequestedData() {
-        requestRunner.stopAndClear();
+        requestRunner.clearRequests();
         synchronized (renderableMap) {
             for (List<IRenderable> renderableList : renderableMap.values()) {
                 for (IRenderable renderable : renderableList) {
@@ -1188,6 +1212,9 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
             renderableMap.clear();
         }
         dataMap.clear();
+        if (getStatus() == ResourceStatus.DISPOSED) {
+            pdoMap.clear();
+        }
     }
 
     protected List<PluginDataObject> getCurrentPluginDataObjects() {

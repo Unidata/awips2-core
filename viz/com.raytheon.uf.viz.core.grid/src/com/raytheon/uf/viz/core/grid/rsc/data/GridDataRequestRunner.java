@@ -22,6 +22,7 @@ package com.raytheon.uf.viz.core.grid.rsc.data;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.status.IPerformanceStatusHandler;
@@ -32,6 +33,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.DataTime;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.grid.rsc.AbstractGridResource;
+import com.raytheon.uf.viz.core.rsc.AbstractVizResource.ResourceStatus;
 
 /**
  *
@@ -53,6 +55,8 @@ import com.raytheon.uf.viz.core.grid.rsc.AbstractGridResource;
  * May 14, 2015 4079       bsteffen    Move to core.grid
  * Aug 31, 2021 8651       njensen     Added method isScheduled(DataTime)
  * Jan 26, 2022 8741       njensen     Added performance logging
+ * Dec 20, 2023 2036519    mapeters    Prevent requesting data for disposed resources,
+ *                                     add fromCacheOnly arg to requestData()
  *
  * </pre>
  *
@@ -99,9 +103,9 @@ public class GridDataRequestRunner {
 
     }
 
-    private AbstractGridResource<?> resource;
+    private final AbstractGridResource<?> resource;
 
-    private List<GridDataRequest> requests = new ArrayList<>();
+    private final List<GridDataRequest> requests = new ArrayList<>();
 
     public GridDataRequestRunner(AbstractGridResource<?> resource) {
         this.resource = resource;
@@ -162,35 +166,55 @@ public class GridDataRequestRunner {
         return null;
     }
 
+    public List<GeneralGridData> requestData(DataTime time,
+            List<PluginDataObject> pdos) {
+        return requestData(time, pdos, false);
+    }
+
     /**
+     * Request data for the given time and PDOs.
+     *
      * @param time
      * @param pdos
+     * @param fromCacheOnly
+     *            true to only get the data if it's already cached and to do
+     *            nothing otherwise, false to trigger a request for the data if
+     *            it's not yet cached
      * @return null if no requests matching time have been fulfilled
      */
     public List<GeneralGridData> requestData(DataTime time,
-            List<PluginDataObject> pdos) {
-        GridDataRequest request = new GridDataRequest(time, pdos);
+            List<PluginDataObject> pdos, boolean fromCacheOnly) {
+        GridDataRequest request = null;
         synchronized (requests) {
+            if (resource.getStatus() == ResourceStatus.DISPOSED) {
+                return null;
+            }
             Iterator<GridDataRequest> itr = requests.iterator();
             while (itr.hasNext()) {
                 GridDataRequest r = itr.next();
                 if (r.time.equals(time)) {
-                    itr.remove();
                     if (r.gridData != null) {
+                        itr.remove();
                         return r.gridData;
-                    } else if ((r.pdos == null) && (pdos == null)) {
-                        request = r;
-                    } else if ((r.pdos != null) && r.pdos.equals(pdos)) {
-                        request = r;
+                    } else if (!fromCacheOnly) {
+                        itr.remove();
+                        if (Objects.equals(r.pdos, pdos)) {
+                            request = r;
+                        }
                     }
                 }
             }
-            requests.add(0, request);
-            if ((request.exception != null) && !request.exceptionHandled) {
-                handleExceptions();
-            }
-            if (request.shouldRequest()) {
-                GridDataRequestJobPool.schedule(this);
+            if (!fromCacheOnly) {
+                if (request == null) {
+                    request = new GridDataRequest(time, pdos);
+                }
+                requests.add(0, request);
+                if ((request.exception != null) && !request.exceptionHandled) {
+                    handleExceptions();
+                }
+                if (request.shouldRequest()) {
+                    GridDataRequestJobPool.schedule(this);
+                }
             }
         }
         return null;
@@ -271,7 +295,7 @@ public class GridDataRequestRunner {
         }
     }
 
-    public void stopAndClear() {
+    public void clearRequests() {
         synchronized (requests) {
             requests.clear();
         }

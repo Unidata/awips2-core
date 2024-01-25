@@ -2,7 +2,7 @@
 <feature
       id="com.raytheon.uf.edex.foss.org.apache.activemq.feature"
       label="org.apache.activemq Feature"
-      version="5.15.14"
+      version="5.18.3"
       provider-name="RAYTHEON">
 
    <description url="http://www.example.com/description">
@@ -21,6 +21,6 @@
          id="org.apache.activemq"
          download-size="0"
          install-size="0"
-         version="5.15.14"/>
+         version="5.18.3"/>
 
 </feature>
