@@ -16,7 +16,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.common.units;
+package com.raytheon.uf.common.units.indriya;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
@@ -27,8 +27,8 @@ import tech.units.indriya.function.DefaultNumberSystem;
 /**
  * Custom number system for the indriya units library to use. This tweaks the
  * default number system with a couple performance enhancements that were
- * specifically noticed to help speed up the unit conversions in
- * RadarRequestableData when loading radial velocity as grid data.
+ * specifically noticed to help speed up unit conversions when loading radial
+ * velocity as grid data, and goes-r Day Convection data.
  *
  * <pre>
  *
@@ -38,6 +38,8 @@ import tech.units.indriya.function.DefaultNumberSystem;
  * ------------ ---------- ----------- --------------------------
  * Mar 14, 2023 2031675    mapeters    Initial creation
  * Dec 20, 2023 2036519    mapeters    Override multiply()
+ * Feb 20, 2024 2036778    mapeters    Simplify basic operations for performance,
+ *                                     move to indriya subpackage
  *
  * </pre>
  *
@@ -69,23 +71,26 @@ public class CustomNumberSystem extends DefaultNumberSystem {
 
     @Override
     public Number multiply(Number x, Number y) {
-        if (isNaN(x) || isNaN(y)) {
-            /*
-             * The super method throws a NumberFormatException with NaNs, and
-             * catching the exceptions is slow.
-             *
-             * Indriya intentionally does not support NaN as discussed in this
-             * issue: https://github.com/unitsofmeasurement/indriya/issues/287
-             */
-            return Float.NaN;
-        }
-
-        return super.multiply(x, y);
+        // Simplified for performance and to prevent exceptions with NaNs
+        return x.doubleValue() * y.doubleValue();
     }
 
-    private static boolean isNaN(Number number) {
-        return (number instanceof Double && ((Double) number).isNaN())
-                || (number instanceof Float && ((Float) number).isNaN());
+    @Override
+    public Number add(Number x, Number y) {
+        // Simplified for performance and to prevent exceptions with NaNs
+        return x.doubleValue() + y.doubleValue();
+    }
+
+    @Override
+    public Number divide(Number x, Number y) {
+        // Simplified for performance and to prevent exceptions with NaNs
+        return x.doubleValue() / y.doubleValue();
+    }
+
+    @Override
+    public Number subtract(Number x, Number y) {
+        // Simplified for performance and to prevent exceptions with NaNs
+        return x.doubleValue() - y.doubleValue();
     }
 
     /**
