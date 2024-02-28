@@ -43,7 +43,12 @@
     </bean>
 
     <bean
-        class="com.raytheon.uf.common.units.CustomNumberSystem"
+        class="com.raytheon.uf.common.units.indriya.CustomNumberSystem"
         factory-method="setAsCurrentNumberSystem">
+    </bean>
+
+    <bean
+        class="com.raytheon.uf.common.units.indriya.CustomConverterCompositionHandler"
+        factory-method="setAsConverterCompositionHandler">
     </bean>
 </beans>
