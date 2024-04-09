@@ -19,7 +19,7 @@ Require-Bundle: org.apache.camel,
  com.raytheon.uf.common.comm,
  com.raytheon.uf.common.json,
  com.raytheon.uf.common.jms,
- javax.activation
+ jakarta.activation
 Export-Package: com.raytheon.uf.edex.esb.camel,
  com.raytheon.uf.edex.esb.camel.context,
  com.raytheon.uf.edex.esb.camel.jms

@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <feature
-      id="com.raytheon.uf.edex.foss.javax.activation.feature"
-      label="javax.activation Feature"
-      version="1.2.2"
+      id="com.raytheon.uf.edex.foss.jakarta.activation.feature"
+      label="jakarta.activation Feature"
+      version="2.1.3"
       provider-name="RAYTHEON">
 
    <description url="http://www.example.com/description">
@@ -18,9 +18,9 @@
    </license>
 
    <plugin
-         id="javax.activation"
+         id="jakarta.activation"
          download-size="0"
          install-size="0"
-         version="1.2.2"/>
+         version="2.1.3"/>
 
 </feature>
