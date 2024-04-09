@@ -19,8 +19,8 @@
  **/
 package com.raytheon.uf.viz.personalities.cave.presentation;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import javax.inject.Inject;
 
 import org.eclipse.e4.core.services.events.IEventBroker;

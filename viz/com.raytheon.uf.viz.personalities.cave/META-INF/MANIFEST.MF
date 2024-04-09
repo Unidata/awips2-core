@@ -28,7 +28,7 @@ Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.e4.core.di,
  org.eclipse.emf.ecore,
  org.slf4j,
- javax.annotation,
+ jakarta.annotation,
  javax.inject
 Bundle-RequiredExecutionEnvironment: JavaSE-11
 Bundle-ActivationPolicy: lazy
