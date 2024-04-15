@@ -6,7 +6,7 @@ Bundle-Version: 1.19.0.qualifier
 Bundle-Vendor: Raytheon
 Bundle-RequiredExecutionEnvironment: JavaSE-11
 Require-Bundle: org.apache.camel,
- javax.jms,
+ jakarta.jms,
  com.raytheon.edex.common,
  org.apache.http,
  com.raytheon.uf.common.localization,

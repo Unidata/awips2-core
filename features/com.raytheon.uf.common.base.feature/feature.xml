@@ -215,7 +215,7 @@
          unpack="false"/>
 
    <plugin
-         id="javax.jms"
+         id="jakarta.jms"
          download-size="0"
          install-size="0"
          version="0.0.0"/>

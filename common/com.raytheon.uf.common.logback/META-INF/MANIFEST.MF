@@ -7,7 +7,7 @@ Bundle-Vendor: RAYTHEON
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Eclipse-BuddyPolicy: registered
 Require-Bundle: ch.qos.logback,
- javax.jms,
+ jakarta.jms,
  org.slf4j,
  com.raytheon.uf.common.util,
  org.apache.commons.io
