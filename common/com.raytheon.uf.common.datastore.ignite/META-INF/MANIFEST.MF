@@ -4,7 +4,7 @@ Bundle-Name: Ignite DataStore
 Bundle-SymbolicName: com.raytheon.uf.common.datastore.ignite
 Bundle-Version: 1.20.0.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-RequiredExecutionEnvironment: JavaSE-17
 Require-Bundle: com.raytheon.uf.common.datastorage,
  org.apache.ignite,
  com.raytheon.uf.common.serialization,
