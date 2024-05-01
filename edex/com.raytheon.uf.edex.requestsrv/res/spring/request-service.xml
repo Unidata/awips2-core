@@ -18,10 +18,10 @@
         </restConfiguration>
 
         <rest path="{{edex.http.server.path}}">
-            <post uri="/{format}">
+            <post path="/{format}">
                 <to uri="bean:httpServiceExecutor?method=execute(${body}, ${header.format}, ${in.header.accept-encoding}, ${in.header.CamelHttpServletResponse})" />
             </post>
-            <post uri="/">
+            <post path="/">
                 <to uri="bean:httpServiceExecutor?method=execute(${body}, ${in.header.content-type}, ${in.header.accept-encoding}, ${in.header.CamelHttpServletResponse})" />
             </post>
         </rest>
