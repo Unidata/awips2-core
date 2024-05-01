@@ -30,16 +30,16 @@
                 <resource>
                     <loadProperties>
                         <capabilities>
-                            <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true"
-                                outlineWidth="2" />
-                            <capability xsi:type="colorableCapability" colorAsString="#cc5000" />
-                            <capability xsi:type="densityCapability" density="0.2"/>
+                            <capability xsi:type="colorableCapability"
+                                colorAsString="#9b9b9b" />
+                            <capability xsi:type="labelableCapability"
+                                labelField="name" />
                         </capabilities>
                     </loadProperties>
                     <properties isMapLayer="true" />
-                    <resourceData xsi:type="dbMapResourceData">
-                        <table>mapdata.interstate</table>
-                        <mapName>Interstates</mapName>
+                    <resourceData xsi:type="lpiResourceData">
+                        <filename>airport.lpi</filename>
+                        <mapName>All Airports</mapName>
                     </resourceData>
                 </resource>
             </descriptor>

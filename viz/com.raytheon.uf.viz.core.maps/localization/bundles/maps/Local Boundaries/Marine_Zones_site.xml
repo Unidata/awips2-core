@@ -30,16 +30,22 @@
                 <resource>
                     <loadProperties>
                         <capabilities>
-                            <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true"
-                                outlineWidth="2" />
-                            <capability xsi:type="colorableCapability" colorAsString="#cc5000" />
-                            <capability xsi:type="densityCapability" density="0.2"/>
+                            <capability xsi:type="outlineCapability"
+                                lineStyle="SOLID" />
+                            <capability xsi:type="colorableCapability"
+                                colorAsString="#9b9b9b" />
+                            <capability xsi:type="labelableCapability"
+                                labelField="id" />
                         </capabilities>
                     </loadProperties>
                     <properties isMapLayer="true" />
                     <resourceData xsi:type="dbMapResourceData">
-                        <table>mapdata.interstate</table>
-                        <mapName>Interstates</mapName>
+                        <table>mapdata.marinezones</table>
+                        <constraint>position('${site}' in wfo) 
+                        in (select * from generate_series(1,char_length(wfo),3))</constraint>
+                        <column name="wfo" />
+                        <column name="EDITAREA" expression="id" />
+                        <mapName>Coastal Marine Zones ${site}</mapName>
                     </resourceData>
                 </resource>
             </descriptor>

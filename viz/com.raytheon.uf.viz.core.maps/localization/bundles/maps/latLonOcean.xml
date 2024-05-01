@@ -50,7 +50,7 @@
                             <properties isMapLayer="true" />
                             <resourceData xsi:type="dbMapResourceData">
                                 <table>mapdata.latlon10</table>
-                                <mapName>Lat/Lon 10 over Ocean</mapName>
+                                <mapName>Latitude/Longitude</mapName>
                             </resourceData>
                         </resource>
                         <resource>
@@ -65,7 +65,7 @@
                                 <filename>latlon10.lpi</filename>
                             </resourceData>
                         </resource>
-                        <mapName>Lat/Lon 10 over Ocean</mapName>
+                        <mapName>Latitude/Longitude</mapName>
                     </resourceData>
                 </resource>
             </descriptor>

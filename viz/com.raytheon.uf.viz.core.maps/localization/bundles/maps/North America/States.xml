@@ -38,8 +38,8 @@
                     </loadProperties>
                     <properties isMapLayer="true" />
                     <resourceData xsi:type="dbMapResourceData">
-                        <table>mapdata.lowaltitude</table>
-                        <mapName>Low Altitude Routes</mapName>
+                        <table>mapdata.states</table>
+                        <mapName>United States</mapName>
                     </resourceData>
                 </resource>
             </descriptor>

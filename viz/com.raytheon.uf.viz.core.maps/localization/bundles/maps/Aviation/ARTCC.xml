@@ -30,16 +30,16 @@
                 <resource>
                     <loadProperties>
                         <capabilities>
-                            <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true"
-                                outlineWidth="2" />
-                            <capability xsi:type="colorableCapability" colorAsString="#cc5000" />
-                            <capability xsi:type="densityCapability" density="0.2"/>
+                            <capability xsi:type="outlineCapability"
+                                lineStyle="SOLID" />
+                            <capability xsi:type="colorableCapability"
+                                colorAsString="#FFC0CB" />
                         </capabilities>
                     </loadProperties>
                     <properties isMapLayer="true" />
                     <resourceData xsi:type="dbMapResourceData">
-                        <table>mapdata.interstate</table>
-                        <mapName>Interstates</mapName>
+                        <table>mapdata.artcc</table>
+                        <mapName>Air Route Traffic Control Centers (ARTCC)</mapName>
                     </resourceData>
                 </resource>
             </descriptor>

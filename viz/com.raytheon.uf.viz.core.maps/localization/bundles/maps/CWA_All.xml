@@ -33,7 +33,7 @@
                             <capability xsi:type="outlineCapability"
                                 lineStyle="SOLID" />
                             <capability xsi:type="colorableCapability"
-                                colorAsString="#9b9b9b" />
+                                colorAsString="#85ADAD" />
                             <capability xsi:type="labelableCapability"
                                 labelField="CWA" />
                         </capabilities>
