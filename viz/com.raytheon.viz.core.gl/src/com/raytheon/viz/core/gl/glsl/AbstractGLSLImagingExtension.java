@@ -52,7 +52,7 @@ public abstract class AbstractGLSLImagingExtension extends
      */
     @Override
     public int getCompatibilityValue(IGLTarget target) {
-        if (GLCapabilities.getInstance(target.getGl()).cardSupportsShaders
+        if (GLCapabilities.getInstance(target.getGl().getGL2()).cardSupportsShaders
                 && GLTarget.FORCE_NO_SHADER == false) {
             return Compatibilty.ENHANCED_TARGET_COMPATIBLE;
         } else {

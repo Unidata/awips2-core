@@ -19,8 +19,8 @@
  **/
 package com.raytheon.viz.core.gl.internal;
 
-import javax.media.opengl.GL;
-import javax.media.opengl.glu.GLU;
+import com.jogamp.opengl.GL2;
+import com.jogamp.opengl.glu.gl2.GLUgl2;
 
 import org.eclipse.swt.graphics.Rectangle;
 
@@ -37,7 +37,7 @@ import com.raytheon.viz.core.gl.IGLTarget;
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * 
+ * Jan 18, 2023			srcarter@ucar   Bring over MJ changes for GL2
  * 
  * </pre>
  * 
@@ -99,20 +99,20 @@ public class GLView2D extends AbstractView {
     @Override
     public void setupView(IGraphicsTarget target) {
         IGLTarget glTarget = asIGLTarget(target);
-        GL gl = glTarget.getGl();
-        GLU glu = glTarget.getGlu();
+        GL2 gl = glTarget.getGl().getGL2();
+        GLUgl2 glu = glTarget.getGlu();
 
         boolean release = glTarget.makeContextCurrent();
-        gl.glMatrixMode(GL.GL_PROJECTION);
+        gl.glMatrixMode(GL2.GL_PROJECTION);
         gl.glLoadIdentity();
         // We "flip" y-axis for sanity reasons
         glu.gluOrtho2D(this.extent.getMinX(), this.extent.getMaxX(),
                 this.extent.getMaxY(), this.extent.getMinY());
 
-        gl.glMatrixMode(GL.GL_MODELVIEW);
+        gl.glMatrixMode(GL2.GL_MODELVIEW);
         gl.glLoadIdentity();
 
-        gl.glDisable(GL.GL_DEPTH_TEST);
+        gl.glDisable(GL2.GL_DEPTH_TEST);
         if (release) {
             glTarget.releaseContext();
         }

@@ -23,7 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
 
 import org.eclipse.swt.graphics.RGB;
 import org.geotools.coverage.grid.GeneralGridGeometry;
@@ -51,6 +51,7 @@ import org.locationtech.jts.geom.Polygon;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Sep 3, 2011            bsteffen     Initial creation
+ * Jan 18, 2023			srcarter@ucar  Bring over MJ changes for GL2
  * 
  * </pre>
  * 
@@ -97,18 +98,18 @@ public class GLColormapShadedShapeExtension extends
             throws VizException {
         if (shape instanceof GLColormapShadedShape) {
             GLColormapShadedShape glBaseShape = (GLColormapShadedShape) shape;
-            GL gl = target.getGl();
-            gl.glPolygonMode(GL.GL_BACK, GL.GL_FILL);
-            gl.glEnableClientState(GL.GL_VERTEX_ARRAY);
-            gl.glEnable(GL.GL_BLEND);
+            GL2 gl = target.getGl().getGL2();
+            gl.glPolygonMode(GL2.GL_BACK, GL2.GL_FILL);
+            gl.glEnableClientState(GL2.GL_VERTEX_ARRAY);
+            gl.glEnable(GL2.GL_BLEND);
             gl.glBlendColor(1.0f, 1.0f, 1.0f, alpha);
-            gl.glBlendFunc(GL.GL_CONSTANT_ALPHA, GL.GL_ONE_MINUS_CONSTANT_ALPHA);
+            gl.glBlendFunc(GL2.GL_CONSTANT_ALPHA, GL2.GL_ONE_MINUS_CONSTANT_ALPHA);
 
             glBaseShape.paint(gl, colors, brightness, alpha);
 
-            gl.glDisableClientState(GL.GL_VERTEX_ARRAY);
-            gl.glDisable(GL.GL_BLEND);
-            gl.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
+            gl.glDisableClientState(GL2.GL_VERTEX_ARRAY);
+            gl.glDisable(GL2.GL_BLEND);
+            gl.glBlendFunc(GL2.GL_SRC_ALPHA, GL2.GL_ONE_MINUS_SRC_ALPHA);
             return;
         }
         String clazz = "null";
@@ -161,7 +162,7 @@ public class GLColormapShadedShapeExtension extends
             }
         }
 
-        protected synchronized void paint(GL gl, Map<Object, RGB> colors,
+        protected synchronized void paint(GL2 gl, Map<Object, RGB> colors,
                 float brightness, float alpha) {
             if (!polygons.isEmpty()) {
                 compile();
@@ -176,12 +177,12 @@ public class GLColormapShadedShapeExtension extends
             vertexBuffer.rewind();
 
             if (fillPattern != null) {
-                gl.glEnable(GL.GL_POLYGON_STIPPLE);
+                gl.glEnable(GL2.GL_POLYGON_STIPPLE);
 
                 gl.glPolygonStipple(fillPattern, 0);
             }
 
-            gl.glVertexPointer(2, GL.GL_FLOAT, 0, vertexBuffer);
+            gl.glVertexPointer(2, GL2.GL_FLOAT, 0, vertexBuffer);
             if (tessellate) {
                 int colorKeysIndex = 0;
                 int start = 0;
@@ -190,7 +191,7 @@ public class GLColormapShadedShapeExtension extends
                     int length = polygonLengthBuffer.get();
                     Object colorKey = colorKeys.get(colorKeysIndex++);
                     setColorToPaint(gl, colors.get(colorKey), brightness);
-                    gl.glDrawArrays(GL.GL_TRIANGLES, start, length);
+                    gl.glDrawArrays(GL2.GL_TRIANGLES, start, length);
                     start += length;
                 }
             } else {
@@ -200,18 +201,18 @@ public class GLColormapShadedShapeExtension extends
                 while (contourLengthBuffer.hasRemaining()) {
                     Object colorKey = colorKeys.get(colorKeysIndex++);
                     setColorToPaint(gl, colors.get(colorKey), brightness);
-                    gl.glDrawArrays(GL.GL_POLYGON, contourStartBuffer.get(),
+                    gl.glDrawArrays(GL2.GL_POLYGON, contourStartBuffer.get(),
                             contourLengthBuffer.get());
                 }
             }
 
             if (fillPattern != null) {
-                gl.glDisable(GL.GL_POLYGON_STIPPLE);
+                gl.glDisable(GL2.GL_POLYGON_STIPPLE);
             }
 
         }
 
-        private void setColorToPaint(GL gl, RGB color, float brightness) {
+        private void setColorToPaint(GL2 gl, RGB color, float brightness) {
             float red = 0.0f;
             float green = 0.0f;
             float blue = 0.0f;

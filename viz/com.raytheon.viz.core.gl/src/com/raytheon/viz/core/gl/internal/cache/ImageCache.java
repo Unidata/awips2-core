@@ -20,7 +20,7 @@
 
 package com.raytheon.viz.core.gl.internal.cache;
 
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
 
 import com.raytheon.uf.common.util.cache.LRUCache;
 import com.raytheon.uf.viz.core.Activator;
@@ -40,6 +40,7 @@ import com.raytheon.viz.core.gl.GLDisposalManager.GLDisposer;
  *                                  int overflow when using cache size > 1GB
  * Jan 21, 2020  73572    tjensen   Allow sizing of heap memory and restaging of
  *                                  textures from cache
+ * Jan 18, 2023		 srcarter@ucar  MJ change for GL2
  *
  * </pre>
  *
@@ -151,7 +152,7 @@ public class ImageCache extends LRUCache<Object, IImageCacheable>
         } else if (this == textureCache) {
             new GLDisposer() {
                 @Override
-                protected void dispose(GL gl) {
+                protected void dispose(GL2 gl) {
                     i.disposeTexture(sizeManagement);
                 }
             }.dispose();

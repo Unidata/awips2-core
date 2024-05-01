@@ -19,7 +19,7 @@
  **/
 package com.raytheon.viz.core.gl.objects;
 
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
 
 /**
  * 
@@ -33,6 +33,7 @@ import javax.media.opengl.GL;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Feb 17, 2012            bsteffen     Initial creation
+ * Jan 18, 2023			srcarter@ucar   MJ changes for GL2
  * 
  * </pre>
  * 
@@ -63,21 +64,21 @@ public class GLRenderBuffer extends GLIdWrapper {
     }
 
     @Override
-    protected void genId(GL gl, int[] arr) {
-        gl.glGenRenderbuffersEXT(1, arr, 0);
+    protected void genId(GL2 gl, int[] arr) {
+        gl.glGenRenderbuffers(1, arr, 0);
     }
 
     @Override
-    protected void deleteId(GL gl, int[] arr) {
-        gl.glDeleteRenderbuffersEXT(1, arr, 0);
+    protected void deleteId(GL2 gl, int[] arr) {
+        gl.glDeleteRenderbuffers(1, arr, 0);
     }
 
-    public void bind(GL gl) {
-        gl.glBindRenderbufferEXT(GL.GL_RENDERBUFFER_EXT, id);
+    public void bind(GL2 gl) {
+        gl.glBindRenderbuffer(GL2.GL_RENDERBUFFER, id);
     }
 
-    public void createStorage(GL gl, int internalFormat, int width, int height) {
-        gl.glRenderbufferStorageEXT(GL.GL_RENDERBUFFER_EXT, internalFormat,
+    public void createStorage(GL2 gl, int internalFormat, int width, int height) {
+        gl.glRenderbufferStorage(GL2.GL_RENDERBUFFER, internalFormat,
                 width, height);
     }
 

@@ -20,7 +20,7 @@
 package com.raytheon.viz.core.gl.images;
 
 import javax.measure.Unit;
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
 
 import com.raytheon.uf.common.colormap.image.ColorMapData.ColorMapDataType;
 import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
@@ -42,6 +42,7 @@ import com.raytheon.uf.viz.core.exception.VizException;
  * Mar 21, 2013 1806       bsteffen    Update GL mosaicing to use dynamic data
  *                                     format for offscreen textures.
  * Oct 16, 2013 2333       mschenke    Moved shared logic into base class
+ * Jan 18, 2023			srcarter@ucar  Bring over MJ changes for GL2
  * 
  * </pre>
  * 
@@ -67,7 +68,7 @@ public class GLColormappedImage extends AbstractGLColormappedImage {
      * .GLContext)
      */
     @Override
-    public void loadTexture(GL gl) throws VizException {
+    public void loadTexture(GL2 gl) throws VizException {
         super.loadTexture(gl);
         // No need to keep around texture data after loading
         data.disposeTextureData();

@@ -19,7 +19,7 @@
  **/
 package com.raytheon.viz.core.gl.objects;
 
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
 
 /**
  * 
@@ -33,6 +33,7 @@ import javax.media.opengl.GL;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Feb 17, 2012            bsteffen     Initial creation
+ * Jan 18, 2023			srcarter@ucar   MJ changes for GL2
  * 
  * </pre>
  * 
@@ -63,13 +64,13 @@ public class GLTextureObject extends GLIdWrapper {
     }
 
     @Override
-    protected void genId(GL gl, int[] arr) {
+    protected void genId(GL2 gl, int[] arr) {
         gl.glGenTextures(1, arr, 0);
 
     }
 
     @Override
-    protected void deleteId(GL gl, int[] arr) {
+    protected void deleteId(GL2 gl, int[] arr) {
         gl.glDeleteTextures(1, arr, 0);
     }
 
@@ -81,7 +82,7 @@ public class GLTextureObject extends GLIdWrapper {
      *            either GL_TEXTURE_1D, GL_TEXTURE_2D, GL_TEXTURE_3D, or
      *            GL_TEXTURE_CUBE_MAP.
      */
-    public void bind(GL gl, int target) {
+    public void bind(GL2 gl, int target) {
         gl.glBindTexture(target, id);
     }
 

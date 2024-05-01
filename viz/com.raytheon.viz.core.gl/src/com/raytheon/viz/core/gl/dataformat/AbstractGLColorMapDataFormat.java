@@ -21,7 +21,7 @@ package com.raytheon.viz.core.gl.dataformat;
 
 import java.nio.Buffer;
 
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
 
 import com.raytheon.uf.common.util.BufferUtil;
 
@@ -38,6 +38,7 @@ import com.raytheon.uf.common.util.BufferUtil;
  * Oct 16, 2013  2333     mschenke    Removed Buffer from GLColorMapData
  * Nov 18, 2013  2543     bsteffen    Add more buffer compatibility checks.
  * Apr 07, 2014  2968     njensen     Duplicate buffer in formatForGL()
+ * Jan 18, 2023			srcarter@ucar Bring over changes from MJ for GL2
  * 
  * </pre>
  * 
@@ -50,7 +51,7 @@ public abstract class AbstractGLColorMapDataFormat {
     /**
      * Return the texture's data type
      * 
-     * Example: GL.GL_FLOAT
+     * Example: GL2.GL_FLOAT
      * 
      * @return the data type of the texture
      * 
@@ -62,7 +63,7 @@ public abstract class AbstractGLColorMapDataFormat {
      * 
      * This is the format of the texture after driver manipulation
      * 
-     * Example: GL.GL_LUMINANCE8
+     * Example: GL2.GL_LUMINANCE8
      * 
      * @return the texture internal format
      */
@@ -197,12 +198,12 @@ public abstract class AbstractGLColorMapDataFormat {
     /**
      * Return the texture's format
      * 
-     * Example: GL.GL_LUMINANCE
+     * Example: GL2.GL_LUMINANCE
      * 
      * @return the texture format
      */
     public int getTextureFormat() {
-        return GL.GL_LUMINANCE;
+        return GL2.GL_LUMINANCE;
     }
 
     /**

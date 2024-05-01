@@ -23,7 +23,7 @@ import java.nio.IntBuffer;
 import java.util.HashSet;
 import java.util.Set;
 
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
 
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.viz.core.gl.GLGeometryObject2D.State;
@@ -40,6 +40,7 @@ import com.raytheon.viz.core.gl.GLGeometryObject2D.State;
  * ------------ ---------- ----------- --------------------------
  * Jun 07, 2011            njensen     Initial creation
  * Apr 15, 2014 2956       njensen     Fixed documentation
+ * Jan 18, 2023			srcarter@ucar  Bring over MJ changes for GL2
  * 
  * </pre>
  * 
@@ -56,7 +57,7 @@ public class GLGeometryPainter {
      * @param geoms
      * @throws VizException
      */
-    public static void paintGeometries(GL gl, GLGeometryObject2D... geoms)
+    public static void paintGeometries(GL2 gl, GLGeometryObject2D... geoms)
             throws VizException {
         State state = State.INVALID;
         Set<State> states = new HashSet<State>();
@@ -93,24 +94,24 @@ public class GLGeometryPainter {
             // A not compiled buffer, still able to add segments
             for (GLGeometryObject2D geom : geoms) {
                 switch (geom.data.coordType) {
-                case GL.GL_VERTEX_ARRAY: {
-                    gl.glVertexPointer(geom.pointsPerCoordinate(), GL.GL_FLOAT,
+                case GL2.GL_VERTEX_ARRAY: {
+                    gl.glVertexPointer(geom.pointsPerCoordinate(), GL2.GL_FLOAT,
                             0, geom.coordBuffer.getBuffer().rewind());
                     break;
                 }
-                case GL.GL_TEXTURE_COORD_ARRAY: {
+                case GL2.GL_TEXTURE_COORD_ARRAY: {
                     gl.glTexCoordPointer(geom.pointsPerCoordinate(),
-                            GL.GL_FLOAT, 0, geom.coordBuffer.getBuffer()
+                            GL2.GL_FLOAT, 0, geom.coordBuffer.getBuffer()
                                     .rewind());
                     break;
                 }
-                case GL.GL_NORMAL_ARRAY: {
-                    gl.glNormalPointer(GL.GL_FLOAT, 0, geom.coordBuffer
+                case GL2.GL_NORMAL_ARRAY: {
+                    gl.glNormalPointer(GL2.GL_FLOAT, 0, geom.coordBuffer
                             .getBuffer().rewind());
                     break;
                 }
-                case GL.GL_COLOR_ARRAY: {
-                    gl.glColorPointer(geom.pointsPerCoordinate(), GL.GL_FLOAT,
+                case GL2.GL_COLOR_ARRAY: {
+                    gl.glColorPointer(geom.pointsPerCoordinate(), GL2.GL_FLOAT,
                             0, geom.coordBuffer.getBuffer().rewind());
                     break;
                 }
@@ -140,29 +141,29 @@ public class GLGeometryPainter {
                     throw new VizException(
                             "Could not paint geometry, VBO not set!");
                 }
-                geom.vbo.bind(gl, GL.GL_ARRAY_BUFFER);
+                geom.vbo.bind(gl, GL2.GL_ARRAY_BUFFER);
                 switch (geom.data.coordType) {
-                case GL.GL_VERTEX_ARRAY: {
-                    gl.glVertexPointer(geom.pointsPerCoordinate(), GL.GL_FLOAT,
+                case GL2.GL_VERTEX_ARRAY: {
+                    gl.glVertexPointer(geom.pointsPerCoordinate(), GL2.GL_FLOAT,
                             0, 0);
                     break;
                 }
-                case GL.GL_TEXTURE_COORD_ARRAY: {
+                case GL2.GL_TEXTURE_COORD_ARRAY: {
                     gl.glTexCoordPointer(geom.pointsPerCoordinate(),
-                            GL.GL_FLOAT, 0, 0);
+                            GL2.GL_FLOAT, 0, 0);
                     break;
                 }
-                case GL.GL_NORMAL_ARRAY: {
-                    gl.glNormalPointer(GL.GL_FLOAT, 0, 0);
+                case GL2.GL_NORMAL_ARRAY: {
+                    gl.glNormalPointer(GL2.GL_FLOAT, 0, 0);
                     break;
                 }
-                case GL.GL_COLOR_ARRAY: {
-                    gl.glColorPointer(geom.pointsPerCoordinate(), GL.GL_FLOAT,
+                case GL2.GL_COLOR_ARRAY: {
+                    gl.glColorPointer(geom.pointsPerCoordinate(), GL2.GL_FLOAT,
                             0, 0);
                     break;
                 }
                 }
-                gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0);
+                gl.glBindBuffer(GL2.GL_ARRAY_BUFFER, 0);
             }
             for (GLGeometryObject2D geom : geoms) {
                 if (geom.data.manageIndicies) {
@@ -202,7 +203,7 @@ public class GLGeometryPainter {
      * @param count
      * @throws VizException
      */
-    private static void drawArrays(GL gl, int mode, int first, int count)
+    private static void drawArrays(GL2 gl, int mode, int first, int count)
             throws VizException {
         if (first > -1 && count > 0) {
             gl.glDrawArrays(mode, first, count);
@@ -213,7 +214,7 @@ public class GLGeometryPainter {
         }
     }
 
-    private static void multiDrawArrays(GL gl, int mode, IntBuffer first,
+    private static void multiDrawArrays(GL2 gl, int mode, IntBuffer first,
             IntBuffer count, int primcount) throws VizException {
         if (first.capacity() > 0 && count.capacity() > 0 && primcount > 0) {
             gl.glMultiDrawArrays(mode, first, count, primcount);

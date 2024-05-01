@@ -24,7 +24,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 
-import javax.media.opengl.glu.GLUtessellatorCallback;
+import com.jogamp.opengl.glu.GLUtessellatorCallback;
 
 import org.eclipse.swt.graphics.RGB;
 
@@ -39,6 +39,7 @@ import org.eclipse.swt.graphics.RGB;
  *    Date          Ticket#     Engineer    Description
  *    ------------	----------	-----------	--------------------------
  *    7/1/06                    chammack    Initial Creation.
+ *    1/18/23				srcarter@ucar   MJ change for jogamp
  * 
  * </pre>
  * 

@@ -22,7 +22,7 @@ package com.raytheon.viz.core.gl.dataformat;
 import java.nio.Buffer;
 import java.nio.ShortBuffer;
 
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
 
 /**
  * GL Unsigned short data format
@@ -34,6 +34,7 @@ import javax.media.opengl.GL;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Nov 23, 2011            mschenke     Initial creation
+ * Jan 18, 2023			srcarter@ucar	Bring over MJ changes for GL2
  * 
  * </pre>
  * 
@@ -51,7 +52,7 @@ public class GLUnsignedShortDataFormat extends GLShortDataFormat {
      */
     @Override
     public int getTextureType() {
-        return GL.GL_UNSIGNED_SHORT;
+        return GL2.GL_UNSIGNED_SHORT;
     }
 
     /*

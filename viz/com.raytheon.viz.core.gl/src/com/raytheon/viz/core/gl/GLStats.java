@@ -22,7 +22,7 @@ package com.raytheon.viz.core.gl;
 import java.nio.IntBuffer;
 import java.util.Date;
 
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
 
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.widgets.Shell;
@@ -49,6 +49,7 @@ import com.raytheon.viz.core.gl.internal.cache.ImageCache.CacheType;
  * Aug 18, 2014 3512       bclement     added no-shell version of printStats()
  * Jan 26, 2015 3970       bsteffen     Do not print non zero nvidia eviction on the first call.
  * Mar 03, 2015 4176       bsteffen     Handle exceptional cases without throwing exceptions.
+ * Jan 18, 2016 ----       mjames@ucar  Refactor for jogamp2 / osx
  * 
  * </pre>
  * 
@@ -111,7 +112,7 @@ public class GLStats {
      * 
      * @param gl
      */
-    public static void printStats(GL gl) {
+    public static void printStats(GL2 gl) {
         printStats(gl, null);
     }
 
@@ -122,7 +123,7 @@ public class GLStats {
      *            display shell used for notifying the user of continuous high
      *            memory usage.
      */
-    public static void printStats(GL gl, Shell sh) {
+    public static void printStats(GL2 gl, Shell sh) {
         /*
          * test both check freq and print freq, the check freq should be fairly
          * low so as soon as low memory conditions are reached we will report it
@@ -219,7 +220,7 @@ public class GLStats {
         return texPercent > MEM_PRINT_THRESHOLD_PERCENT;
     }
 
-    protected static boolean getNvidiaStats(GL gl, StringBuilder output) {
+    protected static boolean getNvidiaStats(GL2 gl, StringBuilder output) {
         if (gl.isExtensionAvailable(NVX_EXT_ID)) {
             IntBuffer tmp = IntBuffer.allocate(1);
 
@@ -290,7 +291,7 @@ public class GLStats {
     }
 
     // The ATI version is untested as I don't have an ATI GPU.
-    protected static boolean getAtiStats(GL gl, StringBuilder output) {
+    protected static boolean getAtiStats(GL2 gl, StringBuilder output) {
         if (gl.isExtensionAvailable(ATI_EXT_ID)) {
             IntBuffer tmp = IntBuffer.allocate(4);
             gl.glGetIntegerv(VBO_FREE_MEMORY_ATI, tmp);

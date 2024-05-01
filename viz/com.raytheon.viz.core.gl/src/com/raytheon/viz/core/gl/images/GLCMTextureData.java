@@ -19,7 +19,7 @@
  **/
 package com.raytheon.viz.core.gl.images;
 
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
 
 import com.raytheon.uf.common.colormap.image.ColorMapData.ColorMapDataType;
 import com.raytheon.uf.viz.core.exception.VizException;
@@ -42,6 +42,7 @@ import com.raytheon.viz.core.gl.objects.GLTextureObject;
  * Oct 16, 2013 2333       mschenke    Moved retrievable/Buffer parts out and
  *                                     into separate class.
  * Oct 23, 2013 2492       mschenke    Added support for 1D textures
+ * Jan 18, 2023			srcarter@ucar  Bring over MJ changes for GL2
  * 
  * </pre>
  * 
@@ -108,7 +109,7 @@ public class GLCMTextureData {
      * @return true if texture is loaded, false otherwise
      * @throws VizException
      */
-    public synchronized boolean loadTexture(GL gl) throws VizException {
+    public synchronized boolean loadTexture(GL2 gl) throws VizException {
         // Don't need to load if we are already loaded
         if (isLoaded()) {
             return true;
@@ -118,17 +119,17 @@ public class GLCMTextureData {
             return false;
         }
         int type = getTextureStorageType();
-        if (type == GL.GL_NONE) {
+        if (type == GL2.GL_NONE) {
             throw new VizException("Unsupported dimension size for texture");
         }
 
         tex = new GLTextureObject(this);
         tex.bind(gl, type);
 
-        gl.glTexParameteri(type, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP_TO_EDGE);
-        gl.glTexParameteri(type, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP_TO_EDGE);
-        gl.glTexParameteri(type, GL.GL_TEXTURE_MIN_FILTER, GL.GL_LINEAR);
-        gl.glTexParameteri(type, GL.GL_TEXTURE_MAG_FILTER, GL.GL_LINEAR);
+        gl.glTexParameteri(type, GL2.GL_TEXTURE_WRAP_S, GL2.GL_CLAMP_TO_EDGE);
+        gl.glTexParameteri(type, GL2.GL_TEXTURE_WRAP_T, GL2.GL_CLAMP_TO_EDGE);
+        gl.glTexParameteri(type, GL2.GL_TEXTURE_MIN_FILTER, GL2.GL_LINEAR);
+        gl.glTexParameteri(type, GL2.GL_TEXTURE_MAG_FILTER, GL2.GL_LINEAR);
 
         boolean changeScaleAndBias = isDataFormatScaled() && isDataFormatSigned();
         if (changeScaleAndBias) {
@@ -137,19 +138,19 @@ public class GLCMTextureData {
             // negative values. Adding a scale and bias remaps this from
             // 0 to 1, where 0 is the smallest negative number and 1 is
             // the largest positive number.
-            gl.glPixelTransferf(GL.GL_RED_SCALE, 0.5f);
-            gl.glPixelTransferf(GL.GL_RED_BIAS, 0.5f);
+            gl.glPixelTransferf(GL2.GL_RED_SCALE, 0.5f);
+            gl.glPixelTransferf(GL2.GL_RED_BIAS, 0.5f);
         }
 
-        if (type == GL.GL_TEXTURE_1D) {
+        if (type == GL2.GL_TEXTURE_1D) {
             createTexture1D(gl, type, getDimensionSize(0));
-        } else if (type == GL.GL_TEXTURE_2D) {
+        } else if (type == GL2.GL_TEXTURE_2D) {
             createTexture2D(gl, type, getDimensionSize(0), getDimensionSize(1));
         }
 
         if (changeScaleAndBias) {
-            gl.glPixelTransferf(GL.GL_RED_SCALE, 1.0f);
-            gl.glPixelTransferf(GL.GL_RED_BIAS, 0.0f);
+            gl.glPixelTransferf(GL2.GL_RED_SCALE, 1.0f);
+            gl.glPixelTransferf(GL2.GL_RED_BIAS, 0.0f);
         }
 
         return true;
@@ -165,7 +166,7 @@ public class GLCMTextureData {
      * @param w
      * @param h
      */
-    protected void createTexture2D(GL gl, int type, int w, int h) {
+    protected void createTexture2D(GL2 gl, int type, int w, int h) {
         // Allocate our space on the graphics card, no buffer to upload so it
         // will be filled with default values initially (0s)
         gl.glTexImage2D(type, 0, getTextureInternalFormat(), w, h, 0,
@@ -181,7 +182,7 @@ public class GLCMTextureData {
      * @param w
      * @param h
      */
-    protected void createTexture1D(GL gl, int type, int w) {
+    protected void createTexture1D(GL2 gl, int type, int w) {
         // Allocate our space on the graphics card, no buffer to upload so it
         // will be filled with default values initially (0s)
         gl.glTexImage1D(type, 0, getTextureInternalFormat(), w, 0,
@@ -306,7 +307,7 @@ public class GLCMTextureData {
     }
 
     /**
-     * The texture storage type of the data. Will return {@link GL#GL_NONE} if
+     * The texture storage type of the data. Will return {@link GL2.GL_NONE} if
      * unsupported dimension is detected
      * 
      * @return
@@ -314,11 +315,11 @@ public class GLCMTextureData {
     public int getTextureStorageType() {
         switch (data.getNumDimensions()) {
         case 1:
-            return GL.GL_TEXTURE_1D;
+            return GL2.GL_TEXTURE_1D;
         case 2:
-            return GL.GL_TEXTURE_2D;
+            return GL2.GL_TEXTURE_2D;
         default:
-            return GL.GL_NONE;
+            return GL2.GL_NONE;
         }
     }
 

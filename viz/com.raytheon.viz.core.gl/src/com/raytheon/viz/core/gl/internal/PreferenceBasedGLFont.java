@@ -26,7 +26,7 @@ import org.eclipse.swt.graphics.Point;
 
 import com.raytheon.uf.viz.core.drawables.IFont;
 import com.raytheon.viz.core.gl.IGLFont;
-import com.sun.opengl.util.j2d.TextRenderer;
+import com.jogamp.opengl.util.awt.TextRenderer;
 
 /**
  * GL font that is set by preferences page, listens for updates
@@ -39,6 +39,7 @@ import com.sun.opengl.util.j2d.TextRenderer;
  * ------------ ---------- ----------- --------------------------
  * Oct 19, 2010            mschenke    Initial creation
  * Nov 04, 2015   5070     randerso    Added DPI font scaling
+ * Jan 18, 2023			srcarter@ucar  Bring in MJ change for jogamp
  *
  * </pre>
  *

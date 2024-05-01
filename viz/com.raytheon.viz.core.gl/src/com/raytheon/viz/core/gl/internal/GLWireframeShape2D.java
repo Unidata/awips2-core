@@ -23,7 +23,7 @@ import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
 
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
@@ -61,6 +61,7 @@ import org.locationtech.jts.geom.Coordinate;
  * ------------ ---------- ----------- --------------------------
  * May 27, 2011            mschenke    Initial creation
  * Feb 14, 2014 2804       mschenke    Removed setting of IExtent for clipping
+ * Jan 18, 2023			srcarter@ucar  Bring over MJ changes for GL2
  * 
  * </pre>
  * 
@@ -84,8 +85,8 @@ public class GLWireframeShape2D implements IWireframeShape {
     private GLGeometryObjectData geomData;
 
     public GLWireframeShape2D(GeneralGridGeometry gridGeometry, boolean mutable) {
-        geomData = new GLGeometryObjectData(GL.GL_LINE_STRIP,
-                GL.GL_VERTEX_ARRAY);
+        geomData = new GLGeometryObjectData(GL2.GL_LINE_STRIP,
+                GL2.GL_VERTEX_ARRAY);
         geomData.mutable = mutable;
 
         try {
@@ -249,10 +250,10 @@ public class GLWireframeShape2D implements IWireframeShape {
 
         if (!geomData.mutable && !compiled) {
             compiled = true;
-            geometry.compile(target.getGl());
+            geometry.compile(target.getGl().getGL2());
         }
 
-        GL gl = target.getGl();
+        GL2 gl = target.getGl().getGL2();
 
         List<DrawableString> toDraw = new ArrayList<DrawableString>(
                 labels.size());
@@ -271,13 +272,13 @@ public class GLWireframeShape2D implements IWireframeShape {
 
         if (toDraw.size() > 0) {
             int[] colorBuffer = new int[1];
-            gl.glGetIntegerv(GL.GL_DRAW_BUFFER, colorBuffer, 0);
-            gl.glDrawBuffer(GL.GL_NONE);
-            gl.glEnable(GL.GL_STENCIL_TEST);
-            gl.glClear(GL.GL_STENCIL_BUFFER_BIT);
+            gl.glGetIntegerv(GL2.GL_DRAW_BUFFER, colorBuffer, 0);
+            gl.glDrawBuffer(GL2.GL_NONE);
+            gl.glEnable(GL2.GL_STENCIL_TEST);
+            gl.glClear(GL2.GL_STENCIL_BUFFER_BIT);
 
-            gl.glStencilFunc(GL.GL_ALWAYS, 0x1, 0x1);
-            gl.glStencilOp(GL.GL_REPLACE, GL.GL_REPLACE, GL.GL_REPLACE);
+            gl.glStencilFunc(GL2.GL_ALWAYS, 0x1, 0x1);
+            gl.glStencilOp(GL2.GL_REPLACE, GL2.GL_REPLACE, GL2.GL_REPLACE);
             usedStencilBuffer = true;
             double scale = viewExtent.getWidth() / canvasSize.width;
 
@@ -292,10 +293,10 @@ public class GLWireframeShape2D implements IWireframeShape {
             for (DrawableString label : toDraw) {
                 bounds = target.getStringsBounds(label);
                 double[] pos = new double[] { label.basics.x, label.basics.y };
-                gl.glPolygonMode(GL.GL_BACK, GL.GL_FILL);
-                gl.glEnable(GL.GL_BLEND);
+                gl.glPolygonMode(GL2.GL_BACK, GL2.GL_FILL);
+                gl.glEnable(GL2.GL_BLEND);
                 gl.glColor4d(0.0, 0.0, 0.0, alpha);
-                gl.glBegin(GL.GL_QUADS);
+                gl.glBegin(GL2.GL_QUADS);
 
                 adjustedHalfWidth = (bounds.getWidth() * scale) / 2.0;
                 adjustedHalfHeight = (bounds.getHeight() * scale) / 2.0;
@@ -313,8 +314,8 @@ public class GLWireframeShape2D implements IWireframeShape {
             gl.glDrawBuffer(colorBuffer[0]);
         }
 
-        gl.glEnable(GL.GL_BLEND);
-        gl.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
+        gl.glEnable(GL2.GL_BLEND);
+        gl.glBlendFunc(GL2.GL_SRC_ALPHA, GL2.GL_ONE_MINUS_SRC_ALPHA);
 
         if (lineWidth > 0) {
             gl.glLineWidth(lineWidth);
@@ -327,20 +328,20 @@ public class GLWireframeShape2D implements IWireframeShape {
                 color.blue / 255.0f, alpha);
 
         if (usedStencilBuffer) {
-            gl.glStencilFunc(GL.GL_NOTEQUAL, 0x1, 0x1);
-            gl.glStencilOp(GL.GL_KEEP, GL.GL_KEEP, GL.GL_KEEP);
+            gl.glStencilFunc(GL2.GL_NOTEQUAL, 0x1, 0x1);
+            gl.glStencilOp(GL2.GL_KEEP, GL2.GL_KEEP, GL2.GL_KEEP);
         }
 
-        geometry.paint(target.getGl());
+        geometry.paint(target.getGl().getGL2());
 
-        gl.glDisable(GL.GL_BLEND);
+        gl.glDisable(GL2.GL_BLEND);
 
         // Draw labels
         if (toDraw.size() > 0) {
-            gl.glStencilFunc(GL.GL_ALWAYS, 0x0, 0x1);
-            gl.glStencilOp(GL.GL_KEEP, GL.GL_KEEP, GL.GL_KEEP);
-            gl.glClear(GL.GL_STENCIL_BUFFER_BIT);
-            gl.glDisable(GL.GL_STENCIL_TEST);
+            gl.glStencilFunc(GL2.GL_ALWAYS, 0x0, 0x1);
+            gl.glStencilOp(GL2.GL_KEEP, GL2.GL_KEEP, GL2.GL_KEEP);
+            gl.glClear(GL2.GL_STENCIL_BUFFER_BIT);
+            gl.glDisable(GL2.GL_STENCIL_TEST);
             target.drawStrings(toDraw);
         }
     }

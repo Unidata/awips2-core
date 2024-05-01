@@ -22,7 +22,7 @@ package com.raytheon.viz.core.gl.internal;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
 
 import org.apache.commons.collections.keyvalue.MultiKey;
 import org.geotools.coverage.grid.GeneralGridGeometry;
@@ -49,6 +49,7 @@ import com.raytheon.viz.core.gl.SharedCoordMap.SharedCoordinateKey;
  * ------------- -------- --------- --------------------------
  * Jul 01, 2010           mschenke  Initial creation
  * Jun 11, 2015  4551     bsteffen  Add minNumDivs to getNumDivisions
+ * Jan 18, 2023		  srcarter@ucar Bring over MJ changes for GL2
  * 
  * </pre>
  * 
@@ -59,7 +60,7 @@ public class GLMesh2DStrips extends AbstractGLMesh {
 
     private GLMesh2DStrips(GridGeometry2D imageGeometry,
             GeneralGridGeometry targetGeometry) throws VizException {
-        super(GL.GL_TRIANGLE_STRIP);
+        super(GL2.GL_TRIANGLE_STRIP);
         initialize(imageGeometry, targetGeometry);
     }
 
