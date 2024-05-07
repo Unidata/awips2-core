@@ -37,6 +37,7 @@ import tech.units.indriya.function.MultiplyConverter;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Feb 19, 2024 2036778    mapeters    Initial creation
+ * May 07, 2024 2037232    aford       Changes required for Indriya 2.1.4 update
  *
  * </pre>
  *
@@ -116,6 +117,11 @@ public class PrimitiveMultiplyConverter extends AbstractConverter
 
     @Override
     public Double getValue() {
+        return doubleFactor;
+    }
+
+    @Override
+    public double getAsDouble() {
         return doubleFactor;
     }
 
