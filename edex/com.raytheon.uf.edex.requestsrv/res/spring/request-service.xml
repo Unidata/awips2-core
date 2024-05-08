@@ -7,7 +7,7 @@
 
     <camelContext id="request-service-camel"
         xmlns="http://camel.apache.org/schema/spring"
-        errorHandlerRef="errorHandler">
+        errorHandlerRef="errorHandler" streamCache="false">
 
         <propertyPlaceholder id="requestServiceProperties"
                              location="classpath:edex-requestsrv.properties"/>
