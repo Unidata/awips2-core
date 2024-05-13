@@ -23,18 +23,18 @@ import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.List;
 
-import si.uom.SI;
-
+import org.geotools.api.coverage.grid.GridEnvelope;
+import org.geotools.api.geometry.Bounds;
+import org.geotools.api.referencing.FactoryException;
+import org.geotools.api.referencing.cs.CoordinateSystem;
+import org.geotools.api.referencing.operation.TransformException;
 import org.geotools.coverage.grid.GeneralGridGeometry;
 import org.geotools.coverage.grid.GridEnvelope2D;
-import org.opengis.coverage.grid.GridEnvelope;
-import org.opengis.geometry.Envelope;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.cs.CoordinateSystem;
-import org.opengis.referencing.operation.TransformException;
 
 import com.raytheon.uf.common.numeric.dest.DataDestination;
 import com.raytheon.uf.common.numeric.source.DataSource;
+
+import si.uom.SI;
 
 /**
  * Class used to create downscaled versions of geospatial data. Downscales to an
@@ -47,7 +47,8 @@ import com.raytheon.uf.common.numeric.source.DataSource;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jul 6, 2012            mschenke     Initial creation
- * 
+ * May 07, 2024  2037231  aford        Upgrade GeoTools to 31
+ *
  * </pre>
  * 
  * @author mschenke
@@ -88,7 +89,7 @@ public class GridDownscaler {
         List<Rectangle> downscaleSizes = new ArrayList<Rectangle>();
 
         GridEnvelope ge = gridGeometry.getGridRange();
-        Envelope e = gridGeometry.getEnvelope();
+        Bounds e = gridGeometry.getEnvelope();
 
         Rectangle currSize = new Rectangle(ge.getSpan(0), ge.getSpan(1));
         downscaleSizes.add(currSize);
@@ -103,7 +104,7 @@ public class GridDownscaler {
         return downscaleSizes.toArray(new Rectangle[downscaleSizes.size()]);
     }
 
-    private Envelope sourceEnvelope;
+    private Bounds sourceEnvelope;
 
     private Rectangle[] downscaleGeometries;
 

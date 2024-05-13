@@ -21,15 +21,15 @@ package com.raytheon.uf.viz.core.rsc.hdf5;
 
 import java.awt.Rectangle;
 
+import org.geotools.api.coverage.grid.GridEnvelope;
+import org.geotools.api.geometry.Bounds;
 import org.geotools.coverage.grid.GeneralGridEnvelope;
 import org.geotools.coverage.grid.GridGeometry2D;
-import org.geotools.geometry.GeneralEnvelope;
+import org.geotools.geometry.GeneralBounds;
 import org.geotools.geometry.jts.ReferencedEnvelope;
-import org.opengis.coverage.grid.GridEnvelope;
-import org.opengis.geometry.Envelope;
+import org.locationtech.jts.geom.Coordinate;
 
 import com.raytheon.uf.viz.core.PixelCoverage;
-import org.locationtech.jts.geom.Coordinate;
 
 /**
  * ImageTile is an object that represents an image (or part of an image)
@@ -47,7 +47,8 @@ import org.locationtech.jts.geom.Coordinate;
  * ------------- -------- --------- -----------------
  * Mar 13, 2012           mschenke  Initial creation
  * Nov 03, 2016  5976     bsteffen  Deprecate
- * 
+ * May 07, 2024  2037231  aford     Upgrade GeoTools to 31
+ *
  * </pre>
  * 
  * @author mschenke
@@ -69,7 +70,7 @@ public class ImageTile {
      * @return
      */
     public boolean contains(double x, double y) {
-        Envelope env = imageGeometry.getEnvelope();
+        Bounds env = imageGeometry.getEnvelope();
         return env.getMinimum(0) <= x && env.getMaximum(0) >= x
                 && env.getMinimum(1) <= y && env.getMaximum(1) >= y;
     }
@@ -94,7 +95,7 @@ public class ImageTile {
      */
     public void setGridGeometry(Rectangle rect, ReferencedEnvelope env) {
         GeneralGridEnvelope gge = new GeneralGridEnvelope(rect);
-        GeneralEnvelope ge = new GeneralEnvelope(env);
+        GeneralBounds ge = new GeneralBounds(env);
         imageGeometry = new GridGeometry2D(gge, ge);
     }
 

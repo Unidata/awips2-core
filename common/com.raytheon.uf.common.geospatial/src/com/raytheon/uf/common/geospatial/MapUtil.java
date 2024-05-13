@@ -26,14 +26,28 @@ import java.util.Map;
 
 import org.apache.commons.collections.map.LRUMap;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.geotools.api.geometry.Bounds;
+import org.geotools.api.geometry.Position;
+import org.geotools.api.metadata.spatial.PixelOrientation;
+import org.geotools.api.parameter.ParameterValueGroup;
+import org.geotools.api.referencing.FactoryException;
+import org.geotools.api.referencing.NoSuchIdentifierException;
+import org.geotools.api.referencing.crs.CoordinateReferenceSystem;
+import org.geotools.api.referencing.crs.GeographicCRS;
+import org.geotools.api.referencing.crs.ProjectedCRS;
+import org.geotools.api.referencing.cs.CartesianCS;
+import org.geotools.api.referencing.datum.PixelInCell;
+import org.geotools.api.referencing.operation.MathTransform;
+import org.geotools.api.referencing.operation.NoninvertibleTransformException;
+import org.geotools.api.referencing.operation.TransformException;
 import org.geotools.coverage.grid.GeneralGridEnvelope;
 import org.geotools.coverage.grid.GeneralGridGeometry;
 import org.geotools.coverage.grid.GridCoverage2D;
 import org.geotools.coverage.grid.GridCoverageFactory;
 import org.geotools.coverage.grid.GridGeometry2D;
 import org.geotools.coverage.grid.InvalidGridGeometryException;
-import org.geotools.geometry.DirectPosition2D;
-import org.geotools.geometry.GeneralEnvelope;
+import org.geotools.geometry.GeneralBounds;
+import org.geotools.geometry.Position2D;
 import org.geotools.geometry.jts.JTS;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.referencing.CRS;
@@ -43,30 +57,16 @@ import org.geotools.referencing.cs.DefaultCartesianCS;
 import org.geotools.referencing.operation.DefaultMathTransformFactory;
 import org.geotools.referencing.operation.DefiningConversion;
 import org.geotools.referencing.operation.projection.LambertConformal;
-import org.opengis.geometry.DirectPosition;
-import org.opengis.geometry.Envelope;
-import org.opengis.metadata.spatial.PixelOrientation;
-import org.opengis.parameter.ParameterValueGroup;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.NoSuchIdentifierException;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
-import org.opengis.referencing.crs.GeographicCRS;
-import org.opengis.referencing.crs.ProjectedCRS;
-import org.opengis.referencing.cs.CartesianCS;
-import org.opengis.referencing.datum.PixelInCell;
-import org.opengis.referencing.operation.MathTransform;
-import org.opengis.referencing.operation.NoninvertibleTransformException;
-import org.opengis.referencing.operation.TransformException;
-
-import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.common.status.UFStatus.Priority;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.LinearRing;
 import org.locationtech.jts.geom.Point;
 import org.locationtech.jts.geom.Polygon;
+
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
+import com.raytheon.uf.common.status.UFStatus.Priority;
 
 /**
  * MapUtil provides a convenience wrapper for some common map interactions such
@@ -92,7 +92,8 @@ import org.locationtech.jts.geom.Polygon;
  *                                    origin for lambert conformal
  * Sep 13, 2022  8858     lsingh      Force (longitude, latitude) axis order for
  *                                    coordinates as part of Geotools 26.4 upgrade.
- * 
+ * May 07, 2024  2037231  aford       Upgrade GeoTools to 31
+ *
  * </pre>
  * 
  * @author chammack
@@ -173,7 +174,7 @@ public class MapUtil {
         MathTransform LLtoPROJ = CRS.findMathTransform(LATLON_PROJECTION, crs,
                 true);
 
-        GeneralEnvelope generalEnvelope = extractProjectedEnvelope(crs,
+        GeneralBounds generalEnvelope = extractProjectedEnvelope(crs,
                 cornerPoints, LLtoPROJ);
 
         baseGC = factory.create(name, image, generalEnvelope);
@@ -205,7 +206,7 @@ public class MapUtil {
         MathTransform LLtoPROJ = CRS.findMathTransform(LATLON_PROJECTION, crs,
                 true);
 
-        GeneralEnvelope generalEnvelope = extractProjectedEnvelope(crs,
+        GeneralBounds generalEnvelope = extractProjectedEnvelope(crs,
                 cornerPoints, LLtoPROJ);
 
         baseGC = factory.create(name, grid, generalEnvelope);
@@ -228,10 +229,10 @@ public class MapUtil {
      * @return a projected envelope
      * @throws TransformException
      */
-    public static GeneralEnvelope extractProjectedEnvelope(
+    public static GeneralBounds extractProjectedEnvelope(
             CoordinateReferenceSystem crs, Point[] cornerPoints,
             MathTransform LLtoPROJ) throws TransformException {
-        GeneralEnvelope generalEnvelope = new GeneralEnvelope(2);
+        GeneralBounds generalEnvelope = new GeneralBounds(2);
         generalEnvelope.setCoordinateReferenceSystem(crs);
 
         double minX = Double.POSITIVE_INFINITY;
@@ -240,10 +241,8 @@ public class MapUtil {
         double maxY = Double.NEGATIVE_INFINITY;
 
         for (Point p : cornerPoints) {
-            DirectPosition ll = new DirectPosition2D(LATLON_PROJECTION,
-                    p.getX(), p.getY());
-            DirectPosition translated = LLtoPROJ.transform(ll,
-                    new DirectPosition2D());
+            Position ll = new Position2D(LATLON_PROJECTION, p.getX(), p.getY());
+            Position translated = LLtoPROJ.transform(ll, new Position2D());
             double x = translated.getOrdinate(0);
             double y = translated.getOrdinate(1);
 
@@ -280,9 +279,9 @@ public class MapUtil {
      * @return a native envelope
      * 
      */
-    public static GeneralEnvelope convertToNativeEnvelope(Coordinate ll,
+    public static GeneralBounds convertToNativeEnvelope(Coordinate ll,
             Coordinate ur, ISpatialObject gloc) {
-        GeneralEnvelope generalEnvelope = new GeneralEnvelope(2);
+        GeneralBounds generalEnvelope = new GeneralBounds(2);
         generalEnvelope.setCoordinateReferenceSystem(gloc.getCrs());
 
         double minX = Double.POSITIVE_INFINITY;
@@ -327,7 +326,7 @@ public class MapUtil {
      *             , TransformException
      */
     public static GeneralGridGeometry reprojectGeometry(
-            GeneralGridGeometry sourceGeometry, Envelope targetEnvelope)
+            GeneralGridGeometry sourceGeometry, Bounds targetEnvelope)
             throws FactoryException, TransformException {
         return reprojectGeometry(sourceGeometry, targetEnvelope, false);
     }
@@ -346,7 +345,7 @@ public class MapUtil {
      *             , TransformException
      */
     public static GeneralGridGeometry reprojectGeometry(
-            GeneralGridGeometry sourceGeometry, Envelope targetEnvelope,
+            GeneralGridGeometry sourceGeometry, Bounds targetEnvelope,
             boolean addBorder) throws FactoryException, TransformException {
         return reprojectGeometry(sourceGeometry, targetEnvelope, addBorder, 1);
     }
@@ -368,9 +367,9 @@ public class MapUtil {
      *             , TransformException
      */
     public static GeneralGridGeometry reprojectGeometry(
-            GeneralGridGeometry sourceGeometry, Envelope targetEnvelope,
-            boolean addBorder, int oversampleFactor) throws FactoryException,
-            TransformException {
+            GeneralGridGeometry sourceGeometry, Bounds targetEnvelope,
+            boolean addBorder, int oversampleFactor)
+            throws FactoryException, TransformException {
         CoordinateReferenceSystem targetCRS = targetEnvelope
                 .getCoordinateReferenceSystem();
         ReferencedEnvelope targetREnv = null;
@@ -410,8 +409,8 @@ public class MapUtil {
                     .intersection(newSourceEnv));
         }
         // Get the newEnvelope
-        ReferencedEnvelope newEnv = new ReferencedEnvelope(JTS.getEnvelope2D(
-                intersection, LATLON_PROJECTION), LATLON_PROJECTION);
+        ReferencedEnvelope newEnv = new ReferencedEnvelope(intersection,
+                LATLON_PROJECTION);
 
         newEnv = newEnv.transform(targetCRS, false, 500);
         // Calculate nx and ny, start with the number of original grid
@@ -804,7 +803,7 @@ public class MapUtil {
                             .getPointN(i);
                 }
 
-                GeneralEnvelope env2 = MapUtil.extractProjectedEnvelope(
+                GeneralBounds env2 = MapUtil.extractProjectedEnvelope(
                         obj.getCrs(), points,
                         MapUtil.getTransformFromLatLon(obj.getCrs()));
 
@@ -1314,7 +1313,7 @@ public class MapUtil {
      * @throws TransformException
      */
     public static ReferencedEnvelope reprojectAndIntersect(
-            Envelope sourceEnvelope, Envelope targetEnvelope)
+            Bounds sourceEnvelope, Bounds targetEnvelope)
             throws TransformException {
         try {
             // Use referenced envelope to go from source crs into target crs.
@@ -1377,11 +1376,10 @@ public class MapUtil {
 
             for (double xTestPoint : xTestPoints) {
                 for (double yTestPoint : yTestPoints) {
-                    DirectPosition2D edge = new DirectPosition2D(xTestPoint,
-                            yTestPoint);
+                    Position2D edge = new Position2D(xTestPoint, yTestPoint);
                     if (!result.contains(edge)) {
                         try {
-                            DirectPosition2D tmp = new DirectPosition2D();
+                            Position2D tmp = new Position2D();
                             mt.transform(edge, tmp);
                             if (sourceRefEnvelope.contains(tmp)) {
                                 result.expandToInclude(edge.x, edge.y);
@@ -1401,17 +1399,17 @@ public class MapUtil {
     }
 
     public static GridGeometry2D createFineIntersectingGeometry(
-            org.opengis.geometry.Envelope sourceEnvelope,
-            org.opengis.geometry.Envelope targetEnvelope, long[] sizes)
+            Bounds sourceEnvelope,
+            Bounds targetEnvelope, long[] sizes)
             throws Exception {
         ReferencedEnvelope targetREnv = new ReferencedEnvelope(targetEnvelope);
         CoordinateReferenceSystem targetCRS = targetREnv
                 .getCoordinateReferenceSystem();
         ReferencedEnvelope sourceEnv = new ReferencedEnvelope(sourceEnvelope);
 
-        ReferencedEnvelope newEnv = new ReferencedEnvelope(JTS.getEnvelope2D(
+        ReferencedEnvelope newEnv = new ReferencedEnvelope(
                 targetREnv.intersection(sourceEnv.transform(targetCRS, false)),
-                targetCRS), targetCRS);
+                targetCRS);
         GridGeometry2D newTarget = new GridGeometry2D(new GeneralGridEnvelope(
                 new int[] { 0, 0 }, new int[] { (int) (sizes[0]),
                         (int) (sizes[1]) }), newEnv);
@@ -1433,8 +1431,8 @@ public class MapUtil {
             double minX = Double.POSITIVE_INFINITY;
             double minY = Double.POSITIVE_INFINITY;
             for (int i = 0; i < coords.length; ++i) {
-                DirectPosition2D to = new DirectPosition2D();
-                mt.transform(new DirectPosition2D(coords[i].x, coords[i].y), to);
+                Position2D to = new Position2D();
+                mt.transform(new Position2D(coords[i].x, coords[i].y), to);
                 maxX = Math.max(maxX, to.x);
                 maxY = Math.max(maxY, to.y);
                 minX = Math.min(minX, to.x);

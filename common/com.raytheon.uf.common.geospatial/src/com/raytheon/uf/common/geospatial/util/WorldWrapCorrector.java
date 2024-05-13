@@ -24,9 +24,8 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.geotools.api.geometry.Bounds;
 import org.geotools.coverage.grid.GeneralGridGeometry;
-import org.opengis.geometry.Envelope;
-
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryCollection;
@@ -54,7 +53,8 @@ import org.locationtech.jts.geom.prep.PreparedGeometryFactory;
  * Dec 11, 2013  2619     bsteffen    Fix rare dateline bug in flattenGeometry.
  * Feb 14, 2013  2804     mschenke    Added function fo checking if correcting
  *                                    needs to occur.
- * 
+ * May 07, 2024  2037231  aford       Upgrade GeoTools to 31
+ *
  * </pre>
  * 
  * @author mschenke
@@ -79,7 +79,7 @@ public class WorldWrapCorrector {
      * 
      * @param worldEnvelope
      */
-    public WorldWrapCorrector(Envelope worldEnvelope) {
+    public WorldWrapCorrector(Bounds worldEnvelope) {
         checker = new WorldWrapChecker(worldEnvelope);
     }
 

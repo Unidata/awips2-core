@@ -26,7 +26,7 @@ import java.util.Set;
 
 import org.eclipse.swt.widgets.Composite;
 import org.locationtech.jts.geom.Coordinate;
-import org.opengis.coverage.grid.GridEnvelope;
+import org.geotools.api.coverage.grid.GridEnvelope;
 
 import com.raytheon.uf.viz.core.IDisplayPane;
 import com.raytheon.uf.viz.core.IDisplayPaneContainer;

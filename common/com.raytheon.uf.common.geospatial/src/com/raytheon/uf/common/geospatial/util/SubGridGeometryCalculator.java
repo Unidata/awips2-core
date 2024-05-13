@@ -19,16 +19,15 @@
  **/
 package com.raytheon.uf.common.geospatial.util;
 
+import org.geotools.api.coverage.grid.GridEnvelope;
+import org.geotools.api.coverage.grid.GridGeometry;
+import org.geotools.api.geometry.Bounds;
+import org.geotools.api.referencing.FactoryException;
+import org.geotools.api.referencing.crs.CoordinateReferenceSystem;
+import org.geotools.api.referencing.operation.TransformException;
 import org.geotools.coverage.grid.GridEnvelope2D;
 import org.geotools.coverage.grid.GridGeometry2D;
-import org.geotools.geometry.Envelope2D;
-import org.opengis.coverage.grid.GridEnvelope;
-import org.opengis.coverage.grid.GridGeometry;
-import org.opengis.geometry.Envelope;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
-import org.opengis.referencing.operation.TransformException;
-
+import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.locationtech.jts.geom.Geometry;
 
 /**
@@ -44,7 +43,8 @@ import org.locationtech.jts.geom.Geometry;
  * ------------- -------- ----------- --------------------------
  * Feb 04, 2014  2672     bsteffen    Initial creation
  * Mar 03, 2015  4022     bsteffen    Handle empty geometry from EnvelopeIntersection
- * 
+ * May 07, 2024  2037231  aford       Upgrade GeoTools to 31
+ *
  * </pre>
  * 
  * @author bsteffen
@@ -52,7 +52,7 @@ import org.locationtech.jts.geom.Geometry;
  */
 public class SubGridGeometryCalculator {
 
-    private final Envelope envelope;
+    private final Bounds envelope;
 
     private final GridGeometry gridGeometry;
 
@@ -75,27 +75,27 @@ public class SubGridGeometryCalculator {
      *             If something goes wrong mapping the envelope crs onto the
      *             grid geometry crs.
      */
-    public SubGridGeometryCalculator(Envelope envelope, GridGeometry gridGeometry)
+    public SubGridGeometryCalculator(Bounds envelope, GridGeometry gridGeometry)
             throws TransformException {
         this.envelope = envelope;
         this.gridGeometry = gridGeometry;
         this.subGridGeometry = calculate(envelope, gridGeometry);
     }
 
-    protected static GridGeometry calculate(Envelope envelope,
+    protected static GridGeometry calculate(Bounds envelope,
             GridGeometry gridGeometry) throws TransformException {
         GridGeometry2D gg2D = GridGeometry2D.wrap(gridGeometry);
         CoordinateReferenceSystem gridCRS = gg2D.getCoordinateReferenceSystem();
         GridEnvelope2D gridRange = gg2D.getGridRange2D();
-        Envelope2D gridEnv = gg2D.getEnvelope2D();
+        ReferencedEnvelope gridEnv = gg2D.getEnvelope2D();
         int gridWidth = gridRange.width;
         int gridHeight = gridRange.height;
         /*
          * Use grid spacing to determine a threshold for EnvelopeIntersection.
          * This guarantees the result is within one grid cell.
          */
-        double dx = gridEnv.width / gridWidth;
-        double dy = gridEnv.height / gridHeight;
+        double dx = gridEnv.getWidth() / gridWidth;
+        double dy = gridEnv.getHeight() / gridHeight;
         double threshold = Math.max(dx, dy);
         Geometry geom = null;
         try {
@@ -109,8 +109,8 @@ public class SubGridGeometryCalculator {
             /* Convert from jts envelope to geotools envelope. */
             org.locationtech.jts.geom.Envelope env = geom
                     .getEnvelopeInternal();
-            Envelope2D subEnv = new Envelope2D(gridCRS, env.getMinX(),
-                    env.getMinY(), env.getWidth(), env.getHeight());
+            ReferencedEnvelope subEnv = new ReferencedEnvelope(env.getMinX(),
+                    env.getMinY(), env.getWidth(), env.getHeight(), gridCRS);
             subRange = gg2D.worldToGrid(subEnv);
             /* Add a 1 pixel border so interpolation near the edges is nice */
             subRange.grow(1, 1);
@@ -128,7 +128,7 @@ public class SubGridGeometryCalculator {
     /**
      * @return The original envelope used to create this calculator.
      */
-    public Envelope getEnvelope() {
+    public Bounds getEnvelope() {
         return envelope;
     }
 

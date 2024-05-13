@@ -21,7 +21,7 @@ package com.raytheon.uf.viz.core.drawables;
 
 import org.eclipse.swt.graphics.RGB;
 import org.geotools.referencing.operation.projection.ProjectionException;
-import org.opengis.referencing.FactoryException;
+import org.geotools.api.referencing.FactoryException;
 
 import com.raytheon.uf.common.geospatial.ReferencedGeometry;
 import com.raytheon.uf.common.geospatial.util.WorldWrapCorrector;

@@ -23,6 +23,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.geotools.api.geometry.Bounds;
+import org.geotools.api.parameter.ParameterNotFoundException;
+import org.geotools.api.parameter.ParameterValueGroup;
+import org.geotools.api.referencing.FactoryException;
+import org.geotools.api.referencing.crs.CoordinateReferenceSystem;
+import org.geotools.api.referencing.operation.MathTransform;
+import org.geotools.api.referencing.operation.TransformException;
 import org.geotools.geometry.jts.JTS;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.referencing.CRS;
@@ -30,18 +37,8 @@ import org.geotools.referencing.crs.DefaultGeographicCRS;
 import org.geotools.referencing.operation.projection.EquidistantCylindrical;
 import org.geotools.referencing.operation.projection.MapProjection;
 import org.geotools.referencing.operation.projection.MapProjection.AbstractProvider;
-import org.opengis.geometry.Envelope;
-import org.opengis.parameter.ParameterNotFoundException;
-import org.opengis.parameter.ParameterValueGroup;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
-import org.opengis.referencing.operation.MathTransform;
-import org.opengis.referencing.operation.TransformException;
-
-import com.raytheon.uf.common.geospatial.MapUtil;
-import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.UFStatus;
 import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Envelope;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryCollection;
 import org.locationtech.jts.geom.GeometryFactory;
@@ -50,6 +47,10 @@ import org.locationtech.jts.geom.LineString;
 import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.geom.TopologyException;
 import org.locationtech.jts.geom.Triangle;
+
+import com.raytheon.uf.common.geospatial.MapUtil;
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
 
 /**
  * Utility class capable of computing geometric intersection of one
@@ -84,7 +85,8 @@ import org.locationtech.jts.geom.Triangle;
  * Jan 27, 2020  3375     bsteffen  Defer to Brute force when intersections
  *                                  fail. Only invert the area if it actually
  *                                  improves the result.
- * 
+ * May 07, 2024  2037231  aford     Upgrade GeoTools to 31
+ *
  * </pre>
  * 
  * @author mschenke
@@ -118,9 +120,8 @@ public class EnvelopeIntersection {
      * @see #createEnvelopeIntersection(Envelope, Envelope, int)
      * @see #createEnvelopeIntersection(Envelope, Envelope, double, int, int)
      */
-    public static Geometry createEnvelopeIntersection(Envelope sourceEnvelope,
-            Envelope targetEnvelope)
-            throws TransformException, FactoryException {
+    public static Geometry createEnvelopeIntersection(Bounds sourceEnvelope,
+            Bounds targetEnvelope) throws TransformException, FactoryException {
         return createEnvelopeIntersection(sourceEnvelope, targetEnvelope, 1000);
     }
 
@@ -147,8 +148,8 @@ public class EnvelopeIntersection {
      * @see #createEnvelopeIntersection(Envelope, Envelope)
      * @see #createEnvelopeIntersection(Envelope, Envelope, double, int, int)
      */
-    public static Geometry createEnvelopeIntersection(Envelope sourceEnvelope,
-            Envelope targetEnvelope, int effort)
+    public static Geometry createEnvelopeIntersection(Bounds sourceEnvelope,
+            Bounds targetEnvelope, int effort)
             throws TransformException, FactoryException {
         /*
          * Set maxHorDivisions and maxVertDivisions so that the aspect ratio of
@@ -194,8 +195,8 @@ public class EnvelopeIntersection {
      * @see #createEnvelopeIntersection(Envelope, Envelope)
      * @see #createEnvelopeIntersection(Envelope, Envelope, int)
      */
-    public static Geometry createEnvelopeIntersection(Envelope sourceEnvelope,
-            Envelope targetEnvelope, double threshold, int maxHorDivisions,
+    public static Geometry createEnvelopeIntersection(Bounds sourceEnvelope,
+            Bounds targetEnvelope, double threshold, int maxHorDivisions,
             int maxVertDivisions) throws TransformException, FactoryException {
         ReferencedEnvelope sourceREnvelope = reference(sourceEnvelope);
         ReferencedEnvelope targetREnvelope = reference(targetEnvelope);
@@ -1300,7 +1301,7 @@ public class EnvelopeIntersection {
         return transformedPoint;
     }
 
-    private static ReferencedEnvelope reference(Envelope envelope) {
+    private static ReferencedEnvelope reference(Bounds envelope) {
         if (envelope instanceof ReferencedEnvelope) {
             return (ReferencedEnvelope) envelope;
         }

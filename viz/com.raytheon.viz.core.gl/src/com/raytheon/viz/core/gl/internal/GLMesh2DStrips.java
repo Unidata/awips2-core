@@ -25,11 +25,11 @@ import java.util.Map;
 import javax.media.opengl.GL;
 
 import org.apache.commons.collections.keyvalue.MultiKey;
+import org.geotools.api.referencing.operation.MathTransform;
+import org.geotools.api.referencing.operation.TransformException;
 import org.geotools.coverage.grid.GeneralGridGeometry;
 import org.geotools.coverage.grid.GridGeometry2D;
 import org.geotools.geometry.jts.ReferencedEnvelope;
-import org.opengis.referencing.operation.MathTransform;
-import org.opengis.referencing.operation.TransformException;
 
 import com.raytheon.uf.common.geospatial.MapUtil;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -63,14 +63,6 @@ public class GLMesh2DStrips extends AbstractGLMesh {
         initialize(imageGeometry, targetGeometry);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.core.IMesh#calculateMesh(com.raytheon.viz.core.PixelCoverage
-     * , com.raytheon.viz.core.rsc.tiling.AbstractTileSet.HDF5Tile,
-     * org.opengis.referencing.operation.MathTransform)
-     */
     @Override
     public double[][][] generateWorldCoords(GridGeometry2D imageGeometry,
             MathTransform mt) throws TransformException {

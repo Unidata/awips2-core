@@ -33,14 +33,14 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
+import org.geotools.api.referencing.crs.CoordinateReferenceSystem;
+import org.geotools.api.referencing.datum.PixelInCell;
+import org.geotools.api.referencing.operation.MathTransform;
+import org.geotools.api.referencing.operation.TransformException;
 import org.geotools.coverage.grid.GeneralGridEnvelope;
 import org.geotools.coverage.grid.GeneralGridGeometry;
 import org.geotools.coverage.grid.GridGeometry2D;
-import org.geotools.geometry.GeneralEnvelope;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
-import org.opengis.referencing.datum.PixelInCell;
-import org.opengis.referencing.operation.MathTransform;
-import org.opengis.referencing.operation.TransformException;
+import org.geotools.geometry.GeneralBounds;
 
 import com.raytheon.uf.common.geospatial.TransformFactory;
 import com.raytheon.uf.common.geospatial.adapter.GridGeometryAdapter;
@@ -87,6 +87,7 @@ import com.raytheon.uf.viz.core.time.TimeMatchingJob;
  *                                  listener.
  * Dec 02, 2019  71868    tjensen   Change updateUI call in notifyFrameChanged()
  *                                  to be async
+ * May 07, 2024  2037231  aford     Upgrade GeoTools to 31
  *
  * </pre>
  *
@@ -770,7 +771,7 @@ public abstract class AbstractDescriptor extends ResourceGroup
 
     protected static GeneralGridGeometry createGridGeometry(IExtent extent,
             CoordinateReferenceSystem crs) {
-        GeneralEnvelope envelope = new GeneralEnvelope(2);
+        GeneralBounds envelope = new GeneralBounds(2);
         envelope.setRange(0, extent.getMinX(), extent.getMaxX());
         envelope.setRange(1, extent.getMinY(), extent.getMaxY());
         envelope.setCoordinateReferenceSystem(crs);

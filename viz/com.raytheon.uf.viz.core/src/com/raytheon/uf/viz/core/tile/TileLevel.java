@@ -19,26 +19,26 @@
  **/
 package com.raytheon.uf.viz.core.tile;
 
+import org.geotools.api.coverage.grid.GridEnvelope;
+import org.geotools.api.geometry.Bounds;
+import org.geotools.api.referencing.FactoryException;
+import org.geotools.api.referencing.datum.PixelInCell;
+import org.geotools.api.referencing.operation.MathTransform;
+import org.geotools.api.referencing.operation.TransformException;
 import org.geotools.coverage.grid.GeneralGridGeometry;
 import org.geotools.coverage.grid.GridEnvelope2D;
 import org.geotools.coverage.grid.GridGeometry2D;
 import org.geotools.geometry.jts.JTS;
 import org.geotools.referencing.operation.DefaultMathTransformFactory;
 import org.geotools.referencing.operation.projection.ProjectionException;
-import org.opengis.coverage.grid.GridEnvelope;
-import org.opengis.geometry.Envelope;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.datum.PixelInCell;
-import org.opengis.referencing.operation.MathTransform;
-import org.opengis.referencing.operation.TransformException;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Geometry;
 
 import com.raytheon.uf.common.geospatial.CRSCache;
 import com.raytheon.uf.common.geospatial.util.EnvelopeIntersection;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.Geometry;
 
 /**
  * This object represents a single tile level. It does this by containing a 2
@@ -58,7 +58,8 @@ import org.locationtech.jts.geom.Geometry;
  * Aug 08, 2016  5806     bsteffen  Fix when tile center is not valid in
  *                                  descriptor CRS and throws an Exception.
  * Mar 29, 2017  6202     bsteffen  Adjust pixel density calculation.
- * 
+ * May 07, 2024  2037231  aford     Upgrade GeoTools to 31
+ *
  * </pre>
  * 
  * @author mschenke
@@ -98,7 +99,7 @@ public class TileLevel {
         intialize(levelGeometry.getGridRange(), levelGeometry.getEnvelope());
     }
 
-    private void intialize(GridEnvelope range, Envelope envelope) {
+    private void intialize(GridEnvelope range, Bounds envelope) {
         int width = range.getSpan(0);
         int height = range.getSpan(1);
         int fullTileDimX = width / tileSize;
@@ -134,7 +135,7 @@ public class TileLevel {
                             targetGeometry.getGridToCRS(PixelInCell.CELL_CORNER)
                                     .inverse());
 
-            Envelope levelEnv = levelGeometry.getEnvelope();
+            Bounds levelEnv = levelGeometry.getEnvelope();
             double[] in = new double[] {
                     levelEnv.getMinimum(0) + (levelEnv.getSpan(0) / 2),
                     levelEnv.getMinimum(1) + (levelEnv.getSpan(1) / 2) };
@@ -310,7 +311,7 @@ public class TileLevel {
         int tileHeight = Math.min(endY - tileY, tileSize);
 
         range = new GridEnvelope2D(tileX, tileY, tileWidth, tileHeight);
-        Envelope envelope = null;
+        Bounds envelope = null;
         // Convert grid range into crs envelope range
         try {
             envelope = levelGeometry.gridToWorld(range);

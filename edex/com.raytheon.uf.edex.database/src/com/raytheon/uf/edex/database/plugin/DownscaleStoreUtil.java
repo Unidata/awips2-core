@@ -21,7 +21,7 @@ package com.raytheon.uf.edex.database.plugin;
 
 import java.awt.Rectangle;
 
-import org.opengis.referencing.operation.TransformException;
+import org.geotools.api.referencing.operation.TransformException;
 
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.datastorage.DataStoreFactory;

@@ -21,15 +21,15 @@ package com.raytheon.uf.common.geospatial.adapter;
 
 import javax.xml.bind.annotation.adapters.XmlAdapter;
 
+import org.geotools.api.coverage.grid.GridEnvelope;
+import org.geotools.api.geometry.Bounds;
+import org.geotools.api.referencing.FactoryException;
+import org.geotools.api.referencing.crs.CoordinateReferenceSystem;
 import org.geotools.coverage.grid.GeneralGridEnvelope;
 import org.geotools.coverage.grid.GeneralGridGeometry;
 import org.geotools.coverage.grid.GridEnvelope2D;
-import org.geotools.geometry.GeneralEnvelope;
+import org.geotools.geometry.GeneralBounds;
 import org.geotools.referencing.CRS;
-import org.opengis.coverage.grid.GridEnvelope;
-import org.opengis.geometry.Envelope;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 import com.raytheon.uf.common.serialization.IDeserializationContext;
 import com.raytheon.uf.common.serialization.ISerializationContext;
@@ -48,7 +48,8 @@ import com.raytheon.uf.common.serialization.adapters.GridGeometrySerialized;
  * Feb 11, 2009            chammack     Initial creation
  * Aug 08, 2014  3503      bclement     moved from common.serialization to common.geospatial
  * Aug 12, 2014  3449      bclement     fixed GeneralGridEnvelope constructor arg for isHighIncluded
- * 
+ * May 07, 2024  2037231   aford        Upgrade GeoTools to 31
+ *
  * </pre>
  * 
  * @author chammack
@@ -88,7 +89,7 @@ public class GridGeometryAdapter extends
     public GeneralGridGeometry unmarshal(GridGeometrySerialized v)
             throws Exception {
         CoordinateReferenceSystem crs = CRS.parseWKT(v.CRS);
-        GeneralEnvelope env = new GeneralEnvelope(crs);
+        GeneralBounds env = new GeneralBounds(crs);
         env.setRange(0, v.envelopeMinX, v.envelopeMaxX);
         env.setRange(1, v.envelopeMinY, v.envelopeMaxY);
 
@@ -128,7 +129,7 @@ public class GridGeometryAdapter extends
             GeneralGridGeometry object) throws SerializationException {
         int numDims = object.getDimension();
         GridEnvelope range = object.getGridRange();
-        Envelope env = object.getEnvelope();
+        Bounds env = object.getEnvelope();
 
         serializer.writeString(object.getCoordinateReferenceSystem().toWKT());
         serializer.writeI32(numDims);
@@ -154,7 +155,7 @@ public class GridGeometryAdapter extends
             CoordinateReferenceSystem crs = CRS.parseWKT(deserializer
                     .readString());
             int numDims = deserializer.readI32();
-            GeneralEnvelope env = new GeneralEnvelope(crs);
+            GeneralBounds env = new GeneralBounds(crs);
             int[] lowRange = new int[numDims];
             int[] highRange = new int[numDims];
             for (int i = 0; i < numDims; ++i) {

@@ -21,7 +21,7 @@
 package com.raytheon.uf.viz.core;
 
 import org.eclipse.swt.graphics.Rectangle;
-import org.opengis.coverage.grid.GridEnvelope;
+import org.geotools.api.coverage.grid.GridEnvelope;
 
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;

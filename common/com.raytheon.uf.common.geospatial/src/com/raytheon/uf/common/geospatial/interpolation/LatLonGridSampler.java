@@ -21,11 +21,11 @@ package com.raytheon.uf.common.geospatial.interpolation;
 
 import org.geotools.coverage.grid.GeneralGridGeometry;
 import org.geotools.coverage.grid.GridGeometry2D;
-import org.geotools.geometry.DirectPosition2D;
+import org.geotools.geometry.Position2D;
 import org.geotools.referencing.operation.DefaultMathTransformFactory;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.operation.MathTransform;
-import org.opengis.referencing.operation.TransformException;
+import org.geotools.api.referencing.FactoryException;
+import org.geotools.api.referencing.operation.MathTransform;
+import org.geotools.api.referencing.operation.TransformException;
 
 import com.raytheon.uf.common.geospatial.MapUtil;
 import com.raytheon.uf.common.numeric.source.DataSource;
@@ -41,6 +41,7 @@ import com.raytheon.uf.common.numeric.source.DataSource;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 5, 2013            bsteffen     Initial creation
+ * May 07, 2024  2037231  aford        Upgrade GeoTools to 31
  * 
  * </pre>
  * 
@@ -67,7 +68,7 @@ public class LatLonGridSampler {
     }
 
     public double sample(double lon, double lat) throws TransformException {
-        DirectPosition2D pt = new DirectPosition2D(lon, lat);
+        Position2D pt = new Position2D(lon, lat);
         fromLatLon.transform(pt, pt);
         return sampler.sample(pt.x, pt.y);
     }

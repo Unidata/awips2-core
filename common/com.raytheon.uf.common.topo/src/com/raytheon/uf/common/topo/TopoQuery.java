@@ -28,12 +28,25 @@ import java.util.Hashtable;
 import java.util.List;
 import java.util.Map;
 
+import org.geotools.api.coverage.grid.GridEnvelope;
+import org.geotools.api.geometry.Bounds;
+import org.geotools.api.geometry.Position;
+import org.geotools.api.metadata.spatial.PixelOrientation;
+import org.geotools.api.referencing.FactoryException;
+import org.geotools.api.referencing.crs.CoordinateReferenceSystem;
+import org.geotools.api.referencing.crs.GeographicCRS;
+import org.geotools.api.referencing.crs.ProjectedCRS;
+import org.geotools.api.referencing.datum.PixelInCell;
+import org.geotools.api.referencing.operation.CoordinateOperationFactory;
+import org.geotools.api.referencing.operation.MathTransform;
+import org.geotools.api.referencing.operation.MathTransformFactory;
+import org.geotools.api.referencing.operation.TransformException;
 import org.geotools.coverage.grid.GeneralGridEnvelope;
 import org.geotools.coverage.grid.GridCoverage2D;
 import org.geotools.coverage.grid.GridCoverageFactory;
 import org.geotools.coverage.grid.GridGeometry2D;
-import org.geotools.geometry.DirectPosition2D;
-import org.geotools.geometry.GeneralEnvelope;
+import org.geotools.geometry.GeneralBounds;
+import org.geotools.geometry.Position2D;
 import org.geotools.referencing.CRS;
 import org.geotools.referencing.ReferencingFactoryFinder;
 import org.geotools.referencing.operation.AbstractCoordinateOperationFactory;
@@ -42,19 +55,6 @@ import org.geotools.referencing.operation.builder.GridToEnvelopeMapper;
 import org.geotools.referencing.operation.transform.IdentityTransform;
 import org.geotools.util.factory.Hints;
 import org.locationtech.jts.geom.Coordinate;
-import org.opengis.coverage.grid.GridEnvelope;
-import org.opengis.geometry.DirectPosition;
-import org.opengis.geometry.Envelope;
-import org.opengis.metadata.spatial.PixelOrientation;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
-import org.opengis.referencing.crs.GeographicCRS;
-import org.opengis.referencing.crs.ProjectedCRS;
-import org.opengis.referencing.datum.PixelInCell;
-import org.opengis.referencing.operation.CoordinateOperationFactory;
-import org.opengis.referencing.operation.MathTransform;
-import org.opengis.referencing.operation.MathTransformFactory;
-import org.opengis.referencing.operation.TransformException;
 
 import com.raytheon.uf.common.datastorage.DataStoreFactory;
 import com.raytheon.uf.common.datastorage.IDataStore;
@@ -98,7 +98,8 @@ import com.raytheon.uf.common.util.Pair;
  * Oct 27, 2014 3795       randerso    Changed to allow topoLimit to be overridden by system property
  * Nov 04, 2015 4961       randerso    Fix topoQueryMap to cache both the file and level
  * Nov 02, 2016 5979       njensen     Cast to Number where applicable
- * 
+ * May 07, 2024 2037231    aford       Upgrade GeoTools to 31
+ *
  * </pre>
  * 
  * @author randerso
@@ -228,7 +229,7 @@ public class TopoQuery {
             MathTransform llToCrsPM = MapUtil.getTransformFromLatLon(crsPM);
             llToCrsPM.transform(input, 0, output, 0, 2);
 
-            GeneralEnvelope ge = new GeneralEnvelope(2);
+            GeneralBounds ge = new GeneralBounds(2);
             ge.setCoordinateReferenceSystem(crsPM);
             ge.setRange(0, output[0], output[2]);
             ge.setRange(1, output[3], output[1]);
@@ -257,7 +258,7 @@ public class TopoQuery {
             MathTransform llToCrsDL = MapUtil.getTransformFromLatLon(crsDL);
             llToCrsDL.transform(input, 0, output, 0, 2);
 
-            ge = new GeneralEnvelope(2);
+            ge = new GeneralBounds(2);
             ge.setCoordinateReferenceSystem(crsDL);
             ge.setRange(0, output[0], output[2]);
             ge.setRange(1, output[3], output[1]);
@@ -346,7 +347,7 @@ public class TopoQuery {
      * @param geom
      * @return the bounding envelope
      */
-    private Envelope[] computeLLEnv(GridGeometry2D geom) {
+    private Bounds[] computeLLEnv(GridGeometry2D geom) {
         GridEnvelope range = geom.getGridRange();
         try {
             MathTransform toLatLon = MapUtil.getTransformToLatLon(geom
@@ -375,8 +376,8 @@ public class TopoQuery {
             boolean first = true;
             boolean crossedDLHoriz = false;
             for (int x = minX; x <= maxX; x++) {
-                DirectPosition p1 = new DirectPosition2D(x, minY);
-                DirectPosition p2 = new DirectPosition2D(x, maxY);
+                Position p1 = new Position2D(x, minY);
+                Position p2 = new Position2D(x, maxY);
 
                 p1 = gridToLL.transform(p1, null);
                 p2 = gridToLL.transform(p2, null);
@@ -433,8 +434,8 @@ public class TopoQuery {
             first = true;
             boolean crossedDLVert = false;
             for (int y = minY; y <= maxY; y++) {
-                DirectPosition p1 = new DirectPosition2D(minX, y);
-                DirectPosition p2 = new DirectPosition2D(maxX, y);
+                Position p1 = new Position2D(minX, y);
+                Position p2 = new Position2D(maxX, y);
 
                 p1 = gridToLL.transform(p1, null);
                 p2 = gridToLL.transform(p2, null);
@@ -487,27 +488,27 @@ public class TopoQuery {
                 }
             }
 
-            Envelope[] llEnv = null;
+            Bounds[] llEnv = null;
             if (crossedDLHoriz) {
-                llEnv = new Envelope[2];
+                llEnv = new Bounds[2];
 
-                GeneralEnvelope env = new GeneralEnvelope(2);
+                GeneralBounds env = new GeneralBounds(2);
                 env.setCoordinateReferenceSystem(MapUtil.LATLON_PROJECTION);
                 env.setRange(0, minPosLon, 180.0);
                 env.setRange(1, Math.min(minNegLat, minPosLat),
                         Math.max(maxNegLat, maxPosLat));
                 llEnv[0] = env;
 
-                env = new GeneralEnvelope(2);
+                env = new GeneralBounds(2);
                 env.setCoordinateReferenceSystem(MapUtil.LATLON_PROJECTION);
                 env.setRange(0, -180.0, maxNegLon);
                 env.setRange(1, Math.min(minNegLat, minPosLat),
                         Math.max(maxNegLat, maxPosLat));
                 llEnv[1] = env;
             } else if (crossedDLVert) {
-                llEnv = new Envelope[1];
+                llEnv = new Bounds[1];
 
-                GeneralEnvelope env = new GeneralEnvelope(2);
+                GeneralBounds env = new GeneralBounds(2);
                 env.setCoordinateReferenceSystem(MapUtil.LATLON_PROJECTION);
                 env.setRange(0, -180.0, 180.0);
                 // if (maxLat > 0) {
@@ -517,9 +518,9 @@ public class TopoQuery {
                 // }
                 llEnv[0] = env;
             } else {
-                llEnv = new Envelope[1];
+                llEnv = new Bounds[1];
 
-                GeneralEnvelope env = new GeneralEnvelope(2);
+                GeneralBounds env = new GeneralBounds(2);
                 env.setCoordinateReferenceSystem(MapUtil.LATLON_PROJECTION);
                 env.setRange(0, Math.min(minNegLon, minPosLon),
                         Math.max(maxNegLon, maxPosLon));
@@ -552,13 +553,13 @@ public class TopoQuery {
      * @param worldRect
      * @return the bounding envelope
      */
-    private Envelope computeEnv(Rectangle worldRect) {
+    private Bounds computeEnv(Rectangle worldRect) {
         try {
             double[] worldCorners = new double[] { worldRect.getMinX(),
                     worldRect.getMinY(), worldRect.getMaxX(),
                     worldRect.getMaxY() };
             double[] crsCorners = new double[worldCorners.length];
-            GeneralEnvelope env = new GeneralEnvelope(2);
+            GeneralBounds env = new GeneralBounds(2);
             if (worldCorners[2] > (this.worldRect.width)) {
                 worldToCRSDL.transform(worldCorners, 0, crsCorners, 0,
                         worldCorners.length / 2);
@@ -602,10 +603,10 @@ public class TopoQuery {
      * @return the bounding rectangle
      */
     private Rectangle[] computeWorldRect(GridGeometry2D geom) {
-        Envelope llEnv[] = computeLLEnv(geom);
+        Bounds llEnv[] = computeLLEnv(geom);
         Rectangle result[] = new Rectangle[llEnv.length];
         int i = 0;
-        for (Envelope env : llEnv) {
+        for (Bounds env : llEnv) {
             result[i++] = computeWorldRect(env);
         }
         return result;
@@ -618,7 +619,7 @@ public class TopoQuery {
      * @param llEnv
      * @return the bounding rectangle
      */
-    private Rectangle computeWorldRect(Envelope llEnv) {
+    private Rectangle computeWorldRect(Bounds llEnv) {
         try {
             double[] llCorners = new double[] { llEnv.getMinimum(0),
                     llEnv.getMinimum(1), llEnv.getMaximum(0),
@@ -719,8 +720,8 @@ public class TopoQuery {
             rectOffset += worldRect.width;
         }
 
-        Envelope env = computeEnv(new Rectangle(rectangles[0].x,
-                rectangles[0].y, width, height));
+        Bounds env = computeEnv(
+                new Rectangle(rectangles[0].x, rectangles[0].y, width, height));
 
         GridCoverageFactory factory = new GridCoverageFactory();
         GridCoverage2D baseGC = factory.create("", topoValues, env);
