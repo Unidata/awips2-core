@@ -28,8 +28,8 @@ Import-Package: com.raytheon.uf.common.event,
  com.raytheon.uf.edex.database.cluster,
  com.raytheon.uf.edex.event,
  javax.persistence,
- javax.servlet,
- javax.servlet.http,
+ jakarta.servlet,
+ jakarta.servlet.http,
  org.apache.qpid.jms,
  org.apache.qpid.jms.jndi
 

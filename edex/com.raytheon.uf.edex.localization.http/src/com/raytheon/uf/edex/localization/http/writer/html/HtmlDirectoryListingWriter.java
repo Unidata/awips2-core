@@ -26,14 +26,14 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
-import javax.servlet.http.HttpServletRequest;
-
 import com.raytheon.uf.common.http.MimeType;
 import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.edex.localization.http.writer.IDirectoryListingWriter;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * Localization response writer that generates HTML directory listings.

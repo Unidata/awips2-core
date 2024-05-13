@@ -23,11 +23,6 @@ import java.io.PrintWriter;
 import java.time.Duration;
 import java.util.Collection;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.apache.ignite.DataRegionMetrics;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCluster;
@@ -38,6 +33,11 @@ import com.raytheon.uf.common.datastorage.StorageException;
 import com.raytheon.uf.common.datastore.ignite.IgniteClientManager;
 import com.raytheon.uf.common.datastore.ignite.IgniteClusterManager;
 import com.raytheon.uf.common.util.SizeUtil;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * {@link HttpServlet} which handles GET requests by returning some metrics
