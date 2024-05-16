@@ -109,7 +109,7 @@ public class SubGridGeometryCalculator {
             /* Convert from jts envelope to geotools envelope. */
             org.locationtech.jts.geom.Envelope env = geom
                     .getEnvelopeInternal();
-            ReferencedEnvelope subEnv = new ReferencedEnvelope(env.getMinX(),
+            ReferencedEnvelope subEnv = ReferencedEnvelope.rect(env.getMinX(),
                     env.getMinY(), env.getWidth(), env.getHeight(), gridCRS);
             subRange = gg2D.worldToGrid(subEnv);
             /* Add a 1 pixel border so interpolation near the edges is nice */
