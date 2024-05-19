@@ -19,6 +19,7 @@
  **/
 package com.raytheon.uf.edex.esb;
 
+import com.raytheon.uf.edex.core.modes.ModesException;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -48,12 +49,13 @@ import org.slf4j.LoggerFactory;
  * <pre>
  * SOFTWARE HISTORY
  * 
- * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- -------------------------------------------
- * Nov 14, 2008           chammack  Initial creation.
- * Feb 15, 2013  1638     mschenke  Removed reference to unused "stop" method.
- * Apr 15, 2014  2726     rjpeter   Use slf4j logger.
- * Jul 03, 2019  7875     randerso  Logged EDEX_VERSION setting. Code cleanup.
+ * Date          Ticket#  Engineer      Description
+ * ------------- -------- ---------     -------------------------------------------
+ * Nov 14, 2008           chammack      Initial creation.
+ * Feb 15, 2013  1638     mschenke      Removed reference to unused "stop" method.
+ * Apr 15, 2014  2726     rjpeter       Use slf4j logger.
+ * Jul 03, 2019  7875     randerso      Logged EDEX_VERSION setting. Code cleanup.
+ * Apr 26, 2024  2037312  lisa.singh    Added a new exit code for misspelled operational code.
  * 
  * </pre>
  * 
@@ -155,7 +157,15 @@ public class Main {
             System.exit(1);
         } catch (Throwable e) {
             logger.error("Error occurred during startup: ", e);
-            System.exit(1);
+            if (e.getCause() instanceof ModesException) {
+                // If the operational mode is typed incorrectly,
+                // use a different exit code so YAJSW doesn't automatically
+                // restart.
+                // See wrapper.conf for YAJSW settings.
+                System.exit(2);
+            } else {
+                System.exit(1);
+            }
         }
     }
 

@@ -42,6 +42,8 @@ import JUtil
 # Nov 17, 2017  20471    randerson Removed String() cast from _toJavaString()
 # Jul 31, 2019  7878     tgurney   Add a handler to convert Python
 #                                  bytes/bytearray to Java byte[]
+# Feb 09, 2024  2036792  smoorthy  Add check for a string conversion indicator flag 
+#                                  in pyObjectToJavaObject.
 #
 #
 
@@ -326,6 +328,11 @@ def pyObjectToJavaObject(val):
     '''
     Method registered with JUtil to convert Python objects to Java objects.
     '''
+    # For Jep 4.x, objects no longer fall back to String when converting from Python to Java.
+    # However, we need to keep that functionality for certain objects, so we check 
+    # for a flag indicating this.
+    if hasattr(val, 'pyToJavaStrFlag'):
+        return True, str(val)
     valtype = type(val)
     for pyType in pythonClasses :
         if issubclass(valtype, pyType):
