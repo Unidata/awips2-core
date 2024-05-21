@@ -25,7 +25,6 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
-import javax.servlet.http.HttpServletRequest;
 import javax.xml.bind.JAXBException;
 
 import com.raytheon.uf.common.http.MimeType;
@@ -36,6 +35,8 @@ import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.serialization.JAXBManager;
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.edex.localization.http.writer.IDirectoryListingWriter;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * Localization response writer that generates XML directory listings.

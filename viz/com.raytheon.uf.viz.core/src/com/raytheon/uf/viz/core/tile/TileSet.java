@@ -26,16 +26,16 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.collections.keyvalue.MultiKey;
+import org.geotools.api.coverage.grid.GridEnvelope;
+import org.geotools.api.geometry.Bounds;
 import org.geotools.coverage.grid.GeneralGridEnvelope;
 import org.geotools.coverage.grid.GeneralGridGeometry;
 import org.geotools.coverage.grid.GridGeometry2D;
-import org.opengis.coverage.grid.GridEnvelope;
-import org.opengis.geometry.Envelope;
-
-import com.raytheon.uf.viz.core.IExtent;
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
+
+import com.raytheon.uf.viz.core.IExtent;
 
 /**
  * A TileSet is an object that consists of multiple tile levels. Each tile level
@@ -52,7 +52,8 @@ import org.locationtech.jts.geom.GeometryFactory;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 8, 2012            mschenke     Initial creation
- * 
+ * May 07,2024  2037231   aford        Upgrade GeoTools to 31
+ *
  * </pre>
  * 
  * @author mschenke
@@ -121,7 +122,7 @@ public class TileSet {
      * @param levels
      */
     private void initialize(GridGeometry2D tileSetGeometry, int levels) {
-        Envelope envelope = tileSetGeometry.getEnvelope();
+        Bounds envelope = tileSetGeometry.getEnvelope();
         GridEnvelope range = tileSetGeometry.getGridRange();
         int startX = range.getLow(0);
         int startY = range.getLow(1);

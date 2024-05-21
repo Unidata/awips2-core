@@ -19,8 +19,6 @@
  **/
 package com.raytheon.uf.viz.core.geom;
 
-import org.opengis.geometry.DirectPosition;
-
 import org.locationtech.jts.geom.Coordinate;
 
 /**

@@ -22,13 +22,13 @@ package com.raytheon.uf.edex.localization.http;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import javax.servlet.http.HttpServletResponse;
-
 import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
+
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * Utility class for resolving localization resources from HTTP paths

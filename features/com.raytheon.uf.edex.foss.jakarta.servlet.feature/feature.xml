@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <feature
-      id="com.raytheon.uf.edex.foss.org.apache.activemq.feature"
-      label="org.apache.activemq Feature"
-      version="6.0.1"
+      id="com.raytheon.uf.edex.foss.jakarta.servlet.feature"
+      label="jakarta.servlet Feature"
+      version="6.0.0"
       provider-name="RAYTHEON">
 
    <description url="http://www.example.com/description">
@@ -18,9 +18,9 @@
    </license>
 
    <plugin
-         id="org.apache.activemq"
+         id="jakarta.servlet"
          download-size="0"
          install-size="0"
-         version="6.0.1"/>
+         version="6.0.0"/>
 
 </feature>

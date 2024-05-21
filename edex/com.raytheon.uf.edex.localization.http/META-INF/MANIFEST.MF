@@ -7,7 +7,7 @@ Bundle-Vendor: RAYTHEON
 Bundle-RequiredExecutionEnvironment: JavaSE-11
 Require-Bundle: com.raytheon.uf.common.http,
  com.raytheon.uf.common.localization,
- javax.servlet,
+ jakarta.servlet,
  com.raytheon.uf.common.time,
  com.raytheon.uf.edex.auth,
  com.raytheon.uf.common.auth,

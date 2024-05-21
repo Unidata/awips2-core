@@ -32,9 +32,6 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import com.raytheon.uf.common.http.AcceptHeaderParser;
 import com.raytheon.uf.common.http.AcceptHeaderValue;
 import com.raytheon.uf.common.http.MimeType;
@@ -50,6 +47,9 @@ import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.edex.localization.http.writer.IDirectoryListingWriter;
 import com.raytheon.uf.edex.localization.http.writer.ILocalizationResponseWriter;
 import com.raytheon.uf.edex.localization.http.writer.html.HtmlDirectoryListingWriter;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * Handles GET http method for localization files. The actual generation of

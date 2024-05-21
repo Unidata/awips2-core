@@ -21,8 +21,8 @@ Require-Bundle: com.raytheon.uf.edex.auth,
  com.fasterxml.jackson,
  javax.xml.bind
 Import-Package: com.raytheon.edex.esb,
- javax.servlet,
- javax.servlet.http
+ jakarta.servlet,
+ jakarta.servlet.http
 Export-Package: com.raytheon.uf.edex.requestsrv,
  com.raytheon.uf.edex.requestsrv.http,
  com.raytheon.uf.edex.requestsrv.request,

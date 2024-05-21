@@ -23,9 +23,21 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.geotools.api.geometry.Bounds;
+import org.geotools.api.parameter.GeneralParameterValue;
+import org.geotools.api.parameter.ParameterDescriptor;
+import org.geotools.api.parameter.ParameterValue;
+import org.geotools.api.parameter.ParameterValueGroup;
+import org.geotools.api.referencing.crs.CoordinateReferenceSystem;
+import org.geotools.api.referencing.crs.GeographicCRS;
+import org.geotools.api.referencing.crs.ProjectedCRS;
+import org.geotools.api.referencing.cs.CartesianCS;
+import org.geotools.api.referencing.operation.Conversion;
+import org.geotools.api.referencing.operation.MathTransform;
+import org.geotools.api.util.InternationalString;
 import org.geotools.coverage.grid.GridEnvelope2D;
 import org.geotools.coverage.grid.GridGeometry2D;
-import org.geotools.geometry.Envelope2D;
+import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.parameter.DefaultParameterDescriptor;
 import org.geotools.parameter.Parameter;
 import org.geotools.parameter.ParameterGroup;
@@ -34,18 +46,6 @@ import org.geotools.referencing.crs.DefaultProjectedCRS;
 import org.geotools.referencing.cs.DefaultCartesianCS;
 import org.geotools.referencing.operation.DefaultMathTransformFactory;
 import org.geotools.referencing.operation.DefiningConversion;
-import org.opengis.geometry.Envelope;
-import org.opengis.parameter.GeneralParameterValue;
-import org.opengis.parameter.ParameterDescriptor;
-import org.opengis.parameter.ParameterValue;
-import org.opengis.parameter.ParameterValueGroup;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
-import org.opengis.referencing.crs.GeographicCRS;
-import org.opengis.referencing.crs.ProjectedCRS;
-import org.opengis.referencing.cs.CartesianCS;
-import org.opengis.referencing.operation.Conversion;
-import org.opengis.referencing.operation.MathTransform;
-import org.opengis.util.InternationalString;
 
 import com.raytheon.uf.common.serialization.IDeserializationContext;
 import com.raytheon.uf.common.serialization.ISerializationContext;
@@ -65,8 +65,9 @@ import com.raytheon.uf.common.serialization.SerializationException;
  *                                      serialize PROJCS differently to
  *                                      work around geotools WKT limitations
  * Aug 08, 2014  3503      bclement    moved from common.serialization to common.geospatial
- * 
- * 
+ * May 07, 2024  2037231   aford       Upgrade GeoTools to 31
+ *
+ *
  * </pre>
  * 
  * @author randerso
@@ -213,7 +214,7 @@ public class GridGeometry2DAdapter implements
             double dy = deserializer.readDouble();
             double dw = deserializer.readDouble();
             double dh = deserializer.readDouble();
-            Envelope envelope = new Envelope2D(crs, dx, dy, dw, dh);
+            Bounds envelope = ReferencedEnvelope.rect(dx, dy, dw, dh, crs);
 
             GridGeometry2D gridGeom = new GridGeometry2D(gridRange, envelope);
             return gridGeom;

@@ -19,21 +19,15 @@
  **/
 package com.raytheon.uf.viz.core.grid.rsc.data;
 
-import java.awt.geom.Rectangle2D;
-
 import javax.measure.Unit;
-import javax.measure.UnitConverter;
 
+import org.geotools.api.referencing.FactoryException;
+import org.geotools.api.referencing.crs.CoordinateReferenceSystem;
+import org.geotools.api.referencing.operation.TransformException;
 import org.geotools.coverage.grid.GeneralGridGeometry;
 import org.geotools.coverage.grid.GridEnvelope2D;
 import org.geotools.coverage.grid.GridGeometry2D;
-import org.geotools.geometry.Envelope2D;
-import org.locationtech.jts.geom.Coordinate;
-import org.opengis.coverage.grid.GridEnvelope;
-import org.opengis.geometry.Envelope;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
-import org.opengis.referencing.operation.TransformException;
+import org.geotools.geometry.jts.ReferencedEnvelope;
 
 import com.raytheon.uf.common.geospatial.data.GeographicDataSource;
 import com.raytheon.uf.common.geospatial.interpolation.Interpolation;
@@ -69,6 +63,7 @@ import com.raytheon.uf.common.numeric.source.OffsetDataSource;
  *                                    createVectorData.
  * Jun 27, 2019  65510    ksunil      support fill colors through XML
  * Aug 29, 2019  67949    tjensen     Refactor to support additional GFE products
+ * May 07, 2024  2037231  aford       Upgrade GeoTools to 31
  *
  * </pre>
  *
@@ -150,20 +145,20 @@ public abstract class GeneralGridData {
             // Coordinate System is different, incompatible
             return null;
         }
-        Envelope2D envelope1 = geometry1.getEnvelope2D();
+        ReferencedEnvelope envelope1 = geometry1.getEnvelope2D();
         GridEnvelope2D range1 = geometry1.getGridRange2D();
-        double dx = envelope1.width / range1.width;
+        double dx = envelope1.getWidth() / range1.width;
 
-        Envelope2D envelope2 = geometry2.getEnvelope2D();
+        ReferencedEnvelope envelope2 = geometry2.getEnvelope2D();
         GridEnvelope2D range2 = geometry2.getGridRange2D();
-        double dx2 = envelope2.width / range2.width;
+        double dx2 = envelope2.getWidth() / range2.width;
 
         if (Math.abs(dx - dx2) > 0.00001) {
             // X Spacing is different, incompatible
             return null;
         }
-        double dy = envelope1.height / range1.height;
-        double dy2 = envelope2.height / range2.height;
+        double dy = envelope1.getHeight() / range1.height;
+        double dy2 = envelope2.getHeight() / range2.height;
         if (Math.abs(dy - dy2) > 0.00001) {
             // Y Spacing is different, incompatible
             return null;
@@ -179,17 +174,20 @@ public abstract class GeneralGridData {
             return null;
         }
 
-        Rectangle2D rectangle = envelope1.createUnion(envelope2);
-        Envelope2D envelope = new Envelope2D(crs, rectangle);
-        int nx = (int) Math.round(rectangle.getWidth() / dx);
-        int ny = (int) Math.round(rectangle.getHeight() / dy);
+        ReferencedEnvelope envelope = new ReferencedEnvelope(crs);
+        envelope.expandToInclude(envelope1);
+        envelope.expandToInclude(envelope2);
+
+        int nx = (int) Math.round(envelope.getWidth() / dx);
+        int ny = (int) Math.round(envelope.getHeight() / dy);
         GridEnvelope2D range = new GridEnvelope2D(0, 0, nx, ny);
 
-        GridGeometry2D geometry = new GridGeometry2D((GridEnvelope) range,
-                (Envelope) envelope);
+        GridGeometry2D geometry = new GridGeometry2D(range, envelope);
         // Shift the ranges to be relative to the new geometry
-        range1.x = (int) Math.round((envelope1.x - envelope.x) / dx);
-        range2.x = (int) Math.round((envelope2.x - envelope.x) / dx);
+        range1.x = (int) Math
+                .round((envelope1.getMinX() - envelope.getMinX()) / dx);
+        range2.x = (int) Math
+                .round((envelope2.getMinX() - envelope.getMinX()) / dx);
         // y axis is swapped, our grids start at upper left and y increases down
         // and y axis increases up.
         range1.y = (int) Math

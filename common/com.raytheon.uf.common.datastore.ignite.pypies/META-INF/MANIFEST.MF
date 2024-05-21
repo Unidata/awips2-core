@@ -8,7 +8,7 @@ Bundle-RequiredExecutionEnvironment: JavaSE-17
 Require-Bundle: com.raytheon.uf.common.datastorage,
  org.eclipse.jetty,
  org.apache.ignite,
- javax.servlet,
+ jakarta.servlet,
  com.raytheon.uf.common.datastore.ignite,
  com.raytheon.uf.common.datastore.pypies.servlet,
  com.raytheon.uf.common.pypies,

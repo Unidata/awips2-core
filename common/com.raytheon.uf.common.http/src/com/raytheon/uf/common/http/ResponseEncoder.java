@@ -23,9 +23,9 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.zip.GZIPOutputStream;
 
-import javax.servlet.http.HttpServletResponse;
-
 import org.apache.http.HttpHeaders;
+
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * Utility to handle response encoding for servlet response objects (eg gzip)

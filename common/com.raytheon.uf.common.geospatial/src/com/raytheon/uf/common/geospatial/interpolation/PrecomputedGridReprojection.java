@@ -28,8 +28,8 @@ import java.util.Map;
 import org.apache.commons.collections.keyvalue.MultiKey;
 import org.geotools.coverage.grid.GeneralGridGeometry;
 import org.geotools.referencing.operation.projection.ProjectionException;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.operation.TransformException;
+import org.geotools.api.referencing.FactoryException;
+import org.geotools.api.referencing.operation.TransformException;
 
 /**
  * A GridReprojection which precomputes the coordinates of all the grid cells so

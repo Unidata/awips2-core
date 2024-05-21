@@ -22,8 +22,8 @@ package com.raytheon.uf.common.geospatial;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.opengis.referencing.operation.MathTransform;
-import org.opengis.referencing.operation.TransformException;
+import org.geotools.api.referencing.operation.MathTransform;
+import org.geotools.api.referencing.operation.TransformException;
 
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;

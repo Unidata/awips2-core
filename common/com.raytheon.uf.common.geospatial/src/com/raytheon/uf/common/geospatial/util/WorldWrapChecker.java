@@ -19,16 +19,16 @@
  **/
 package com.raytheon.uf.common.geospatial.util;
 
+import org.geotools.api.geometry.Bounds;
+import org.geotools.api.parameter.ParameterNotFoundException;
+import org.geotools.api.parameter.ParameterValueGroup;
+import org.geotools.api.referencing.operation.MathTransform;
+import org.geotools.api.referencing.operation.TransformException;
 import org.geotools.coverage.grid.GeneralGridGeometry;
 import org.geotools.referencing.CRS;
 import org.geotools.referencing.operation.projection.MapProjection;
 import org.geotools.referencing.operation.projection.MapProjection.AbstractProvider;
 import org.locationtech.jts.geom.impl.PackedCoordinateSequence;
-import org.opengis.geometry.Envelope;
-import org.opengis.parameter.ParameterNotFoundException;
-import org.opengis.parameter.ParameterValueGroup;
-import org.opengis.referencing.operation.MathTransform;
-import org.opengis.referencing.operation.TransformException;
 
 import com.raytheon.uf.common.geospatial.MapUtil;
 import com.raytheon.uf.common.status.UFStatus;
@@ -46,8 +46,9 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * ------------ ---------- ----------- --------------------------
  * Jun 6, 2011            mschenke     Initial creation
  * Feb 17, 2015  4063     bsteffen     Use actual inverse central meridians for normalize longitudes.
- * 
- * 
+ * May 07, 2024  2037231  aford        Upgrade GeoTools to 31
+ *
+ *
  * </pre>
  * 
  * @author mschenke
@@ -95,7 +96,7 @@ public class WorldWrapChecker {
 
     private final boolean checkForWrapping;
 
-    public WorldWrapChecker(Envelope worldEnvelope) {
+    public WorldWrapChecker(Bounds worldEnvelope) {
         MapProjection worldProjection = CRS.getMapProjection(worldEnvelope
                 .getCoordinateReferenceSystem());
         double centralMeridian = 0.0;

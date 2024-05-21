@@ -22,11 +22,11 @@ package com.raytheon.uf.edex.localization.http;
 import java.io.IOException;
 import java.io.OutputStream;
 
-import javax.servlet.http.HttpServletRequest;
-
 import com.raytheon.uf.common.http.MimeType;
 import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.edex.localization.http.writer.ILocalizationResponseWriter;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * Pairs a response type with a writer object. This ensures that the writer

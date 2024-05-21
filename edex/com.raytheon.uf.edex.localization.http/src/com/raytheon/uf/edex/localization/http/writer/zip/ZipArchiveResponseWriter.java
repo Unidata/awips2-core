@@ -26,8 +26,6 @@ import java.nio.file.Paths;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import javax.servlet.http.HttpServletRequest;
-
 import com.raytheon.uf.common.http.MimeType;
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationContext;
@@ -36,6 +34,8 @@ import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.edex.localization.http.LocalizationHttpDataTransfer;
 import com.raytheon.uf.edex.localization.http.writer.ILocalizationResponseWriter;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * Localization response writer that recursively writes a localization directory

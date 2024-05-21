@@ -22,15 +22,15 @@ package com.raytheon.uf.common.geospatial.interpolation;
 import java.awt.geom.Point2D;
 
 import org.geotools.coverage.grid.GeneralGridGeometry;
-import org.geotools.geometry.DirectPosition2D;
+import org.geotools.geometry.Position2D;
 import org.geotools.referencing.CRS;
 import org.geotools.referencing.operation.DefaultMathTransformFactory;
 import org.geotools.referencing.operation.projection.ProjectionException;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
-import org.opengis.referencing.datum.PixelInCell;
-import org.opengis.referencing.operation.MathTransform;
-import org.opengis.referencing.operation.TransformException;
+import org.geotools.api.referencing.FactoryException;
+import org.geotools.api.referencing.crs.CoordinateReferenceSystem;
+import org.geotools.api.referencing.datum.PixelInCell;
+import org.geotools.api.referencing.operation.MathTransform;
+import org.geotools.api.referencing.operation.TransformException;
 
 import com.raytheon.uf.common.numeric.dest.DataDestination;
 import com.raytheon.uf.common.numeric.source.DataSource;
@@ -48,6 +48,7 @@ import com.raytheon.uf.common.numeric.source.DataSource;
  * ------------ ---------- ----------- --------------------------
  * Jun 18, 2012            bsteffen    Initial creation
  * Jul 17, 2013 2185       bsteffen    Cache computed grid reprojections.
+ * May 07, 2024 2037231    aford       Upgrade GeoTools to 31
  * 
  * </pre>
  * 
@@ -127,7 +128,7 @@ public class GridReprojection {
     protected Point2D.Double getReprojectDataPoint(int x, int y)
             throws TransformException, FactoryException {
         initTransforms();
-        DirectPosition2D dp = new DirectPosition2D(x, y);
+        Position2D dp = new Position2D(x, y);
         transform.transform(dp, dp);
         return dp;
     }

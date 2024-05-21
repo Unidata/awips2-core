@@ -44,21 +44,22 @@ import org.eclipse.swt.widgets.Layout;
 import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
+import org.geotools.api.coverage.grid.GridEnvelope;
+import org.geotools.api.geometry.Bounds;
+import org.geotools.api.parameter.InvalidParameterValueException;
+import org.geotools.api.parameter.ParameterDescriptor;
+import org.geotools.api.parameter.ParameterValueGroup;
+import org.geotools.api.referencing.NoSuchIdentifierException;
+import org.geotools.api.referencing.crs.CoordinateReferenceSystem;
+import org.geotools.api.referencing.cs.CoordinateSystem;
+import org.geotools.api.referencing.cs.CoordinateSystemAxis;
+import org.geotools.api.referencing.operation.Projection;
 import org.geotools.coverage.grid.GeneralGridGeometry;
 import org.geotools.parameter.Parameter;
 import org.geotools.referencing.CRS;
 import org.geotools.referencing.operation.DefaultMathTransformFactory;
 import org.geotools.referencing.operation.projection.MapProjection;
-import org.opengis.coverage.grid.GridEnvelope;
-import org.opengis.geometry.Envelope;
-import org.opengis.parameter.InvalidParameterValueException;
-import org.opengis.parameter.ParameterDescriptor;
-import org.opengis.parameter.ParameterValueGroup;
-import org.opengis.referencing.NoSuchIdentifierException;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
-import org.opengis.referencing.cs.CoordinateSystem;
-import org.opengis.referencing.cs.CoordinateSystemAxis;
-import org.opengis.referencing.operation.Projection;
+import org.locationtech.jts.geom.Coordinate;
 
 import com.raytheon.uf.common.geospatial.MapUtil;
 import com.raytheon.uf.common.status.IUFStatusHandler;
@@ -76,7 +77,6 @@ import com.raytheon.uf.viz.core.maps.actions.NewMapEditor;
 import com.raytheon.uf.viz.core.maps.scales.IMapScaleDisplay;
 import com.raytheon.viz.ui.EditorUtil;
 import com.raytheon.viz.ui.dialogs.CaveJFACEDialog;
-import org.locationtech.jts.geom.Coordinate;
 
 /**
  * Dialog that creates a custom geotools projection
@@ -91,7 +91,8 @@ import org.locationtech.jts.geom.Coordinate;
  *                                  temporarily
  * Apr 21, 2016  5579     bsteffen  Default to match current display. Add Import
  *                                  Extent From Display. Add tooltips.
- * 
+ * May 07, 2024  2037231  aford     Upgrade GeoTools to 31
+ *
  * </pre>
  * 
  * @author randerso
@@ -649,7 +650,7 @@ public class CreateProjectionDialog extends CaveJFACEDialog {
                 } else if (centerBtn.getSelection()) {
                     GridEnvelope gridRange = mapDescriptor.getGridGeometry()
                             .getGridRange();
-                    Envelope envelope = mapDescriptor.getGridGeometry()
+                    Bounds envelope = mapDescriptor.getGridGeometry()
                             .getEnvelope();
                     double[] center = extent.getCenter();
                     center = mapDescriptor.pixelToWorld(center);
@@ -702,7 +703,7 @@ public class CreateProjectionDialog extends CaveJFACEDialog {
                 GeneralGridGeometry gridGeometry = mapDescriptor
                         .getGridGeometry();
                 GridEnvelope gridRange = gridGeometry.getGridRange();
-                Envelope envelope = gridGeometry.getEnvelope();
+                Bounds envelope = gridGeometry.getEnvelope();
                 double[] ll = { gridRange.getLow(0), gridRange.getLow(1) };
                 double[] ur = { gridRange.getHigh(0), gridRange.getHigh(1) };
                 double[] center = {

@@ -23,7 +23,11 @@ import java.util.ArrayList;
 import java.util.BitSet;
 import java.util.List;
 
-import org.geotools.geometry.DirectPosition2D;
+import org.geotools.api.geometry.Bounds;
+import org.geotools.api.referencing.FactoryException;
+import org.geotools.api.referencing.operation.MathTransform;
+import org.geotools.api.referencing.operation.TransformException;
+import org.geotools.geometry.Position2D;
 import org.geotools.geometry.jts.JTS;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.locationtech.jts.geom.Coordinate;
@@ -32,10 +36,6 @@ import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.GeometryFactory;
 import org.locationtech.jts.geom.Polygon;
 import org.locationtech.jts.geom.impl.PackedCoordinateSequence;
-import org.opengis.geometry.Envelope;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.operation.MathTransform;
-import org.opengis.referencing.operation.TransformException;
 
 import com.raytheon.uf.common.geospatial.MapUtil;
 
@@ -57,7 +57,8 @@ import com.raytheon.uf.common.geospatial.MapUtil;
  * Jan 29, 2015  3939     bsteffen    Add cross consistency checks.
  * May 27, 2015  4472     bsteffen    Ignore exceptions when building target
  *                                    coordinates.
- * 
+ * May 07, 2024  2037231  aford       Upgrade GeoTools to 31
+ *
  * </pre>
  * 
  * @author bsteffen
@@ -89,8 +90,8 @@ class BruteForceEnvelopeIntersection {
      * Construct a new intersection. This will calculate all fields including
      * reprojecting all points in the grid.
      */
-    private BruteForceEnvelopeIntersection(Envelope sourceEnvelope,
-            Envelope targetEnvelope, int width, int height)
+    private BruteForceEnvelopeIntersection(Bounds sourceEnvelope,
+            Bounds targetEnvelope, int width, int height)
             throws FactoryException, TransformException {
         if (sourceEnvelope instanceof ReferencedEnvelope) {
             this.sourceEnvelope = (ReferencedEnvelope) sourceEnvelope;
@@ -467,7 +468,7 @@ class BruteForceEnvelopeIntersection {
             double y = worldMinY + (j - 0.5) * dYWorld;
             double x = worldMinX + (i - 0.5) * dXWorld;
 
-            DirectPosition2D centerPoint = new DirectPosition2D(x, y);
+            Position2D centerPoint = new Position2D(x, y);
             sourceCRSToLatLon.transform(centerPoint, centerPoint);
             latLonToTargetCRS.transform(centerPoint, centerPoint);
             GeometryFactory gf = new GeometryFactory();
@@ -640,8 +641,8 @@ class BruteForceEnvelopeIntersection {
      * @throws FactoryException
      * @throws TransformException
      */
-    public static Geometry createEnvelopeIntersection(Envelope sourceEnvelope,
-            Envelope targetEnvelope, int maxHorDivisions, int maxVertDivisions)
+    public static Geometry createEnvelopeIntersection(Bounds sourceEnvelope,
+            Bounds targetEnvelope, int maxHorDivisions, int maxVertDivisions)
             throws FactoryException, TransformException {
         return new BruteForceEnvelopeIntersection(sourceEnvelope, targetEnvelope,
                 maxHorDivisions, maxVertDivisions).reproject();

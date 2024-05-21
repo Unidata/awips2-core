@@ -29,18 +29,19 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.collections.keyvalue.MultiKey;
+import org.geotools.api.geometry.Bounds;
+import org.geotools.api.referencing.datum.PixelInCell;
+import org.geotools.api.referencing.operation.MathTransform;
+import org.geotools.api.referencing.operation.MathTransform2D;
+import org.geotools.api.referencing.operation.NoninvertibleTransformException;
+import org.geotools.api.referencing.operation.TransformException;
 import org.geotools.coverage.grid.GeneralGridEnvelope;
 import org.geotools.coverage.grid.GridGeometry2D;
-import org.geotools.geometry.GeneralEnvelope;
+import org.geotools.geometry.GeneralBounds;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.referencing.CRS;
 import org.geotools.referencing.crs.DefaultGeographicCRS;
-import org.opengis.geometry.Envelope;
-import org.opengis.referencing.datum.PixelInCell;
-import org.opengis.referencing.operation.MathTransform;
-import org.opengis.referencing.operation.MathTransform2D;
-import org.opengis.referencing.operation.NoninvertibleTransformException;
-import org.opengis.referencing.operation.TransformException;
+import org.locationtech.jts.geom.Coordinate;
 
 import com.raytheon.uf.common.datastorage.StorageException;
 import com.raytheon.uf.common.geospatial.MapUtil;
@@ -67,7 +68,6 @@ import com.raytheon.uf.viz.core.rsc.capabilities.ColorMapCapability;
 import com.raytheon.uf.viz.core.rsc.capabilities.ImagingCapability;
 import com.raytheon.uf.viz.core.rsc.hdf5.ImageTile;
 import com.raytheon.uf.viz.core.tile.TileSetRenderable;
-import org.locationtech.jts.geom.Coordinate;
 
 /**
  * Describes an Abstract HDF5 Tileset
@@ -83,7 +83,8 @@ import org.locationtech.jts.geom.Coordinate;
  *    Feb 15, 2007             chammack    Initial Creation.
  *    Jun 24, 2013       2122  mschenke    Removed unused IMeshCallback listeners
  *    Aug 14, 2014 3522        bclement    deprecated
- * 
+ *    May 07, 2024 2037231     aford       Upgrade GeoTools to 31
+ *
  * </pre>
  * 
  * @author chammack
@@ -249,7 +250,7 @@ public abstract class AbstractTileSet implements IRenderable {
         int h = gridGeometry.getGridRange().getSpan(1);
         int w = gridGeometry.getGridRange().getSpan(0);
 
-        Envelope env = this.gridGeometry[0].getEnvelope();
+        Bounds env = this.gridGeometry[0].getEnvelope();
 
         for (int i = 1; i < levels; i++) {
             h /= 2;
@@ -297,7 +298,7 @@ public abstract class AbstractTileSet implements IRenderable {
             ReferencedEnvelope mapEnv = new ReferencedEnvelope(
                     this.mapDescriptor.getGridGeometry().getEnvelope());
             mapEnv = mapEnv.transform(MapUtil.LATLON_PROJECTION, false);
-            GeneralEnvelope generalMapEnv = new GeneralEnvelope(mapEnv);
+            GeneralBounds generalMapEnv = new GeneralBounds(mapEnv);
             generalMapEnv.normalize(false);
             startY = 0;
             for (int j = 0; j < totalTilesY; j++) {
@@ -331,7 +332,7 @@ public abstract class AbstractTileSet implements IRenderable {
                     ReferencedEnvelope env = new ReferencedEnvelope(ul[0],
                             lr[0], ul[1], lr[1],
                             gridGeometry[0].getCoordinateReferenceSystem());
-                    GeneralEnvelope generalEnv = new GeneralEnvelope(
+                    GeneralBounds generalEnv = new GeneralBounds(
                             env.transform(MapUtil.LATLON_PROJECTION, false));
                     // tiles which cross the dateline will almost always be
                     // created since normalizing changes their range to
