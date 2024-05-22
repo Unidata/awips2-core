@@ -5,7 +5,7 @@ Bundle-SymbolicName: com.raytheon.uf.common.util
 Bundle-Version: 1.20.0.qualifier
 Bundle-Vendor: RAYTHEON
 Bundle-RequiredExecutionEnvironment: JavaSE-11
-Require-Bundle: javax.xml.bind
+Require-Bundle: jakarta.xml.bind
 Export-Package: com.raytheon.uf.common.util,
  com.raytheon.uf.common.util.algorithm,
  com.raytheon.uf.common.util.app,

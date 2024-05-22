@@ -10,6 +10,6 @@ Require-Bundle: com.raytheon.uf.common.serialization,
  com.raytheon.uf.common.status,
  org.apache.commons.lang3,
  org.slf4j,
- javax.xml.bind
+ jakarta.xml.bind
 Import-Package: org.apache.camel
 Export-Package: com.raytheon.uf.edex.distribution

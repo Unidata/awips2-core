@@ -19,7 +19,7 @@ Require-Bundle: com.raytheon.uf.edex.auth,
  org.springframework,
  org.apache.shiro,
  com.fasterxml.jackson,
- javax.xml.bind
+ jakarta.xml.bind
 Import-Package: com.raytheon.edex.esb,
  jakarta.servlet,
  jakarta.servlet.http

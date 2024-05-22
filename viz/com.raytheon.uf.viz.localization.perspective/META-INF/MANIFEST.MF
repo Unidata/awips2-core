@@ -30,7 +30,7 @@ Require-Bundle: org.python.pydev,
  org.eclipse.e4.ui.workbench,
  com.raytheon.uf.common.protectedfiles,
  com.raytheon.uf.common.python,
- javax.xml.bind
+ jakarta.xml.bind
 Bundle-ActivationPolicy: lazy
 Bundle-RequiredExecutionEnvironment: JavaSE-11
 Export-Package: com.raytheon.uf.viz.localization.perspective.adapter,

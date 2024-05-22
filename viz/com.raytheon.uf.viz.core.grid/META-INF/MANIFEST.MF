@@ -17,7 +17,7 @@ Require-Bundle: com.raytheon.uf.viz.core,
  javax.measure,
  com.raytheon.uf.viz.core.point,
  com.raytheon.uf.viz.core.rsc,
- javax.xml.bind
+ jakarta.xml.bind
 Export-Package: com.raytheon.uf.viz.core.grid.display,
  com.raytheon.uf.viz.core.grid.rsc,
  com.raytheon.uf.viz.core.grid.rsc.data

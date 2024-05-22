@@ -13,7 +13,7 @@ Require-Bundle: org.springframework,
  com.raytheon.uf.common.convert,
  org.apache.commons.lang3,
  org.hibernate,
- javax.xml.bind,
+ jakarta.xml.bind,
  javax.measure,
  jakarta.persistence
 Import-Package: org.apache.commons.beanutils

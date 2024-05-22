@@ -6,5 +6,5 @@ Bundle-Version: 1.18.0.qualifier
 Bundle-Vendor: RAYTHEON
 Bundle-RequiredExecutionEnvironment: JavaSE-11
 Require-Bundle: com.raytheon.uf.common.dataquery,
- javax.xml.bind
+ jakarta.xml.bind
 Export-Package: com.raytheon.uf.common.dataplugin.notify

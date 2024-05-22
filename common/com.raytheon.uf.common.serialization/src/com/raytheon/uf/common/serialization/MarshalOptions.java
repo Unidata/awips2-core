@@ -19,8 +19,8 @@
  **/
 package com.raytheon.uf.common.serialization;
 
-import javax.xml.bind.Marshaller;
-import javax.xml.bind.PropertyException;
+import jakarta.xml.bind.Marshaller;
+import jakarta.xml.bind.PropertyException;
 
 /**
  * Formatting and output options for JAXB marshallers

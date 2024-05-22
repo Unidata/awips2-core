@@ -19,14 +19,14 @@
  **/
 package com.raytheon.uf.common.serialization.jaxb;
 
-import javax.xml.bind.JAXBException;
+import jakarta.xml.bind.JAXBException;
 
 import org.xml.sax.Attributes;
 import org.xml.sax.ContentHandler;
 import org.xml.sax.Locator;
 import org.xml.sax.SAXException;
 
-import com.sun.xml.bind.v2.runtime.unmarshaller.SAXConnector;
+import org.glassfish.jaxb.runtime.v2.runtime.unmarshaller.SAXConnector;
 
 /**
  * JAXB Content handler, delegates work to SAXConnector. Ignores exceptions in

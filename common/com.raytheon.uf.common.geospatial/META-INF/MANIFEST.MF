@@ -19,7 +19,7 @@ Require-Bundle: org.geotools;visibility:=reexport,
  com.raytheon.uf.common.numeric,
  com.raytheon.uf.common.convert,
  com.raytheon.uf.common.localization,
- javax.xml.bind
+ jakarta.xml.bind
 Export-Package: com.raytheon.uf.common.geospatial,
  com.raytheon.uf.common.geospatial.adapter,
  com.raytheon.uf.common.geospatial.data,

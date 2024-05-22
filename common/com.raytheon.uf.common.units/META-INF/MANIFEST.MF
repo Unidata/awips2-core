@@ -12,6 +12,6 @@ Require-Bundle: javax.measure;visibility:=reexport,
  com.raytheon.uf.common.status,
  com.raytheon.uf.common.convert,
  com.raytheon.uf.common.serialization,
- javax.xml.bind,
+ jakarta.xml.bind,
  javax.measure
 Export-Package: com.raytheon.uf.common.units

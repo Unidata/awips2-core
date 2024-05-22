@@ -2,7 +2,7 @@ package com.raytheon.uf.common.time.util;
 
 import java.util.Date;
 
-import javax.xml.bind.annotation.adapters.XmlAdapter;
+import jakarta.xml.bind.annotation.adapters.XmlAdapter;
 
 /**
  * An {@link XmlAdapter} version that allows JABX marshaling/unmarshaling

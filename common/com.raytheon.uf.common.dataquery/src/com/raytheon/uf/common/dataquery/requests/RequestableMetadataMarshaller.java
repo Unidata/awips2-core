@@ -22,7 +22,7 @@ package com.raytheon.uf.common.dataquery.requests;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
-import javax.xml.bind.annotation.adapters.XmlAdapter;
+import jakarta.xml.bind.annotation.adapters.XmlAdapter;
 
 /**
  * Handles serializing metadata maps in JAXB

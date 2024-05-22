@@ -23,7 +23,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.util.Collection;
 
-import javax.xml.bind.JAXBException;
+import jakarta.xml.bind.JAXBException;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;

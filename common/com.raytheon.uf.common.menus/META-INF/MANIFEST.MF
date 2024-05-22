@@ -8,7 +8,7 @@ Require-Bundle: com.raytheon.uf.common.localization,
  com.raytheon.uf.common.serialization,
  com.raytheon.uf.common.serialization.comm,
  com.raytheon.uf.common.util,
- javax.xml.bind
+ jakarta.xml.bind
 Bundle-RequiredExecutionEnvironment: JavaSE-11
 Bundle-ActivationPolicy: lazy
 Import-Package: com.raytheon.uf.common.localization,

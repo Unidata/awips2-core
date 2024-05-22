@@ -21,7 +21,7 @@ package com.raytheon.uf.common.time.domain;
 
 import java.util.concurrent.TimeUnit;
 
-import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
+import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeTypeAdapter;
 import com.raytheon.uf.common.time.domain.api.IDuration;

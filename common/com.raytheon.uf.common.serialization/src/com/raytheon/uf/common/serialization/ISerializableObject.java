@@ -19,7 +19,7 @@
  **/
 package com.raytheon.uf.common.serialization;
 
-import javax.xml.bind.JAXB;
+import jakarta.xml.bind.JAXB;
 
 /**
  * DEPRECATED! Former usage (no longer applies):

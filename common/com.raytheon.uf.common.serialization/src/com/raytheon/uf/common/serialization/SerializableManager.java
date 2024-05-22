@@ -32,8 +32,8 @@ import java.util.List;
 import java.util.ServiceConfigurationError;
 import java.util.Set;
 
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlRegistry;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlRegistry;
 
 import com.raytheon.uf.common.serialization.jaxb.JaxbDummyObject;
 

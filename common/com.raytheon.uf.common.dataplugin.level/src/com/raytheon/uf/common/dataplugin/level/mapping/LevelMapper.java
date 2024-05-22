@@ -23,7 +23,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import javax.measure.Unit;
-import javax.xml.bind.JAXBException;
+import jakarta.xml.bind.JAXBException;
 
 import com.raytheon.uf.common.dataplugin.level.Level;
 import com.raytheon.uf.common.dataplugin.level.LevelFactory;

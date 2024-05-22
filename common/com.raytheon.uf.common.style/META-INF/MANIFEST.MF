@@ -17,5 +17,5 @@ Require-Bundle: com.raytheon.uf.common.colormap,
  com.raytheon.uf.common.status,
  com.raytheon.uf.common.localization,
  org.apache.commons.lang3,
- javax.xml.bind
+ jakarta.xml.bind
 Import-Package: com.raytheon.uf.common.util

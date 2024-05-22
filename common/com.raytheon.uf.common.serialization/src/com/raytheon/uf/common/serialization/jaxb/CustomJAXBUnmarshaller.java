@@ -21,11 +21,11 @@ package com.raytheon.uf.common.serialization.jaxb;
 
 import java.io.IOException;
 
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.UnmarshalException;
-import javax.xml.bind.UnmarshallerHandler;
-import javax.xml.bind.ValidationEventHandler;
-import javax.xml.bind.helpers.AbstractUnmarshallerImpl;
+import jakarta.xml.bind.JAXBException;
+import jakarta.xml.bind.UnmarshalException;
+import jakarta.xml.bind.UnmarshallerHandler;
+import jakarta.xml.bind.ValidationEventHandler;
+import jakarta.xml.bind.helpers.AbstractUnmarshallerImpl;
 import javax.xml.validation.Schema;
 
 import org.w3c.dom.Node;
@@ -34,12 +34,12 @@ import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
 
-import com.sun.xml.bind.v2.runtime.JaxBeanInfo;
-import com.sun.xml.bind.v2.runtime.unmarshaller.InterningXmlVisitor;
-import com.sun.xml.bind.v2.runtime.unmarshaller.SAXConnector;
-import com.sun.xml.bind.v2.runtime.unmarshaller.UnmarshallerImpl;
-import com.sun.xml.bind.v2.runtime.unmarshaller.UnmarshallingContext;
-import com.sun.xml.bind.v2.runtime.unmarshaller.XmlVisitor;
+import org.glassfish.jaxb.runtime.v2.runtime.JaxBeanInfo;
+import org.glassfish.jaxb.runtime.v2.runtime.unmarshaller.InterningXmlVisitor;
+import org.glassfish.jaxb.runtime.v2.runtime.unmarshaller.SAXConnector;
+import org.glassfish.jaxb.runtime.v2.runtime.unmarshaller.UnmarshallerImpl;
+import org.glassfish.jaxb.runtime.v2.runtime.unmarshaller.UnmarshallingContext;
+import org.glassfish.jaxb.runtime.v2.runtime.unmarshaller.XmlVisitor;
 
 /**
  * Custom JAXB Unmarshaller, used to set custom content handler. Delegates

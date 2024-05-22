@@ -8,7 +8,7 @@ Bundle-RequiredExecutionEnvironment: JavaSE-11
 Require-Bundle: com.raytheon.uf.viz.core,
  org.apache.batik,
  org.geotools,
- javax.xml.bind,
+ jakarta.xml.bind,
  org.eclipse.ui
 Export-Package: com.raytheon.uf.viz.core.point.display,
  com.raytheon.uf.viz.core.point.drawables.ext,

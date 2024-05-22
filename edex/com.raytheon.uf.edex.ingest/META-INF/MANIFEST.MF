@@ -9,7 +9,7 @@ Require-Bundle: com.raytheon.edex.common,
  com.raytheon.uf.common.localization,
  org.slf4j,
  org.apache.camel,
- javax.xml.bind
+ jakarta.xml.bind
 Export-Package: com.raytheon.uf.edex.ingest
 Bundle-RequiredExecutionEnvironment: JavaSE-11
 Import-Package: com.raytheon.uf.edex.core,

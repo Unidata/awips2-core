@@ -19,7 +19,7 @@
  **/
 package com.raytheon.uf.common.time.domain.api;
 
-import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
+import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import javax.xml.datatype.Duration;
 
 import com.raytheon.uf.common.time.domain.IDurationTypeAdapter;

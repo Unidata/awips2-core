@@ -26,7 +26,7 @@ Require-Bundle: com.raytheon.uf.common.dataaccess,
  com.raytheon.uf.common.numeric,
  org.springframework;visibility:=reexport,
  com.raytheon.uf.common.dataaccess,
- javax.xml.bind
+ jakarta.xml.bind
 Export-Package: com.raytheon.uf.edex.database,
  com.raytheon.uf.edex.database.cluster,
  com.raytheon.uf.edex.database.cluster.handler,

@@ -30,13 +30,13 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Map;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-
 import com.raytheon.uf.common.serialization.jaxb.JaxbMarshallerStrategy;
 import com.raytheon.uf.common.serialization.jaxb.PooledJaxbMarshallerStrategy;
 import com.raytheon.uf.common.status.IPerformanceStatusHandler;
 import com.raytheon.uf.common.status.PerformanceStatus;
+
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.JAXBException;
 
 /**
  * Provides an easy and convenient layer to marshal or unmarshal objects to and

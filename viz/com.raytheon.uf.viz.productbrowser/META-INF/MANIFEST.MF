@@ -13,5 +13,5 @@ Require-Bundle: org.eclipse.core.runtime,
  com.raytheon.viz.ui,
  com.raytheon.uf.viz.core,
  com.raytheon.uf.common.dataplugin,
- javax.xml.bind
+ jakarta.xml.bind
 Bundle-ClassPath: com.raytheon.uf.viz.productbrowser.jar

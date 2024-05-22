@@ -36,6 +36,6 @@ Export-Package: com.raytheon.uf.common.derivparam,
  com.raytheon.uf.common.derivparam.library,
  com.raytheon.uf.common.derivparam.tree
 Require-Bundle: org.geotools,
- javax.xml.bind,
+ jakarta.xml.bind,
  javax.measure,
  jakarta.persistence

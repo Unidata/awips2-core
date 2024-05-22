@@ -13,5 +13,5 @@ Import-Package: com.raytheon.uf.common.serialization,
 Require-Bundle: org.springframework,
  com.raytheon.uf.common.status,
  com.raytheon.uf.common.util,
- javax.xml.bind
+ jakarta.xml.bind
 Eclipse-BuddyPolicy: registered

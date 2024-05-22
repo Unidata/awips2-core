@@ -19,8 +19,8 @@
  **/
 package com.raytheon.uf.common.serialization.jaxb;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
 
 /**
  * Object added to jaxb class list first so jaxb.properties can be found

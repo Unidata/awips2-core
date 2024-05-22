@@ -21,8 +21,8 @@ package com.raytheon.uf.viz.ui.menus.xml;
 
 import java.util.Set;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
 
 import org.eclipse.jface.action.AbstractGroupMarker;
 import org.eclipse.jface.action.GroupMarker;

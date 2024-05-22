@@ -18,7 +18,7 @@ Require-Bundle: com.raytheon.uf.common.time;visibility:=reexport,
  com.raytheon.uf.common.message,
  com.raytheon.uf.common.numeric,
  com.raytheon.uf.common.util,
- javax.xml.bind
+ jakarta.xml.bind
 Export-Package: com.raytheon.uf.common.dataaccess,
  com.raytheon.uf.common.dataaccess.exception,
  com.raytheon.uf.common.dataaccess.geom,

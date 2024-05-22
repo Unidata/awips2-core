@@ -19,8 +19,8 @@
  **/
 package com.raytheon.uf.viz.core.rsc;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
 
 /**
  * Provides an interface for generating a string that describes an

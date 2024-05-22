@@ -22,4 +22,4 @@ Require-Bundle: com.raytheon.uf.common.time,
  com.raytheon.uf.common.units,
  org.apache.commons.lang3,
  org.hibernate,
- javax.xml.bind
+ jakarta.xml.bind

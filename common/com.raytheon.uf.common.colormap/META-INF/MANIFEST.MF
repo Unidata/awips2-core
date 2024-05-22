@@ -12,7 +12,7 @@ Export-Package: com.raytheon.uf.common.colormap,
 Require-Bundle: com.raytheon.uf.common.serialization,
  javax.measure,
  com.raytheon.uf.common.units,
- javax.xml.bind,
+ jakarta.xml.bind,
  com.raytheon.uf.common.localization
 Import-Package: com.raytheon.uf.common.status
 

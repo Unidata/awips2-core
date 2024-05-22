@@ -39,7 +39,7 @@ Require-Bundle: org.eclipse.ui,
  com.raytheon.uf.common.jms;visibility:=reexport,
  org.slf4j,
  com.raytheon.uf.common.python,
- javax.xml.bind,
+ jakarta.xml.bind,
  javax.jws,
  org.springframework
 Bundle-ActivationPolicy: lazy

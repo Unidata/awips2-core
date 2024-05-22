@@ -22,9 +22,9 @@ package com.raytheon.uf.viz.core.map;
 
 import java.text.NumberFormat;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlRootElement;
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import org.eclipse.swt.graphics.RGB;
 import org.geotools.api.geometry.Position;

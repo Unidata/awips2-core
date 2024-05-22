@@ -9,6 +9,6 @@ Export-Package: com.raytheon.uf.common.status,
 Bundle-RequiredExecutionEnvironment: JavaSE-11
 Eclipse-BuddyPolicy: registered
 Require-Bundle: org.slf4j,
- javax.xml.bind
+ jakarta.xml.bind
 Import-Package: com.raytheon.uf.common.util,
  org.apache.commons.io.output

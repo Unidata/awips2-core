@@ -13,5 +13,5 @@ Import-Package: com.raytheon.uf.common.alertmonitor,
  com.raytheon.uf.common.status.slf4j,
  com.raytheon.uf.edex.core
 Require-Bundle: org.slf4j,
- javax.xml.bind
+ jakarta.xml.bind
 Export-Package: com.raytheon.uf.edex.log

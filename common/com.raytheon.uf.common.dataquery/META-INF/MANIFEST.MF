@@ -12,6 +12,6 @@ Export-Package: com.raytheon.uf.common.dataquery,
 Require-Bundle: com.raytheon.uf.common.serialization,
  com.raytheon.uf.common.serialization.comm,
  com.raytheon.uf.common.dataplugin,
- javax.xml.bind
+ jakarta.xml.bind
 Import-Package: com.raytheon.uf.common.time,
  com.raytheon.uf.common.time.util

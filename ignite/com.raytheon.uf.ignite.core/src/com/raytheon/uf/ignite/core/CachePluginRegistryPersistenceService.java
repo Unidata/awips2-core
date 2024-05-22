@@ -25,7 +25,7 @@ import java.nio.file.Paths;
 import java.util.Iterator;
 
 import javax.cache.Cache.Entry;
-import javax.xml.bind.JAXB;
+import jakarta.xml.bind.JAXB;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.resources.IgniteInstanceResource;

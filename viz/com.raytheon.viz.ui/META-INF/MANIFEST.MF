@@ -25,7 +25,7 @@ Require-Bundle: org.eclipse.ui;visibility:=reexport,
  org.eclipse.e4.core.di.annotations,
  org.eclipse.e4.core.services,
  org.apache.commons.collections4,
- javax.xml.bind,
+ jakarta.xml.bind,
  jakarta.inject
 Import-Package: com.raytheon.uf.common.style,
  com.raytheon.viz.core,

@@ -10,6 +10,6 @@ Require-Bundle: com.raytheon.uf.common.datastore.ignite,
  org.apache.ignite,
  org.slf4j,
  com.raytheon.uf.common.datastorage,
- javax.xml.bind,
+ jakarta.xml.bind,
  jakarta.jms,
  com.raytheon.uf.common.serialization

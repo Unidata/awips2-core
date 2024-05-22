@@ -33,6 +33,6 @@ Require-Bundle: org.apache.commons.lang3,
  com.raytheon.uf.edex.database;visibility:=reexport,
  com.raytheon.uf.edex.core;visibility:=reexport,
  org.slf4j,
- javax.xml.bind
+ jakarta.xml.bind
 Bundle-RequiredExecutionEnvironment: JavaSE-11
 Import-Package: com.raytheon.uf.common.convert
