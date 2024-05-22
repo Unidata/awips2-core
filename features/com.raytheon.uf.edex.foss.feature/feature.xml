@@ -28,6 +28,7 @@
        <import feature="com.raytheon.uf.edex.foss.javax.servlet.feature" version="3.1.0"/>
        <import feature="com.raytheon.uf.edex.foss.jakarta.servlet.feature" version="0.0.0"/>
        <import feature="com.raytheon.uf.edex.foss.org.apache.shiro.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.javax.activation.feature" version="0.0.0"/>
        <import feature="com.raytheon.uf.edex.foss.jakarta.activation.feature" version="0.0.0"/>
        <import feature="com.raytheon.uf.edex.foss.javax.mail.feature" version="0.0.0"/>
        <import feature="com.raytheon.uf.edex.foss.javax.media.opengl.feature" version="0.0.0"/>
