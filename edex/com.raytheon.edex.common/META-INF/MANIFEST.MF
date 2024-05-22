@@ -16,7 +16,7 @@ Export-Package: com.raytheon.edex.common.request,
  com.raytheon.edex.utility
 Require-Bundle: org.apache.commons.lang3,
  javax.measure,
- javax.persistence,
+ jakarta.persistence,
  com.raytheon.uf.common.localization,
  com.raytheon.uf.common.serialization;visibility:=reexport,
  com.raytheon.uf.common.status,

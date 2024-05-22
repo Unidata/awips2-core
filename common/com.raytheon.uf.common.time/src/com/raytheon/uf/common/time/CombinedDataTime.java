@@ -4,7 +4,7 @@ import java.util.Calendar;
 import java.util.Iterator;
 import java.util.TimeZone;
 
-import javax.persistence.Transient;
+import jakarta.persistence.Transient;
 import javax.xml.bind.annotation.XmlTransient;
 
 /**

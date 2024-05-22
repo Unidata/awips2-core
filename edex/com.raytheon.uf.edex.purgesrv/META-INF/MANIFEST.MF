@@ -8,5 +8,5 @@ Bundle-RequiredExecutionEnvironment: JavaSE-1.6
 Require-Bundle: com.raytheon.edex.common,
  org.apache.commons.lang3,
  com.raytheon.uf.common.status,
- javax.persistence
+ jakarta.persistence
 Export-Package: com.raytheon.uf.edex.purgesrv

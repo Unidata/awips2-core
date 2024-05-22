@@ -19,7 +19,7 @@ Require-Bundle: com.raytheon.uf.common.localization,
  com.raytheon.uf.common.util,
  org.apache.commons.beanutils,
  javax.measure,
- javax.persistence;visibility:=reexport,
+ jakarta.persistence;visibility:=reexport,
  org.hibernate;visibility:=reexport,
  javax.xml.bind
 Import-Package: com.raytheon.uf.common.convert

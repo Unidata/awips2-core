@@ -24,9 +24,9 @@ import java.util.Date;
 
 import javax.measure.Unit;
 import javax.measure.quantity.Time;
-import javax.persistence.Column;
-import javax.persistence.Embeddable;
-import javax.persistence.Transient;
+import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
+import jakarta.persistence.Transient;
 
 import com.raytheon.uf.common.pointdata.PointDataDescription.Type;
 import com.raytheon.uf.common.pointdata.elements.AbstractPointDataObject;

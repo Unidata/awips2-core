@@ -7,7 +7,7 @@ Bundle-Vendor: RAYTHEON
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Require-Bundle: com.raytheon.uf.common.serialization,
  com.raytheon.uf.common.serialization.comm,
- javax.persistence,
+ jakarta.persistence,
  com.raytheon.uf.common.dataplugin,
  com.google.guava;bundle-version="32.0.0"
 Export-Package: com.raytheon.uf.common.event

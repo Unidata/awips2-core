@@ -25,6 +25,6 @@ Import-Package: com.raytheon.uf.common.comm,
  com.raytheon.uf.common.time,
  com.raytheon.uf.common.units
 Require-Bundle: javax.measure,
- javax.persistence,
+ jakarta.persistence,
  org.geotools,
  org.apache.commons.lang3

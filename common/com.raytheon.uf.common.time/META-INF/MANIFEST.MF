@@ -15,7 +15,7 @@ Require-Bundle: org.springframework,
  org.hibernate,
  javax.xml.bind,
  javax.measure,
- javax.persistence
+ jakarta.persistence
 Import-Package: org.apache.commons.beanutils
 Export-Package: com.raytheon.uf.common.time,
  com.raytheon.uf.common.time.adapter,
