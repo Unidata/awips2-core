@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <feature
-      id="com.raytheon.uf.edex.foss.javax.activation.feature"
-      label="javax.activation Feature"
-      version="1.2.2"
+      id="com.raytheon.uf.edex.foss.org.ehcache.feature"
+      label="org.ehcache Feature"
+      version="3.10.8"
       provider-name="RAYTHEON">
 
    <description url="http://www.example.com/description">
@@ -18,9 +18,9 @@
    </license>
 
    <plugin
-         id="javax.activation"
+         id="org.ehcache"
          download-size="0"
          install-size="0"
-         version="1.2.2"/>
+         version="3.10.8"/>
 
 </feature>

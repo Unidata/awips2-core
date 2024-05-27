@@ -28,6 +28,7 @@
        <import feature="com.raytheon.uf.edex.foss.javax.servlet.feature" version="3.1.0"/>
        <import feature="com.raytheon.uf.edex.foss.jakarta.servlet.feature" version="0.0.0"/>
        <import feature="com.raytheon.uf.edex.foss.org.apache.shiro.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.javax.activation.feature" version="0.0.0"/>
        <import feature="com.raytheon.uf.edex.foss.jakarta.activation.feature" version="0.0.0"/>
        <import feature="com.raytheon.uf.edex.foss.javax.mail.feature" version="0.0.0"/>
        <import feature="com.raytheon.uf.edex.foss.javax.media.opengl.feature" version="0.0.0"/>
@@ -59,6 +60,7 @@
        <import feature="com.raytheon.uf.edex.foss.ogc.tools.gml.feature" version="0.0.0"/>
        <import feature="com.raytheon.uf.edex.foss.net.dods.feature" version="0.0.0"/>
        <import feature="com.raytheon.uf.edex.foss.org.apache.commons.compress.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.org.ehcache.feature" version="0.0.0"/>
    </requires>
   
    <!-- need to have at least one plugin in the feature. This one was
