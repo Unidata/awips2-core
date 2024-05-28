@@ -170,6 +170,18 @@
          version="0.0.0"/>
 
    <plugin
+         id="jakarta.annotation"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"/>
+
+   <plugin
+         id="jakarta.inject"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"/>
+
+   <plugin
          id="javax.cache"
          download-size="0"
          install-size="0"
@@ -346,6 +358,12 @@
          install-size="0"
          version="0.0.0"
          unpack="false"/>
+
+   <plugin
+         id="org.ehcache"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"/>
 
    <plugin
          id="org.geotools"
