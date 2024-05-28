@@ -24,6 +24,12 @@
          version="0.0.0"/>
 
    <plugin
+         id="jakarta.xml.bind"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"/>
+
+   <plugin
          id="javax.jws"
          download-size="0"
          install-size="0"
