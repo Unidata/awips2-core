@@ -3,6 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: Viz UI
 Bundle-SymbolicName: com.raytheon.viz.ui; singleton:=true
 Bundle-Version: 1.16.0.qualifier
+Eclipse-BundleShape: dir
 Bundle-Activator: com.raytheon.viz.ui.UiPlugin
 Bundle-ActivationPolicy: lazy
 Bundle-Vendor: Raytheon

@@ -3,6 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: Dataaccess
 Bundle-SymbolicName: com.raytheon.uf.common.dataaccess
 Bundle-Version: 1.19.0.qualifier
+Eclipse-BundleShape: dir
 Bundle-Vendor: RAYTHEON
 Bundle-RequiredExecutionEnvironment: JavaSE-11
 Require-Bundle: com.raytheon.uf.common.time;visibility:=reexport,

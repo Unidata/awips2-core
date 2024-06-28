@@ -15,3 +15,4 @@ Require-Bundle: org.springframework,
  com.raytheon.uf.common.util,
  jakarta.xml.bind
 Eclipse-BuddyPolicy: registered
+Eclipse-BundleShape: dir

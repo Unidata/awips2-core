@@ -3,6 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: Nav Tools Plug-in
 Bundle-SymbolicName: com.raytheon.viz.ui.tools.nav;singleton:=true
 Bundle-Version: 1.18.0.qualifier
+Eclipse-BundleShape: dir
 Bundle-Vendor: Raytheon
 Require-Bundle: org.eclipse.ui,
  com.raytheon.viz.ui,

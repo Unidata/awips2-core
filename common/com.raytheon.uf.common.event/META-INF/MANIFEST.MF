@@ -12,3 +12,4 @@ Require-Bundle: com.raytheon.uf.common.serialization,
  com.google.guava;bundle-version="32.0.0"
 Export-Package: com.raytheon.uf.common.event
 Eclipse-BuddyPolicy: registered
+Eclipse-BundleShape: dir

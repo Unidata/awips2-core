@@ -3,6 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: Geolocated Point Displays
 Bundle-SymbolicName: com.raytheon.uf.viz.core.point;singleton:=true
 Bundle-Version: 1.19.0.qualifier
+Eclipse-BundleShape: dir
 Bundle-Vendor: RAYTHEON
 Bundle-RequiredExecutionEnvironment: JavaSE-11
 Require-Bundle: com.raytheon.uf.viz.core,
