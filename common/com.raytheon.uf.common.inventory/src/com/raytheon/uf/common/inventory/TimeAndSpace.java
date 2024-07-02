@@ -19,6 +19,8 @@
  **/
 package com.raytheon.uf.common.inventory;
 
+import java.util.Objects;
+
 import org.geotools.coverage.grid.GridGeometry2D;
 
 import com.raytheon.uf.common.geospatial.IGridGeometryProvider;
@@ -39,13 +41,12 @@ import com.raytheon.uf.common.time.DataTime;
  * Apr 11, 2014  2947     bsteffen    Switch space to use IGridGeometryProvider
  * Mar 07, 2024  2036814  sharbison   Sort the times in LinkedLists for
  *                                    reliable derived parameter results.
+ * Jul 15, 2024  2037624  mapeters    Add matches(), isVirtual()
  *
  * </pre>
  *
  * @author bsteffen
- * @version 1.0
  */
-
 public class TimeAndSpace implements Comparable<TimeAndSpace> {
 
     /**
@@ -127,13 +128,42 @@ public class TimeAndSpace implements Comparable<TimeAndSpace> {
         return space == SPACE_AGNOSTIC;
     }
 
+    /**
+     * @return true if this is representing the data as being available for a
+     *         different time than it's actually for, false otherwise
+     */
+    public boolean isVirtual() {
+        return false;
+    }
+
+    /**
+     * Determine if this and other have the same time and space. This differs
+     * from {@link #equals} in that it doesn't check that the classes match, and
+     * doesn't check subclass fields.
+     *
+     * @param other
+     *            the other {@link TimeAndSpace} to compare against
+     * @return true if this and other match, false otherwise
+     */
+    public final boolean matches(TimeAndSpace other) {
+        if (this == other) {
+            return true;
+        }
+        if (other == null) {
+            return false;
+        }
+        if (!Objects.equals(space, other.space)) {
+            return false;
+        }
+        if (!Objects.equals(time, other.time)) {
+            return false;
+        }
+        return true;
+    }
+
     @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + ((space == null) ? 0 : space.hashCode());
-        result = prime * result + ((time == null) ? 0 : time.hashCode());
-        return result;
+        return Objects.hash(space, time);
     }
 
     @Override
@@ -148,18 +178,10 @@ public class TimeAndSpace implements Comparable<TimeAndSpace> {
             return false;
         }
         TimeAndSpace other = (TimeAndSpace) obj;
-        if (space == null) {
-            if (other.space != null) {
-                return false;
-            }
-        } else if (!space.equals(other.space)) {
+        if (!Objects.equals(space, other.space)) {
             return false;
         }
-        if (time == null) {
-            if (other.time != null) {
-                return false;
-            }
-        } else if (!time.equals(other.time)) {
+        if (!Objects.equals(time, other.time)) {
             return false;
         }
         return true;

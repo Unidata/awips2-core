@@ -24,8 +24,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 import com.raytheon.uf.common.dataplugin.level.Level;
@@ -33,6 +35,7 @@ import com.raytheon.uf.common.datastorage.records.FloatDataRecord;
 import com.raytheon.uf.common.datastorage.records.IDataRecord;
 import com.raytheon.uf.common.derivparam.library.DerivedParameterGenerator;
 import com.raytheon.uf.common.derivparam.library.DerivedParameterRequest;
+import com.raytheon.uf.common.inventory.TimeAndSpace;
 import com.raytheon.uf.common.inventory.data.AbstractRequestableData;
 import com.raytheon.uf.common.inventory.data.AggregateRequestableData;
 import com.raytheon.uf.common.inventory.data.CubeRequestableData;
@@ -54,7 +57,8 @@ import com.raytheon.uf.common.status.PerformanceStatus;
  *                                    concurrent python for threading.
  * Jan 14, 2014  2661     bsteffen    Make vectors u,v only
  * Jan 26, 2022  8741     njensen     Added performance logging
- *
+ * Jul 15, 2024  2037624  mapeters    Override getTimeAndSpace to check for
+ *                                    virtual dependencies
  *
  * </pre>
  *
@@ -65,7 +69,7 @@ public class DerivedRequestableData extends AbstractRequestableData {
     private static final IPerformanceStatusHandler perfLog = PerformanceStatus
             .getHandler("DerivedRequestableData");
 
-    private Map<Object, WeakReference<DerivedParameterRequest>> cache = Collections
+    private final Map<Object, WeakReference<DerivedParameterRequest>> cache = Collections
             .synchronizedMap(
                     new HashMap<Object, WeakReference<DerivedParameterRequest>>());
 
@@ -195,6 +199,39 @@ public class DerivedRequestableData extends AbstractRequestableData {
     }
 
     @Override
+    public TimeAndSpace getTimeAndSpace() {
+        /*
+         * If any dependency is using virtual data, then the derived data is
+         * virtual as well. So check for virtual dependencies first and use
+         * their time and space if possible.
+         */
+        TimeAndSpace tas = super.getTimeAndSpace();
+        Set<TimeAndSpace> virtualTasSet = new HashSet<>();
+        for (AbstractRequestableData dep : getDependencies()) {
+            TimeAndSpace depTas = dep.getTimeAndSpace();
+            if (depTas.isVirtual()) {
+                virtualTasSet.add(depTas);
+            }
+        }
+        if (virtualTasSet.size() == 1) {
+            TimeAndSpace virtTas = virtualTasSet.iterator().next();
+            if (virtTas.matches(tas)) {
+                tas = virtTas;
+            } else {
+                throw new RuntimeException(
+                        "Virtual dependency's time/space don't match derived param's time/space for "
+                                + this + ": Dependency: " + virtTas
+                                + "; Derived: " + tas);
+            }
+        } else if (virtualTasSet.size() > 1) {
+            throw new RuntimeException("Different virtual dependencies used by "
+                    + this + ": " + virtualTasSet);
+        }
+
+        return tas;
+    }
+
+    @Override
     public List<AbstractRequestableData> getDependencies() {
         List<AbstractRequestableData> results = new ArrayList<>();
         for (Object param : request.getBaseParams()) {
@@ -204,5 +241,4 @@ public class DerivedRequestableData extends AbstractRequestableData {
         }
         return results;
     }
-
 }
