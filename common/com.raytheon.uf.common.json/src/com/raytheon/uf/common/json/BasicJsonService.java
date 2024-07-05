@@ -29,7 +29,7 @@ import java.util.TreeMap;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectWriter;
-import com.fasterxml.jackson.module.jaxb.JaxbAnnotationModule;
+import com.fasterxml.jackson.module.jakarta.xmlbind.JakartaXmlBindAnnotationModule;
 
 /**
  * Basic service for reading/writing JSON
@@ -45,6 +45,7 @@ import com.fasterxml.jackson.module.jaxb.JaxbAnnotationModule;
  * Jan 19, 2016  5067      bclement    upgrade jackson to 2.6
  * Jan 26, 2017  6092      randerso    Moved BasicJsonService to
  *                                     com.raytheon.uf.common.json
+ * Jul 05, 2024  2037423   aford       Jackson Upgrade to 2.16.2
  *
  * </pre>
  *
@@ -59,7 +60,7 @@ public class BasicJsonService implements JsonService {
      */
     public BasicJsonService() {
         mapper = new ObjectMapper();
-        mapper.registerModule(new JaxbAnnotationModule());
+        mapper.registerModule(new JakartaXmlBindAnnotationModule());
         mapper.getFactory().configure(JsonGenerator.Feature.AUTO_CLOSE_TARGET,
                 false);
     }
