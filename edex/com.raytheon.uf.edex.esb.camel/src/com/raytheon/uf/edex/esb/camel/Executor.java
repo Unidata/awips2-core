@@ -65,7 +65,8 @@ import com.raytheon.uf.edex.esb.camel.context.ContextManager;
  * May 21, 2014  3195      bclement     system now prints available modes and exits if runmode not specified
  * Dec 22, 2015  4262      dgilling     Wait for async startup beans before starting routes.
  * Feb 08, 2017  6111      njensen      Initialize Spring ApplicationContext more explicitly
- * 
+ * Jul 10, 2024  2037227   tgurney      Fix EDEX crash when no plugins are present
+ *                                      Prevent overriding bean definitions.
  * </pre>
  * 
  * @author chammack
@@ -181,6 +182,13 @@ public class Executor {
         PathManagerFactory.setAdapter(new EDEXLocalizationAdapter());
 
         ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext();
+
+        /*
+         * Overriding bean definitions is a potential cause of bugs. We would
+         * rather enforce the constraint that any given bean name shall be
+         * defined no more than once.
+         */
+        context.setAllowBeanDefinitionOverriding(false);
         context.setConfigLocations(
                 xmlFiles.toArray(new String[xmlFiles.size()]));
         context.refresh();
@@ -236,19 +244,7 @@ public class Executor {
     }
 
     private static String printList(List<String> components) {
-        StringBuilder sb = new StringBuilder();
-
         Collections.sort(components);
-        Iterator<String> iterator = components.iterator();
-        while (iterator.hasNext()) {
-            sb.append(iterator.next());
-            sb.append(", ");
-        }
-
-        int length = sb.length();
-        sb.delete(length - 2, length);
-
-        return sb.toString();
+        return String.join(", ", components);
     }
-
 }

@@ -38,12 +38,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.naming.ConfigurationException;
 
 import org.apache.camel.CamelContext;
+import org.apache.camel.CamelContextAware;
+import org.apache.camel.CamelContextLifecycle;
 import org.apache.camel.Route;
-import org.springframework.beans.BeansException;
-import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
-import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
-import org.springframework.context.ApplicationContext;
-import org.springframework.context.ApplicationContextAware;
 
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
@@ -51,6 +48,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.util.Pair;
 import com.raytheon.uf.edex.core.EdexAsyncStartupBean;
 import com.raytheon.uf.edex.core.IContextStateProcessor;
+import com.raytheon.uf.edex.esb.camel.EDEXRouteContext;
 
 /**
  * Tracks all contexts and is used to auto determine context dependencies and
@@ -76,17 +74,27 @@ import com.raytheon.uf.edex.core.IContextStateProcessor;
  * Mar  4, 2021  8326     tgurney   Fixes for Camel 3 API changes
  * Jun 28, 2022  8865     mapeters  Shut down default context after all others
  * Sep 26, 2022  8920     smoorthy  Add method to register multiple processors at once.
+ * Jul  9, 2024  2037227  tgurney   First round of Camel 4 changes, minimum
+ *                                  necessary to allow EDEX startup.
  *
  * </pre>
  *
  * @author rjpeter
  */
-public class ContextManager
-        implements ApplicationContextAware, BeanFactoryPostProcessor {
+public class ContextManager implements CamelContextAware {
     private static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(ContextManager.class);
 
     private static ContextManager instance = new ContextManager();
+
+    /** The one application-wide CamelContext */
+    private CamelContext theCamelContext;
+
+    /** All route contexts known to this instance of EDEX */
+    private final Set<EDEXRouteContext> routeContexts = new HashSet<>();
+
+    /** Must hold this lock while accessing the routeContexts field */
+    private final Object routeContextsLock = new Object();
 
     /**
      * Endpoint types that are internal only. Mainly used at shutdown time to
@@ -121,11 +129,6 @@ public class ContextManager
      */
     private final IContextStateManager clusteredStateManager = new ClusteredContextStateManager(
             service);
-
-    /**
-     * Spring context. Set by the spring container after bean construction.
-     */
-    private ApplicationContext springCtx = null;
 
     /**
      * Map of context processors that have been registered for a given context.
@@ -195,8 +198,7 @@ public class ContextManager
         if (contextData == null) {
             synchronized (this) {
                 if (contextData == null) {
-                    contextData = new ContextData(new ArrayList<>(springCtx
-                            .getBeansOfType(CamelContext.class).values()));
+                    contextData = new ContextData(List.of(theCamelContext));
                 }
             }
         }
@@ -362,8 +364,9 @@ public class ContextManager
      *            the clustered context to be registered
      * @return this ContextManager
      */
-    public ContextManager registerClusteredContext(final CamelContext context) {
-        clusteredContexts.add(context);
+    public ContextManager registerClusteredContext(
+            final CamelContextLifecycle context) {
+        // TODO: implement
         return this;
     }
 
@@ -393,13 +396,13 @@ public class ContextManager
     }
 
     /**
-    * Register multiple context state processors to be called on start/stop of the
-    * context.
-    *
-    * @param context
-    * @param processors
-    * @return this ContextManager
-    */
+     * Register multiple context state processors to be called on start/stop of
+     * the context.
+     *
+     * @param context
+     * @param processors
+     * @return this ContextManager
+     */
     public ContextManager registerContextStateProcessor(
             final CamelContext context,
             final IContextStateProcessor... processors) {
@@ -412,7 +415,7 @@ public class ContextManager
             contextProcessors.put(context, processorList);
         }
 
-        for (IContextStateProcessor processor: processors) {
+        for (IContextStateProcessor processor : processors) {
             processorList.add(processor);
         }
         return this;
@@ -434,11 +437,6 @@ public class ContextManager
              * runtime dependencies.
              */
             clearDependencyMapping();
-
-            if (springCtx == null) {
-                statusHandler.info(
-                        "Spring Context not set.  Start up never completed, cannot orderly shutdown");
-            }
 
             statusHandler.info("Context Manager stopping contexts");
 
@@ -610,12 +608,6 @@ public class ContextManager
         }
     }
 
-    @Override
-    public void setApplicationContext(ApplicationContext context)
-            throws BeansException {
-        springCtx = context;
-    }
-
     /**
      * @return the timeout in milliseconds
      */
@@ -638,29 +630,6 @@ public class ContextManager
      */
     public boolean isShuttingDown() {
         return shuttingDown.get();
-    }
-
-    /**
-     * Update all camel beans to have autoStartup to false and
-     * allowUseOriginalMessage to false.
-     */
-    @Override
-    public void postProcessBeanFactory(
-            ConfigurableListableBeanFactory beanFactory) throws BeansException {
-        for (CamelContext ctx : beanFactory.getBeansOfType(CamelContext.class)
-                .values()) {
-            /*
-             * set contexts to not auto start to enforce dependency order
-             * correctly.
-             */
-            ctx.setAutoStartup(false);
-
-            /*
-             * set contexts to not allow use original message as that can hurt
-             * performance and is only useful for advanced error handling
-             */
-            ctx.setAllowUseOriginalMessage(false);
-        }
     }
 
     /**
@@ -693,5 +662,24 @@ public class ContextManager
         }
 
         return true;
+    }
+
+    public void registerRouteContext(EDEXRouteContext routeContext) {
+        synchronized (routeContextsLock) {
+            routeContexts.add(routeContext);
+            if (routeContext.isClustered()) {
+                registerClusteredContext(routeContext);
+            }
+        }
+    }
+
+    @Override
+    public CamelContext getCamelContext() {
+        return theCamelContext;
+    }
+
+    @Override
+    public void setCamelContext(CamelContext camelContext) {
+        this.theCamelContext = camelContext;
     }
 }
