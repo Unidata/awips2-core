@@ -1,26 +1,29 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
 package com.raytheon.viz.ui.actions;
 
+import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.viz.core.IDisplayPane;
 import com.raytheon.viz.ui.cmenu.AbstractRightClickAction;
 import com.raytheon.viz.ui.editor.IMultiPaneEditor;
@@ -29,17 +32,17 @@ import com.raytheon.viz.ui.editor.IMultiPaneEditor;
  * Handles selection of a specific pane of a multipane map editor. This action
  * is triggered by right clicking in the pane and selecting one of the "load to"
  * options.
- * 
+ *
  * <pre>
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * 19Dec2007    560        MW Fegan    Initial creation.
- * 
+ * 11Jul2024    2037519    bines       Fixed unhandled event loop exception in run()
+ *
  * </pre>
- * 
+ *
  * @author mfegan
- * @version 1.0
  */
 
 public class SelectPaneAction extends AbstractRightClickAction {
@@ -50,10 +53,13 @@ public class SelectPaneAction extends AbstractRightClickAction {
 
     private String action;
 
+    private static final IUFStatusHandler statusHandler = UFStatus
+            .getHandler(SelectPaneAction.class);
+
     /**
      * Constructor. Creates a SelectPaneAction wired to the specified pane and
      * displaying the specified text.
-     * 
+     *
      * @param pane
      *            the pane this action works on
      * @param actionText
@@ -73,9 +79,11 @@ public class SelectPaneAction extends AbstractRightClickAction {
         editor.setSelectedPane(action, pane);
         if (action.equals(IMultiPaneEditor.IMAGE_ACTION)) {
             try {
-                (new ImagePropertiesAction()).execute(null);
+                ExecutionEvent executionEvent = new ExecutionEvent();
+                (new ImagePropertiesAction()).execute(executionEvent);
             } catch (ExecutionException e) {
-                e.printStackTrace();
+                statusHandler.error("Failed to execute image properties action",
+                        e);
             }
         }
     }
