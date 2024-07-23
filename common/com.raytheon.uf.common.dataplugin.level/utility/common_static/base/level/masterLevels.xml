@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
     <!--
-        This_software_was_developed_and_/_or_modified_by_Raytheon_Company,
+                 This_software_was_developed_and_/_or_modified_by_Raytheon_Company,
         pursuant_to_Contract_DG133W-05-CQ-1067_with_the_US_Government.
 
         U.S._EXPORT_CONTROLLED_TECHNICAL_DATA
@@ -19,9 +19,10 @@
         further_licensing_information.
     -->
     <!-- 
-        This is an incremental override file, indicating that the files
+                 This is an incremental override file, indicating that the files
         at different localization levels will be combined. 
     -->
+    <!-- L. Byerle 3/18/2022 for LightninCast -->
 <masterLevelContainer>
     <masterLevel type="" unitString="" description="Maximum Temperature Speed Level" name="MAXT" />
     <masterLevel type="" unitString="" description="Maximum Mixing Ratio level" name="MAXR" />
@@ -94,4 +95,11 @@
     <masterLevel name="UNKNOWN" type="" unitString="" description="Unknown Level" />
     <masterLevel name="Dflt" type="" unitString="" description="Default Level" />
     <masterLevel name="SCOORD" type="" unitString="" description="Vertical S-Coordinate" />
+    <masterLevel name="EFULL" type="" unitString="" description="East Full Gridded Domain" />
+    <masterLevel name="ECONUS" type="" unitString="" description="East CONUS Satellite Sector" />
+    <masterLevel name="EMESO1" type="" unitString="" description="East Mesoscale 1 Satellite Sector" />
+    <masterLevel name="EMESO2" type="" unitString="" description="East Mesoscale 2 Satellite Sector" />
+    <masterLevel name="WCONUS" type="" unitString="" description="West CONUS Satellite Sector" />
+    <masterLevel name="WMESO1" type="" unitString="" description="West Mesoscale 1 Satellite Sector" />
+    <masterLevel name="WMESO2" type="" unitString="" description="West Mesoscale 2 Satellite Sector" />
 </masterLevelContainer>

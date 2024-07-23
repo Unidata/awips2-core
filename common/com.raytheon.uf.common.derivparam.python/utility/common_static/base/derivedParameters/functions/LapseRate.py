@@ -21,6 +21,7 @@
 
 from numpy.ma.core import masked_values
 from numpy.ma.core import log
+from numpy import nan
 
 ## 
 # Calculate lapse rate from temperature and pressure pairs.
@@ -43,9 +44,13 @@ def execute(Tlo, Plo, Thi, Phi):
     logTratio = log(Tratio)
     logPratio = log(Pratio)
     
+    
     # Guard against divide-by-zero errors, again
     logPratio = masked_values(logPratio, 0, copy=False)
     
     result = C * logTratio / logPratio
     
-    return result
+    #mask null values in AWIPS (originally done for gridded NUCAPS layered data 
+    result2 = masked_values(result, nan, copy=False) 
+    
+    return result2
