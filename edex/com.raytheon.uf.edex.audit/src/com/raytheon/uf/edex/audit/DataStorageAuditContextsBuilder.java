@@ -28,11 +28,10 @@ import org.springframework.context.ApplicationContextAware;
 
 import com.raytheon.uf.common.datastorage.audit.DataStorageAuditUtils;
 import com.raytheon.uf.edex.core.IMessageProducer;
-import com.raytheon.uf.edex.esb.camel.context.ContextManager;
 
 /**
- * Class that dynamically initializes clustered contexts for auditor
- * routes.
+ * Class that dynamically initializes clustered contexts for auditor routes.
+ *
  * <pre>
  *
  * SOFTWARE HISTORY
@@ -41,6 +40,10 @@ import com.raytheon.uf.edex.esb.camel.context.ContextManager;
  * ------------ ---------- ----------- --------------------------
  * Feb 03, 2023 9019       mapeters    Initial creation
  * Feb 10, 2023 9019       smoorthy    Migrate to separate plugin
+ * Jul 24, 2024 2037700    tgurney     Remove clustering and state processor
+ *                                     registration (temporary, Camel 4)
+ *
+ * </pre>
  */
 
 public class DataStorageAuditContextsBuilder
@@ -80,9 +83,11 @@ public class DataStorageAuditContextsBuilder
             }
             beanFactory.initializeBean(camelContext, camelContextId);
             beanFactory.registerSingleton(camelContextId, camelContext);
-            ContextManager.getInstance().registerClusteredContext(camelContext);
-            ContextManager.getInstance()
-                    .registerContextStateProcessor(camelContext, auditor);
+            // TODO Camel 4 - make clustered
+            // ContextManager.getInstance().registerClusteredContext(camelContext);
+            // TODO Camel 4 - register state processor
+            // ContextManager.getInstance()
+            // .registerContextStateProcessor(camelContext, auditor);
         }
     }
 

@@ -20,15 +20,23 @@
 package com.raytheon.uf.edex.esb.camel;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.CamelContextLifecycle;
+import org.apache.camel.Route;
 import org.apache.camel.RuntimeCamelException;
 import org.apache.camel.model.RouteDefinition;
 import org.apache.camel.spi.RouteController;
 import org.apache.camel.support.service.ServiceSupport;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.InitializingBean;
 
@@ -76,6 +84,9 @@ import com.raytheon.uf.edex.esb.camel.context.ContextManager;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * 2024-07-09   2037227    tgurney     Initial creation
+ * 2024-07-24   2037700    tgurney     Add logging of state changes.
+ *                                     Start internal routes first and stop
+ *                                     them last.
  *
  * </pre>
  *
@@ -108,6 +119,16 @@ import com.raytheon.uf.edex.esb.camel.context.ContextManager;
 public class EDEXRouteContext extends ServiceSupport
         implements CamelContextLifecycle, BeanNameAware, InitializingBean {
 
+    private static final Logger logger = LoggerFactory
+            .getLogger(EDEXRouteContext.class);
+
+    /**
+     * Endpoint types that are visible only within the EDEX JVM they were
+     * created in. We want to start these routes first and stop them last.
+     */
+    private static final Set<String> INTERNAL_ENDPOINT_TYPES = Set.of("direct",
+            "seda", "timer", "quartz");
+
     /**
      * Name of this object as a Spring bean. Don't set this manually. The only
      * reason this field is not final is that it has to be set after the
@@ -115,6 +136,7 @@ public class EDEXRouteContext extends ServiceSupport
      */
     private String name = null;
 
+    /** true if this is a clustered context, false if not */
     private final boolean clustered;
 
     private final EDEXRouteBuilder routeBuilder;
@@ -134,6 +156,10 @@ public class EDEXRouteContext extends ServiceSupport
         this.clustered = clustered;
     }
 
+    private void logInfo(String msg) {
+        logger.info(getName() + ": " + msg);
+    }
+
     @Override
     public void afterPropertiesSet() throws Exception {
         build();
@@ -151,7 +177,60 @@ public class EDEXRouteContext extends ServiceSupport
         contextManager.registerRouteContext(this);
     }
 
-    /** @return unmodifiable list of all routes contained in this context */
+    /**
+     * @param URI
+     *            a route URI
+     * @return the type of endpoint that the route receives messages from.
+     *         Frequently-used examples include "direct", "seda", "quartz",
+     *         "timer", "jms-generic", "jms-durable"
+     */
+    private static String getEndpointType(String uri) {
+        if (uri == null) {
+            return null;
+        }
+        String[] parts = uri.split(":", 2);
+        if (parts.length < 2) {
+            return null;
+        }
+        return parts[0];
+    }
+
+    /**
+     * @return true if the route is internal to this JVM, false if the route
+     *         receives messages from outside the JVM
+     */
+    private static boolean routeIsInternal(RouteDefinition r) {
+        return INTERNAL_ENDPOINT_TYPES
+                .contains(getEndpointType(r.getEndpointUrl()));
+    }
+
+    /**
+     * TODO Camel 4 - remove this method after implementing new startup/shutdown
+     * code
+     *
+     * @return true if the route is internal to this JVM, false if the route
+     *         receives messages from outside the JVM
+     * @deprecated Outside classes should no longer need to know about the
+     *             concept of internal vs external routes.
+     */
+    @Deprecated
+    public static boolean routeIsInternal(Route r) {
+        return INTERNAL_ENDPOINT_TYPES
+                .contains(getEndpointType(r.getEndpoint().getEndpointUri()));
+    }
+
+    /** Comparison key for sorting internal routes before external ones */
+    private static int internalFirst(RouteDefinition r) {
+        if (EDEXRouteContext.routeIsInternal(r)) {
+            return 0;
+        }
+        return 1;
+    }
+
+    /**
+     * @return unmodifiable list of all routes contained in this context. The
+     *         order of the routes is unspecified.
+     */
     public List<RouteDefinition> getRouteDefs() {
         if (this.status < EDEXRouteContext.BUILT) {
             // Shouldn't be possible. But just in case
@@ -160,6 +239,35 @@ public class EDEXRouteContext extends ServiceSupport
                             + this);
         }
         return routeDefs;
+    }
+
+    /**
+     * @return unmodifiable list of all routes contained in this context. Routes
+     *         that should be started first are ordered first.
+     */
+    public List<RouteDefinition> getRouteDefsInStartupOrder() {
+        List<RouteDefinition> routeDefsTmp = new ArrayList<>(getRouteDefs());
+        routeDefsTmp
+                .sort(Comparator.comparingInt(EDEXRouteContext::internalFirst));
+        return Collections.unmodifiableList(routeDefsTmp);
+    }
+
+    /**
+     * @return unmodifiable list of all routes contained in this context. Routes
+     *         that should be shut down first (according to inter-context
+     *         relationships) are ordered first.
+     */
+    public List<RouteDefinition> getRouteDefsInShutdownOrder() {
+        List<RouteDefinition> routeDefsTmp = new ArrayList<>(getRouteDefs());
+        routeDefsTmp.sort(Comparator
+                .comparingInt(r -> -EDEXRouteContext.internalFirst(r)));
+        return Collections.unmodifiableList(routeDefsTmp);
+    }
+
+    /** @return set of endpoint URLs for all routes in this context */
+    public Set<String> getEndpointUrls() {
+        return getRouteDefs().stream().map(RouteDefinition::getEndpointUrl)
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     /** @return the bean name */
@@ -204,46 +312,54 @@ public class EDEXRouteContext extends ServiceSupport
 
     @Override
     protected void doStart() {
-        for (RouteDefinition r : getRouteDefs()) {
+        logInfo("starting");
+        for (RouteDefinition r : getRouteDefsInStartupOrder()) {
             try {
                 getRouteController().startRoute(r.getRouteId());
             } catch (Exception e) {
                 throw new RuntimeCamelException(e);
             }
         }
+        logInfo("started");
     }
 
     @Override
     protected void doStop() {
-        for (RouteDefinition r : getRouteDefs()) {
+        logInfo("stopping");
+        for (RouteDefinition r : getRouteDefsInShutdownOrder()) {
             try {
                 getRouteController().stopRoute(r.getRouteId());
             } catch (Exception e) {
                 throw new RuntimeCamelException(e);
             }
         }
+        logInfo("stopped");
     }
 
     @Override
     protected void doSuspend() {
-        for (RouteDefinition r : getRouteDefs()) {
+        logInfo("suspending");
+        for (RouteDefinition r : getRouteDefsInStartupOrder()) {
             try {
                 getRouteController().suspendRoute(r.getRouteId());
             } catch (Exception e) {
                 throw new RuntimeCamelException(e);
             }
         }
+        logInfo("suspended");
     }
 
     @Override
     protected void doResume() {
-        for (RouteDefinition r : getRouteDefs()) {
+        logInfo("resuming");
+        for (RouteDefinition r : getRouteDefsInShutdownOrder()) {
             try {
                 getRouteController().resumeRoute(r.getRouteId());
             } catch (Exception e) {
                 throw new RuntimeCamelException(e);
             }
         }
+        logInfo("resumed");
     }
 
     /* Only for Spring to inject the bean name */
