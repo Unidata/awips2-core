@@ -32,8 +32,8 @@ import org.apache.camel.ServiceStatus;
 
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.common.util.Pair;
 import com.raytheon.uf.edex.core.IContextStateProcessor;
+import com.raytheon.uf.edex.esb.camel.EDEXRouteContext;
 
 /**
  * Implementation of IContextStateManager that does basic validation of context
@@ -53,6 +53,7 @@ import com.raytheon.uf.edex.core.IContextStateProcessor;
  * Jan 26, 2017 6092       randerso    Allow multiple context state processors per context
  * Jul 17, 2017 5570       tgurney     Always stop external routes first
  * Mar  4, 2021 8326       tgurney     Fixes for Camel 3 API changes
+ * Jul 25, 2024 2037700    tgurney     Use EDEXRouteContext to identify internal routes
  *
  * </pre>
  *
@@ -120,7 +121,7 @@ public class DefaultContextStateManager implements IContextStateManager {
                 routes.addAll(context.getRoutes());
 
                 Collections.sort(routes,
-                        Comparator.comparingInt(r -> r.getStartupOrder()));
+                        Comparator.comparingInt(Route::getStartupOrder));
                 for (Route route : routes) {
                     rval &= startRoute(route);
                 }
@@ -181,12 +182,7 @@ public class DefaultContextStateManager implements IContextStateManager {
                 // begin shutting down external routes
                 List<Route> routes = context.getRoutes();
                 for (Route route : routes) {
-                    String uri = route.getEndpoint().getEndpointUri();
-                    Pair<String, String> typeAndName = ContextData
-                            .getEndpointTypeAndName(uri);
-                    String type = typeAndName.getFirst();
-                    if (!ContextManager.INTERNAL_ENDPOINT_TYPES
-                            .contains(type)) {
+                    if (!EDEXRouteContext.routeIsInternal(route)) {
                         try {
                             statusHandler.info(
                                     "Stopping route [" + route.getId() + "]");

@@ -20,7 +20,8 @@
     -->
 
 <!--
-       Refer to edex/modes/README.txt for documentation
+       Refer to edex/modes/README.txt for documentation.
+       TODO Camel 4 - remove this file
 -->
 <edexModes>
     <mode name="dummy">

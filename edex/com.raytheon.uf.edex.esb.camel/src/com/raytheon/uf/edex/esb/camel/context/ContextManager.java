@@ -21,7 +21,6 @@ package com.raytheon.uf.edex.esb.camel.context;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -34,6 +33,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import javax.naming.ConfigurationException;
 
@@ -76,6 +77,7 @@ import com.raytheon.uf.edex.esb.camel.EDEXRouteContext;
  * Sep 26, 2022  8920     smoorthy  Add method to register multiple processors at once.
  * Jul  9, 2024  2037227  tgurney   First round of Camel 4 changes, minimum
  *                                  necessary to allow EDEX startup.
+ * Jul 24, 2024  2037700  tgurney   General refactoring to support EDEXRouteContext
  *
  * </pre>
  *
@@ -93,29 +95,23 @@ public class ContextManager implements CamelContextAware {
     /** All route contexts known to this instance of EDEX */
     private final Set<EDEXRouteContext> routeContexts = new HashSet<>();
 
-    /** Must hold this lock while accessing the routeContexts field */
-    private final Object routeContextsLock = new Object();
-
     /**
-     * Endpoint types that are internal only. Mainly used at shutdown time to
-     * designate routes that shouldn't be shutdown immediately.
+     * Must hold this lock while accessing the routeContexts field. Only take
+     * the write lock when adding or removing items from the set. Otherwise take
+     * the read lock.
      */
-    public static final Set<String> INTERNAL_ENDPOINT_TYPES;
-
-    static {
-        HashSet<String> set = new HashSet<>(
-                ContextDependencyMapping.DEPENDENCY_ENDPOINT_TYPES);
-        set.add("timer");
-        set.add("quartz");
-        set.add("direct");
-        INTERNAL_ENDPOINT_TYPES = Collections.unmodifiableSet(set);
-    }
+    private final ReadWriteLock routeContextsLock = new ReentrantReadWriteLock(
+            true);
 
     /**
      * Service used for start up and shut down threading.
      */
     private final ExecutorService service = Executors.newCachedThreadPool();
 
+    /*
+     * TODO Camel 4 - remove because it is now always empty. Instead we will
+     * call EDEXRouteContext.isClustered
+     */
     private final Set<CamelContext> clusteredContexts = new HashSet<>();
 
     /**
@@ -134,7 +130,7 @@ public class ContextManager implements CamelContextAware {
      * Map of context processors that have been registered for a given context.
      * Used to allow contexts to do custom worn on startup/shutdown.
      */
-    private final Map<CamelContext, List<IContextStateProcessor>> contextProcessors = new HashMap<>();
+    private final Map<EDEXRouteContext, List<IContextStateProcessor>> contextProcessors = new HashMap<>();
 
     /**
      * Cluster lock timeout for clustered contexts.
@@ -179,16 +175,6 @@ public class ContextManager implements CamelContextAware {
     }
 
     /**
-     * Returns a set of endpoint types that are considered internal for routing
-     * purposes.
-     *
-     * @return the internal endpoint types
-     */
-    public Set<String> getInternalEndpointTypes() {
-        return INTERNAL_ENDPOINT_TYPES;
-    }
-
-    /**
      * Gets the context data.
      *
      * @return the context data
@@ -229,7 +215,11 @@ public class ContextManager implements CamelContextAware {
      * @return this list of IContextStateProcessors
      */
     public List<IContextStateProcessor> getStateProcessor(
-            CamelContext context) {
+            CamelContextLifecycle context) {
+        /*
+         * TODO Camel 4 - take EDEXRouteContext as argument. CamelContexts will
+         * not be passed into this method anymore.
+         */
         return contextProcessors.get(context);
     }
 
@@ -290,11 +280,7 @@ public class ContextManager implements CamelContextAware {
                 int internalCount = externalCount - context.getRoutes().size();
 
                 for (Route route : context.getRoutes()) {
-                    String uri = route.getEndpoint().getEndpointUri();
-                    Pair<String, String> typeAndName = ContextData
-                            .getEndpointTypeAndName(uri);
-                    String type = typeAndName.getFirst();
-                    if (INTERNAL_ENDPOINT_TYPES.contains(type)) {
+                    if (EDEXRouteContext.routeIsInternal(route)) {
                         route.setStartupOrder(internalCount);
                         internalCount--;
                     } else {
@@ -304,49 +290,29 @@ public class ContextManager implements CamelContextAware {
                 }
             }
 
-            List<Future<Pair<CamelContext, Boolean>>> callbacks = new LinkedList<>();
+            List<Future<?>> callbacks = new LinkedList<>();
             for (final CamelContext context : cxtData.getContexts()) {
                 final IContextStateManager stateManager = getStateManager(
                         context);
                 if (stateManager.isContextStartable(context)) {
                     /*
                      * Have the ExecutorService start the context to allow for
-                     * quicker startup.
+                     * quicker startup. Only the contexts with no dependencies
+                     * are started from here. The state manager is responsible
+                     * for starting any contexts that depend on a context after
+                     * that context is started.
                      */
-                    callbacks.add(service.submit(() -> {
-                        boolean rval = false;
-                        try {
-                            rval = stateManager.startContext(context);
-
-                            if (!rval) {
-                                statusHandler.error("Context ["
-                                        + context.getName()
-                                        + "] failed to start, shutting down");
-                                System.exit(1);
-                            }
-                        } catch (Throwable e) {
-                            statusHandler
-                                    .fatal("Error occurred starting context: "
-                                            + context.getName(), e);
-                            System.exit(1);
-                        }
-
-                        return new Pair<>(context, rval);
-                    }));
+                    callbacks.add(service.submit(new StartContext(context)));
                 }
             }
 
             /*
-             * Double check call backs that everything started successfully. If
-             * some did not start successfully, force shutdown.
+             * Wait for contexts to start. It is not necessary to check any
+             * statuses since a thread that fails to start its context will
+             * cause the whole JVM to exit.
              */
-            for (Future<Pair<CamelContext, Boolean>> callback : callbacks) {
-                Pair<CamelContext, Boolean> val = callback.get();
-                if (!val.getSecond().booleanValue()) {
-                    statusHandler.error("Context [" + val.getFirst().getName()
-                            + "] failed to start, shutting down");
-                    System.exit(1);
-                }
+            for (Future<?> callback : callbacks) {
+                callback.get();
             }
 
         } catch (Throwable e) {
@@ -356,18 +322,31 @@ public class ContextManager implements CamelContextAware {
         }
     }
 
-    /**
-     * Register a clustered context that is meant to run as a singleton in the
-     * cluster.
-     *
-     * @param context
-     *            the clustered context to be registered
-     * @return this ContextManager
-     */
-    public ContextManager registerClusteredContext(
-            final CamelContextLifecycle context) {
-        // TODO: implement
-        return this;
+    private class StartContext implements Runnable {
+
+        private CamelContext context;
+
+        public StartContext(CamelContext context) {
+            this.context = context;
+        }
+
+        @Override
+        public void run() {
+            try {
+                IContextStateManager stateManager = getStateManager(context);
+                if (!stateManager.startContext(context)) {
+                    statusHandler.error("Context [" + context.getName()
+                            + "] failed to start, shutting down");
+                    System.exit(1);
+                }
+            } catch (Throwable e) {
+                statusHandler.fatal(
+                        "Error occurred starting context: " + context.getName(),
+                        e);
+                System.exit(1);
+            }
+        }
+
     }
 
     /**
@@ -379,7 +358,7 @@ public class ContextManager implements CamelContextAware {
      * @return this ContextManager
      */
     public ContextManager registerContextStateProcessor(
-            final CamelContext context,
+            final EDEXRouteContext context,
             final IContextStateProcessor processor) {
 
         List<IContextStateProcessor> processorList = contextProcessors
@@ -404,7 +383,7 @@ public class ContextManager implements CamelContextAware {
      * @return this ContextManager
      */
     public ContextManager registerContextStateProcessor(
-            final CamelContext context,
+            final EDEXRouteContext context,
             final IContextStateProcessor... processors) {
 
         List<IContextStateProcessor> processorList = contextProcessors
@@ -665,11 +644,11 @@ public class ContextManager implements CamelContextAware {
     }
 
     public void registerRouteContext(EDEXRouteContext routeContext) {
-        synchronized (routeContextsLock) {
+        routeContextsLock.writeLock().lock();
+        try {
             routeContexts.add(routeContext);
-            if (routeContext.isClustered()) {
-                registerClusteredContext(routeContext);
-            }
+        } finally {
+            routeContextsLock.writeLock().unlock();
         }
     }
 

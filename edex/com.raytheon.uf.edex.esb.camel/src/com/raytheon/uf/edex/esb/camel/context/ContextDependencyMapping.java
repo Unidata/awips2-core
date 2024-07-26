@@ -42,39 +42,27 @@ import com.raytheon.uf.common.util.Pair;
 
 /**
  * Contains context dependency mappings.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Mar 26, 2014 2726       rjpeter     Initial creation
- * 
+ * Jul 24, 2024 2037700    tgurney     Update list of endpoint types for Camel 4
+ *
  * </pre>
- * 
+ *
  * @author rjpeter
- * @version 1.0
  */
 public class ContextDependencyMapping {
     /**
-     * Endpoint types that should be tracked for dependency mapping
+     * Endpoint types that should be tracked for dependency mapping. These are
+     * used for communication between contexts
      */
-    protected static final Set<String> DEPENDENCY_ENDPOINT_TYPES;
-
-    static {
-        /*
-         * Endpoint types that are used for inner context routing. If we add
-         * other inner jvm routing types, they should be added here.
-         */
-        Set<String> types = new HashSet<String>(8);
-        types.add("vm");
-        types.add("direct-vm");
-        types.add("seda");
-        types.add("jmx");
-        types.add("guava-eventbus");
-        DEPENDENCY_ENDPOINT_TYPES = Collections.unmodifiableSet(types);
-    }
+    protected static final Set<String> DEPENDENCY_ENDPOINT_TYPES = Set
+            .of("direct", "seda");
 
     /**
      * The dependency mappings.
@@ -86,21 +74,20 @@ public class ContextDependencyMapping {
      * {@code suppressExceptions} can be used to differentiate between
      * startup/shutdown conditions to allow the map to be populated regardless
      * of detected issues.
-     * 
+     *
      * @param contextData
      * @param suppressExceptions
      * @throws ConfigurationException
      */
     public ContextDependencyMapping(ContextData contextData,
             boolean suppressExceptions) throws ConfigurationException {
-        dependencyMapping = Collections
-                .unmodifiableMap(populateDependencyMapping(contextData,
-                        suppressExceptions));
+        dependencyMapping = Collections.unmodifiableMap(
+                populateDependencyMapping(contextData, suppressExceptions));
     }
 
     /**
      * Returns a {@code IUFStatusHandler}. Not cached as rarely used.
-     * 
+     *
      * @return
      */
     private static IUFStatusHandler getHandler() {
@@ -111,7 +98,7 @@ public class ContextDependencyMapping {
      * Dependency mappings per context. The dependency mapping is only for
      * internal vm types that have a direct dependency. Indirect dependency via
      * a JMS queue for example is not returned/enforced.
-     * 
+     *
      * @param contextData
      * @param suppressExceptions
      *            Done in a shutdown scenario to get the dependencyMapping as
@@ -121,27 +108,26 @@ public class ContextDependencyMapping {
             ContextData contextData, boolean suppressExceptions)
             throws ConfigurationException {
         List<CamelContext> contexts = contextData.getContexts();
-        Map<CamelContext, DependencyNode> dependencyMapping = new LinkedHashMap<CamelContext, DependencyNode>(
+        Map<CamelContext, DependencyNode> dependencyMapping = new LinkedHashMap<>(
                 contexts.size());
 
         // set up dependency nodes for internal types
-        Map<String, CamelContext> consumesFrom = new HashMap<String, CamelContext>();
-        Map<String, List<CamelContext>> producesTo = new HashMap<String, List<CamelContext>>();
-        Set<String> consumers = new HashSet<String>();
+        Map<String, CamelContext> consumesFrom = new HashMap<>();
+        Map<String, List<CamelContext>> producesTo = new HashMap<>();
+        Set<String> consumers = new HashSet<>();
 
         // scan for consuming and producing internal endpoints
         for (CamelContext context : contexts) {
             dependencyMapping.put(context, new DependencyNode(context));
             consumers.clear();
             List<Route> routes = context.getRoutes();
-            if ((routes != null) && (routes.size() > 0)) {
+            if (routes != null) {
                 for (Route route : routes) {
                     String uri = route.getEndpoint().getEndpointUri();
                     Pair<String, String> typeAndName = ContextData
                             .getEndpointTypeAndName(uri);
-                    if ((typeAndName != null)
-                            && DEPENDENCY_ENDPOINT_TYPES.contains(typeAndName
-                                    .getFirst())) {
+                    if (typeAndName != null && DEPENDENCY_ENDPOINT_TYPES
+                            .contains(typeAndName.getFirst())) {
                         String endpointName = typeAndName.getSecond();
                         consumers.add(endpointName);
 
@@ -156,8 +142,7 @@ public class ContextDependencyMapping {
                             String msg = "Two contexts listen to the same internal endpoint ["
                                     + endpointName
                                     + "].  ContextManager cannot handle this situation.  Double check configuration.  Conflicting contexts ["
-                                    + prev.getName()
-                                    + "] and ["
+                                    + prev.getName() + "] and ["
                                     + context.getName() + "]";
                             if (suppressExceptions) {
                                 getHandler().error(msg);
@@ -170,20 +155,19 @@ public class ContextDependencyMapping {
             }
 
             Collection<Endpoint> endpoints = context.getEndpoints();
-            if ((endpoints != null) && (endpoints.size() > 0)) {
+            if (endpoints != null) {
                 for (Endpoint ep : endpoints) {
                     String uri = ep.getEndpointUri();
                     Pair<String, String> typeAndName = ContextData
                             .getEndpointTypeAndName(uri);
-                    if ((typeAndName != null)
-                            && DEPENDENCY_ENDPOINT_TYPES.contains(typeAndName
-                                    .getFirst())) {
+                    if (typeAndName != null && DEPENDENCY_ENDPOINT_TYPES
+                            .contains(typeAndName.getFirst())) {
                         String endpointName = typeAndName.getSecond();
                         if (!consumers.contains(endpointName)) {
                             List<CamelContext> producerCtxs = producesTo
                                     .get(endpointName);
                             if (producerCtxs == null) {
-                                producerCtxs = new LinkedList<CamelContext>();
+                                producerCtxs = new LinkedList<>();
                                 producesTo.put(endpointName, producerCtxs);
                             }
                             producerCtxs.add(context);
@@ -202,8 +186,7 @@ public class ContextDependencyMapping {
 
             if (consumer == null) {
                 StringBuilder msg = new StringBuilder(200);
-                msg.append("Internal Routing Endpoint [")
-                        .append(endpoint)
+                msg.append("Internal Routing Endpoint [").append(endpoint)
                         .append("] has no defined consumers.  This is endpoint is used in contexts [");
                 Iterator<CamelContext> producerIter = producers.iterator();
 
@@ -237,7 +220,7 @@ public class ContextDependencyMapping {
     /**
      * Get the contexts that depend upon the passed context to work. If the
      * passed context is unknown null will be returned.
-     * 
+     *
      * @param context
      * @return
      */
@@ -253,7 +236,7 @@ public class ContextDependencyMapping {
     /**
      * Get the contexts that the passed context requires to be running to work.
      * If the passed context is unknown null will be returned.
-     * 
+     *
      * @param context
      * @return
      */
