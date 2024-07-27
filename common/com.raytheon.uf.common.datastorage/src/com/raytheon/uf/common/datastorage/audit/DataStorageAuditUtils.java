@@ -37,6 +37,7 @@ import com.raytheon.uf.common.dataplugin.PluginDataObject;
  * Feb 17, 2022 8608       mapeters    Initial creation
  * Aug 24, 2022 8920       mapeters    Optimizations; Swap key/values for statuses.
  * Feb 03, 2023 9019       mapeters    Adjust for configurable number of audit threads.
+ * Jul 29, 2024 2037700    tgurney     Disable all queues (temporary, Camel 4)
  *
  * </pre>
  *
@@ -44,8 +45,10 @@ import com.raytheon.uf.common.dataplugin.PluginDataObject;
  */
 public class DataStorageAuditUtils {
 
-    public static final int NUM_QUEUES = Integer
-            .getInteger("data.storage.auditer.num.queues");
+    // TODO Camel 4 - add this back in.
+    // public static final int NUM_QUEUES = Integer
+    // .getInteger("data.storage.auditer.num.queues");
+    public static final int NUM_QUEUES = 0;
 
     public static final String QUEUE_ROOT_NAME = "data.storage.audit.event";
 

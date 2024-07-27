@@ -19,21 +19,13 @@
  **/
 package com.raytheon.uf.edex.esb.camel.context;
 
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.naming.ConfigurationException;
-
 import org.apache.camel.CamelContext;
-import org.apache.camel.Route;
 
 import com.raytheon.uf.common.util.Pair;
-import com.raytheon.uf.edex.core.EdexException;
 
 /**
  * Contains all known contexts and parsed data about the contexts.
@@ -47,193 +39,42 @@ import com.raytheon.uf.edex.core.EdexException;
  * Apr 10, 2014 2726       rjpeter     Initial creation.
  * Mar  4, 2021 8326       tgurney     Fixes for Camel 3 API changes
  * Jun 28, 2022 8865       mapeters    Add getDefaultContext()
+ * Jul 29, 2024 2037700    tgurney     Replace with shim interface (Camel 4).
+ *                                     Correctly parse URI without "//".
  *
  * </pre>
  *
  * @author rjpeter
  */
-public class ContextData {
-    private final List<CamelContext> contexts;
-
-    private final Map<String, Route> consumerRouteMapping;
-
-    private final Map<String, String> routeIdUriMapping;
-
+public interface ContextData {
     /**
      * Pulls the direct-vm:name, vm:name, queue:name, topic:name section from
      * the endpoint URI.
      */
-    private static final Pattern endpointUriParsePattern = Pattern
-            .compile("([^:]+)://([^?]+)");
+    public static final Pattern endpointUriParsePattern = Pattern
+            .compile("([^:]+):(?://)?([^?]+)");
 
-    /**
-     * Parses passed contexts for route and endpoint data about all contexts.
-     *
-     * @param contexts
-     * @throws ConfigurationException
-     */
-    public ContextData(List<CamelContext> contexts)
-            throws ConfigurationException {
-        this.contexts = Collections.unmodifiableList(contexts);
-        this.consumerRouteMapping = Collections
-                .unmodifiableMap(generateRouteMappings(this.contexts));
-        Map<String, String> idUriMapping = new HashMap<>(
-                consumerRouteMapping.size(), 1);
-        for (CamelContext ctx : this.contexts) {
-            for (Route route : ctx.getRoutes()) {
-                idUriMapping.put(route.getId(),
-                        route.getEndpoint().getEndpointUri());
-            }
-        }
-
-        this.routeIdUriMapping = Collections.unmodifiableMap(idUriMapping);
+    @Deprecated
+    public default List<CamelContext> getContexts() {
+        return List.of(getDefaultContext());
     }
 
     /**
-     * Populates an endpointName to {@code Route} mapping for the passed
-     * {@code CamelContext}s.
-     *
-     * @return
-     * @throws ConfigurationException
-     */
-    protected static Map<String, Route> generateRouteMappings(
-            List<CamelContext> contexts) throws ConfigurationException {
-        Map<String, Route> routeMapping = new HashMap<>(contexts.size() * 2, 1);
-
-        // populate the consumer definitions
-        for (CamelContext context : contexts) {
-            List<Route> routes = context.getRoutes();
-            if ((routes != null) && (!routes.isEmpty())) {
-                for (Route route : routes) {
-                    String uri = route.getEndpoint().getEndpointUri();
-                    Pair<String, String> typeAndName = getEndpointTypeAndName(
-                            uri);
-                    if (typeAndName != null) {
-                        String endpointName = typeAndName.getSecond();
-
-                        Route prev = routeMapping.put(endpointName, route);
-                        if ((prev != null)
-                                && !endpointName.startsWith("topic:")) {
-                            throw new ConfigurationException(
-                                    "Two contexts listen to the same endpoint name ["
-                                            + endpointName
-                                            + "].  ContextManager cannot handle this situation.  Double check configuration.  Conflicting contexts ["
-                                            + prev.getCamelContext().getName()
-                                            + "] and [" + context.getName()
-                                            + "]");
-                        }
-                    }
-                }
-            }
-        }
-        return routeMapping;
-    }
-
-    /**
-     * Returns the known contexts.
-     *
-     * @return
-     */
-    public List<CamelContext> getContexts() {
-        return contexts;
-    }
-
-    /**
-     * Parses URI for component type and endpoint name.
-     *
      * @param uri
-     * @return
+     * @return component type and endpoint name
      */
     public static Pair<String, String> getEndpointTypeAndName(String uri) {
         Pair<String, String> rval = null;
         Matcher m = endpointUriParsePattern.matcher(uri);
-
         if (m.find()) {
             String endpointType = m.group(1);
             String endpointName = m.group(2);
             rval = new Pair<>(endpointType, endpointName);
         }
-
         return rval;
     }
 
-    /**
-     * Scans the camel context and associated routes. Groups the routes by
-     * consumer type.
-     *
-     * @return
-     */
-    public Map<String, List<Route>> getContextRoutesByEndpointType() {
-        Map<String, List<Route>> routesByType = new HashMap<>();
-        for (CamelContext context : contexts) {
-            List<Route> routes = context.getRoutes();
-            if ((routes != null) && (!routes.isEmpty())) {
-                for (Route route : routes) {
-                    String uri = route.getEndpoint().getEndpointUri();
-                    Pair<String, String> typeAndName = getEndpointTypeAndName(
-                            uri);
-                    String type = typeAndName.getFirst();
-                    List<Route> routesForType = routesByType.get(type);
-                    if (routesForType == null) {
-                        routesForType = new LinkedList<>();
-                        routesByType.put(type, routesForType);
-                    }
-                    routesForType.add(route);
-                }
-            }
-        }
+    @Deprecated
+    public CamelContext getDefaultContext();
 
-        return routesByType;
-    }
-
-    /**
-     * Returns the uri for the consumer endpoint of the route with the specified
-     * routeId.
-     *
-     * @param routeId
-     * @return
-     * @throws EdexException
-     */
-    public String getEndpointUriForRouteId(String routeId)
-            throws EdexException {
-        String uri = routeIdUriMapping.get(routeId);
-        if (uri == null) {
-            throw new EdexException("Route id " + routeId
-                    + " not found.  Check loaded spring configurations.");
-        }
-
-        return uri;
-    }
-
-    /**
-     * Returns the route for the endpoint with the passed name as returned from
-     * getEndpointTypeAndName().
-     *
-     * @param endpointName
-     * @return
-     * @throws EdexException
-     */
-    public Route getRouteForEndpointName(String endpointName)
-            throws EdexException {
-        Route route = consumerRouteMapping.get(endpointName);
-        if (route == null) {
-            throw new EdexException("Endpoint " + endpointName
-                    + " not found.  Check loaded spring configurations.");
-        }
-
-        return route;
-    }
-
-    /**
-     * Get a default camel context to use for actions that don't need a specific
-     * one.
-     *
-     * @return the default camel context
-     */
-    public CamelContext getDefaultContext() {
-        if (!contexts.isEmpty()) {
-            return contexts.get(0);
-        }
-        return null;
-    }
 }

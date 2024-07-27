@@ -32,7 +32,6 @@ import org.apache.camel.CamelContext;
 import org.apache.camel.Endpoint;
 import org.apache.camel.ExchangePattern;
 import org.apache.camel.ProducerTemplate;
-import org.apache.camel.Route;
 import org.apache.camel.spi.InterceptStrategy;
 
 import com.raytheon.uf.common.message.IMessage;
@@ -45,7 +44,6 @@ import com.raytheon.uf.common.util.collections.BoundedMap;
 import com.raytheon.uf.edex.core.EDEXUtil;
 import com.raytheon.uf.edex.core.EdexException;
 import com.raytheon.uf.edex.core.IMessageProducer;
-import com.raytheon.uf.edex.esb.camel.context.ContextData;
 import com.raytheon.uf.edex.esb.camel.context.ContextManager;
 
 /**
@@ -69,6 +67,7 @@ import com.raytheon.uf.edex.esb.camel.context.ContextManager;
  *                                    get the context of the endpoint uri
  * Jun 28, 2022  8865     mapeters    Change determination of default context
  *                                    to use when sending outside JVM
+ * Jul 29, 2024  2037700  tgurney     Replace ContextData with shim interface.
  *
  * </pre>
  *
@@ -115,20 +114,6 @@ public class MessageProducer implements IMessageProducer {
         t.start();
     }
 
-    /**
-     * Returns the ContextData
-     *
-     * @return
-     * @throws EdexException
-     */
-    protected ContextData getContextData() throws EdexException {
-        try {
-            return ContextManager.getInstance().getContextData();
-        } catch (ConfigurationException e) {
-            throw new EdexException("Unable to look up camel context data", e);
-        }
-    }
-
     @Override
     public void sendAsync(String endpoint, Object message)
             throws EdexException {
@@ -137,7 +122,8 @@ public class MessageProducer implements IMessageProducer {
             return;
         }
 
-        String uri = getContextData().getEndpointUriForRouteId(endpoint);
+        String uri = ContextManager.getInstance()
+                .getEndpointUriForRouteId(endpoint);
         sendAsyncUri(uri, message);
     }
 
@@ -227,7 +213,8 @@ public class MessageProducer implements IMessageProducer {
                     + endpoint + " before EDEX has started");
         }
 
-        String uri = getContextData().getEndpointUriForRouteId(endpoint);
+        String uri = ContextManager.getInstance()
+                .getEndpointUriForRouteId(endpoint);
 
         try {
             Pair<ProducerTemplate, Endpoint> ctxAndTemplate = getProducerTemplateAndEndpointForUri(
@@ -281,89 +268,65 @@ public class MessageProducer implements IMessageProducer {
      */
     protected Pair<ProducerTemplate, Endpoint> getProducerTemplateAndEndpointForUri(
             String uri) throws ConfigurationException, EdexException {
-        CamelContext ctx = null;
-        ContextData contextData = getContextData();
-        Pair<String, String> typeAndName = ContextData
-                .getEndpointTypeAndName(uri);
-        if (typeAndName != null) {
-            Route route = contextData
-                    .getRouteForEndpointName(typeAndName.getSecond());
-            if (route != null) {
-                ctx = route.getCamelContext();
-            }
-        }
-
-        if (ctx == null) {
-            // this jvm does not consume from this route, use default context
-            ctx = contextData.getDefaultContext();
-        }
-
-        if (ctx != null) {
-            ProducerTemplate tmp = contextProducerMap.get(ctx);
-            if (tmp == null) {
-                tmp = ctx.createProducerTemplate();
-                ProducerTemplate prev = contextProducerMap.putIfAbsent(ctx,
-                        tmp);
-                if ((prev != null) && (prev != tmp)) {
-                    try {
-                        tmp.stop();
-                    } catch (Exception e) {
-                        statusHandler.error(
-                                "Error occurred stopping temporary ProducerTemplate. Consider synchronizing producer creation.",
-                                e);
-                    }
-                    tmp = prev;
+        CamelContext ctx = ContextManager.getInstance().getCamelContext();
+        ProducerTemplate tmp = contextProducerMap.get(ctx);
+        if (tmp == null) {
+            tmp = ctx.createProducerTemplate();
+            ProducerTemplate prev = contextProducerMap.putIfAbsent(ctx, tmp);
+            if (prev != null && prev != tmp) {
+                try {
+                    tmp.stop();
+                } catch (Exception e) {
+                    statusHandler.error(
+                            "Error occurred stopping temporary ProducerTemplate. Consider synchronizing producer creation.",
+                            e);
                 }
+                tmp = prev;
             }
+        }
 
+        /*
+         * Caching endpoint for the uri ourselves. Camel considers various
+         * endpoints non singleton. So for things like jms-topic, a new endpoint
+         * is created every time a message is sent to the URI instead of reusing
+         * one that was already created. This is in part due to the lack of
+         * tracking per route. We are ok with caching per context as we don't
+         * operate on routes individually only contexts as a whole.
+         */
+        Map<String, Endpoint> endpointMap = contextUriEndpointMap.get(ctx);
+        if (endpointMap == null) {
             /*
-             * Caching endpoint for the uri ourselves. Camel considers various
-             * endpoints non singleton. So for things like jms-topic, a new
-             * endpoint is created every time a message is sent to the URI
-             * instead of reusing one that was already created. This is in part
-             * due to the lack of tracking per route. We are ok with caching per
-             * context as we don't operate on routes individually only contexts
-             * as a whole.
+             * Use bounded map to prevent leaking cached endpoints. If mapping
+             * size is an issue, we may need to consider using just the base
+             * part of the URI as the key
              */
-            Map<String, Endpoint> endpointMap = contextUriEndpointMap.get(ctx);
-            if (endpointMap == null) {
-                /*
-                 * Use bounded map to prevent leaking cached endpoints. If
-                 * mapping size is an issue, we may need to consider using just
-                 * the base part of the URI as the key
-                 */
-                endpointMap = new BoundedMap<>(URI_CACHE_SIZE);
-                Map<String, Endpoint> prev = contextUriEndpointMap
-                        .putIfAbsent(ctx, endpointMap);
-                if (prev != null) {
-                    endpointMap = prev;
-                }
+            endpointMap = new BoundedMap<>(URI_CACHE_SIZE);
+            Map<String, Endpoint> prev = contextUriEndpointMap.putIfAbsent(ctx,
+                    endpointMap);
+            if (prev != null) {
+                endpointMap = prev;
             }
-
-            Endpoint ep = null;
-            synchronized (endpointMap) {
-                ep = endpointMap.get(uri);
-                if (ep == null) {
-                    if (endpointMap.size() == URI_CACHE_SIZE) {
-                        statusHandler.error(
-                                "Context URI mapping has exceeded number of URIs limit ["
-                                        + URI_CACHE_SIZE
-                                        + "]. Possible Endpoint leak in Camel Context. Consider increasing System property ["
-                                        + URI_CACHE_SIZE_PROPERTY + "]");
-                    }
-
-                    ContextManager.getInstance().clearDependencyMapping();
-                    ep = ctx.getEndpoint(uri);
-                    endpointMap.put(uri, ep);
-                }
-            }
-
-            return new Pair<>(tmp, ep);
         }
 
-        throw new ConfigurationException(
-                "Could not find a CamelContext for routing to uri [" + uri
-                        + "].  Check loaded spring configurations.");
+        Endpoint ep = null;
+        synchronized (endpointMap) {
+            ep = endpointMap.get(uri);
+            if (ep == null) {
+                if (endpointMap.size() == URI_CACHE_SIZE) {
+                    statusHandler.error(
+                            "Context URI mapping has exceeded number of URIs limit ["
+                                    + URI_CACHE_SIZE
+                                    + "]. Possible Endpoint leak in Camel Context. Consider increasing System property ["
+                                    + URI_CACHE_SIZE_PROPERTY + "]");
+                }
+
+                ContextManager.getInstance().clearDependencyMapping();
+                ep = ctx.getEndpoint(uri);
+                endpointMap.put(uri, ep);
+            }
+        }
+
+        return new Pair<>(tmp, ep);
     }
 
     private Map<String, Object> getHeaders(Object message) {
@@ -373,7 +336,7 @@ public class MessageProducer implements IMessageProducer {
             headers.put("JMSType", message.getClass().getName());
             headers.putAll(((IMessage) message).getHeaders());
         } else if (message instanceof List) {
-            List<?> list = ((List<?>) message);
+            List<?> list = (List<?>) message;
             if (!list.isEmpty()) {
                 if (list.get(0) instanceof IMessage) {
                     headers = ((IMessage) list.get(0)).getHeaders();

@@ -42,12 +42,14 @@ import org.apache.camel.CamelContext;
 import org.apache.camel.CamelContextAware;
 import org.apache.camel.CamelContextLifecycle;
 import org.apache.camel.Route;
+import org.apache.camel.model.RouteDefinition;
 
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.util.Pair;
 import com.raytheon.uf.edex.core.EdexAsyncStartupBean;
+import com.raytheon.uf.edex.core.EdexException;
 import com.raytheon.uf.edex.core.IContextStateProcessor;
 import com.raytheon.uf.edex.esb.camel.EDEXRouteContext;
 
@@ -78,6 +80,7 @@ import com.raytheon.uf.edex.esb.camel.EDEXRouteContext;
  * Jul  9, 2024  2037227  tgurney   First round of Camel 4 changes, minimum
  *                                  necessary to allow EDEX startup.
  * Jul 24, 2024  2037700  tgurney   General refactoring to support EDEXRouteContext
+ * Jul 29, 2024  2037700  tgurney   Replace ContextData with shim interface (Camel 4)
  *
  * </pre>
  *
@@ -96,12 +99,18 @@ public class ContextManager implements CamelContextAware {
     private final Set<EDEXRouteContext> routeContexts = new HashSet<>();
 
     /**
-     * Must hold this lock while accessing the routeContexts field. Only take
-     * the write lock when adding or removing items from the set. Otherwise take
-     * the read lock.
+     * Map of route IDs to endpoint URIs. This map exists for fast lookup of
+     * endpoint URIs and to guarantee that no routes with duplicate names are
+     * created.
      */
-    private final ReadWriteLock routeContextsLock = new ReentrantReadWriteLock(
-            true);
+    private final Map<String, String> routeIdURIMap = new HashMap<>();
+
+    /**
+     * Must hold this lock while accessing the routeContexts or routeIDURIMap
+     * fields. Only take the write lock when adding or removing items. Otherwise
+     * take the read lock.
+     */
+    private final ReadWriteLock routesLock = new ReentrantReadWriteLock(true);
 
     /**
      * Service used for start up and shut down threading.
@@ -138,11 +147,6 @@ public class ContextManager implements CamelContextAware {
     private int timeOutMillis;
 
     /**
-     * Parsed context data for all contexts known in the spring container.
-     */
-    private volatile ContextData contextData;
-
-    /**
      * Flag to control shutting down the jvm. This handles shutdown being called
      * during startup to short circuit startup.
      */
@@ -168,28 +172,33 @@ public class ContextManager implements CamelContextAware {
         return instance;
     }
 
-    /**
-     * Private constructor.
-     */
     private ContextManager() {
     }
 
-    /**
-     * Gets the context data.
-     *
-     * @return the context data
-     * @throws ConfigurationException
-     */
-    public ContextData getContextData() throws ConfigurationException {
-        if (contextData == null) {
-            synchronized (this) {
-                if (contextData == null) {
-                    contextData = new ContextData(List.of(theCamelContext));
-                }
-            }
-        }
+    public ContextData getContextData() {
+        return this::getCamelContext;
+    }
 
-        return contextData;
+    /**
+     * @param routeId
+     * @return the uri for the consumer endpoint of the route with the specified
+     *         routeId.
+     * @throws EdexException
+     */
+    public String getEndpointUriForRouteId(String routeId)
+            throws EdexException {
+        routesLock.readLock().lock();
+        String uri = null;
+        try {
+            uri = routeIdURIMap.get(routeId);
+        } finally {
+            routesLock.readLock().unlock();
+        }
+        if (uri == null) {
+            throw new EdexException("Route id " + routeId
+                    + " not found.  Check loaded spring configurations.");
+        }
+        return uri;
     }
 
     /**
@@ -644,11 +653,21 @@ public class ContextManager implements CamelContextAware {
     }
 
     public void registerRouteContext(EDEXRouteContext routeContext) {
-        routeContextsLock.writeLock().lock();
+        routesLock.writeLock().lock();
         try {
-            routeContexts.add(routeContext);
+            if (routeContexts.add(routeContext)) {
+                for (RouteDefinition r : routeContext.getRouteDefs()) {
+                    String prev = routeIdURIMap.put(r.getId(),
+                            r.getEndpointUrl());
+                    if (prev != null) {
+                        throw new RuntimeException("Duplicate route ID '"
+                                + r.getId()
+                                + "'. Route IDs must be globally unique.");
+                    }
+                }
+            }
         } finally {
-            routeContextsLock.writeLock().unlock();
+            routesLock.writeLock().unlock();
         }
     }
 
