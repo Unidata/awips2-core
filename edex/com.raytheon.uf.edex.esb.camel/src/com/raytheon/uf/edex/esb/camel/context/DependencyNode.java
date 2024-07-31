@@ -22,9 +22,10 @@ package com.raytheon.uf.edex.esb.camel.context;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.camel.CamelContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.raytheon.uf.edex.esb.camel.EDEXRouteContext;
 
 /**
  * Class to map a context to its required and dependent contexts.
@@ -37,6 +38,7 @@ import org.slf4j.LoggerFactory;
  * ------------ ---------- ----------- --------------------------
  * Apr 10, 2014 2726       rjpeter     Initial creation
  * Jul 24, 2024 2037700    tgurney     Kill EDEX if circular dependency
+ * Jul 31, 2024 2037700    tgurney     Replace CamelContext with EDEXRouteContext
  *
  * </pre>
  *
@@ -46,19 +48,19 @@ public class DependencyNode {
     private static final Logger logger = LoggerFactory
             .getLogger(DependencyNode.class);
 
-    private final CamelContext context;
+    private final EDEXRouteContext context;
 
     /**
      * Contexts required by this context.
      */
-    private final Set<CamelContext> requiredContexts = new HashSet<>();
+    private final Set<EDEXRouteContext> requiredContexts = new HashSet<>();
 
     /**
      * Contexts that depend on this context.
      */
-    private final Set<CamelContext> dependentContexts = new HashSet<>();
+    private final Set<EDEXRouteContext> dependentContexts = new HashSet<>();
 
-    public DependencyNode(CamelContext context) {
+    public DependencyNode(EDEXRouteContext context) {
         this.context = context;
     }
 
@@ -79,21 +81,21 @@ public class DependencyNode {
         }
     }
 
-    public CamelContext getContext() {
+    public EDEXRouteContext getContext() {
         return context;
     }
 
     /**
      * @return all contexts that this context requires to be running.
      */
-    public Set<CamelContext> getRequiredContexts() {
+    public Set<EDEXRouteContext> getRequiredContexts() {
         return requiredContexts;
     }
 
     /**
      * @return all contexts that depend on this context to be running.
      */
-    public Set<CamelContext> getDependentContexts() {
+    public Set<EDEXRouteContext> getDependentContexts() {
         return dependentContexts;
     }
 }

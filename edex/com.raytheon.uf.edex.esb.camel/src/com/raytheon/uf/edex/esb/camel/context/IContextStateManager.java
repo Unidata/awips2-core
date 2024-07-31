@@ -19,78 +19,61 @@
  **/
 package com.raytheon.uf.edex.esb.camel.context;
 
-import org.apache.camel.CamelContext;
-import org.apache.camel.Route;
+import com.raytheon.uf.edex.esb.camel.EDEXRouteContext;
 
 /**
  * Represents a way for managing a context for starting and stopping. Allows for
  * Context with different purposes to be handled independently of each other.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Apr 10, 2014 2726       rjpeter     Initial creation.
- * 
+ * Jul 31, 2024 2037700    tgurney     Replace CamelContext with EDEXRouteContext
+ *
  * </pre>
- * 
+ *
  * @author rjpeter
- * @version 1.0
  */
 public interface IContextStateManager {
     /**
-     * Is the {@code CamelContext} startable?
-     * 
+     * Is the {@code EDEXRouteContext} startable?
+     *
      * @param context
      * @return
      * @throws Exception
      */
-    public boolean isContextStartable(CamelContext context) throws Exception;
+    public boolean isContextStartable(EDEXRouteContext context)
+            throws Exception;
 
     /**
-     * Start the {@code CamelContext}.
-     * 
+     * Start the {@code EDEXRouteContext}.
+     *
      * @param context
      * @return
      * @throws Exception
      */
-    public boolean startContext(CamelContext context) throws Exception;
+    public boolean startContext(EDEXRouteContext context) throws Exception;
 
     /**
-     * Start the {@code Route}.
-     * 
+     * Is the {@code EDEXRouteContext} stoppable?
+     *
      * @param context
      * @return
      * @throws Exception
      */
-    public boolean startRoute(Route route) throws Exception;
+    public boolean isContextStoppable(EDEXRouteContext context)
+            throws Exception;
 
     /**
-     * Is the {@code CamelContext} stoppable?
-     * 
+     * Stop the {@code EDEXRouteContext}.
+     *
      * @param context
      * @return
      * @throws Exception
      */
-    public boolean isContextStoppable(CamelContext context) throws Exception;
-
-    /**
-     * Stop the {@code CamelContext}.
-     * 
-     * @param context
-     * @return
-     * @throws Exception
-     */
-    public boolean stopContext(CamelContext context) throws Exception;
-
-    /**
-     * Stop the {@code Route}.
-     * 
-     * @param context
-     * @return
-     * @throws Exception
-     */
-    public boolean stopRoute(Route route) throws Exception;
+    public boolean stopContext(EDEXRouteContext context) throws Exception;
 }

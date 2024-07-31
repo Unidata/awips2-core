@@ -19,8 +19,6 @@
  **/
 package com.raytheon.uf.edex.esb.camel.context;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -40,8 +38,6 @@ import javax.naming.ConfigurationException;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.CamelContextAware;
-import org.apache.camel.CamelContextLifecycle;
-import org.apache.camel.Route;
 import org.apache.camel.model.RouteDefinition;
 
 import com.raytheon.uf.common.status.IUFStatusHandler;
@@ -81,6 +77,7 @@ import com.raytheon.uf.edex.esb.camel.EDEXRouteContext;
  *                                  necessary to allow EDEX startup.
  * Jul 24, 2024  2037700  tgurney   General refactoring to support EDEXRouteContext
  * Jul 29, 2024  2037700  tgurney   Replace ContextData with shim interface (Camel 4)
+ * Jul 31, 2024, 2037700  tgurney   Perform startup/shutdown on EDEXRouteContexts
  *
  * </pre>
  *
@@ -121,7 +118,7 @@ public class ContextManager implements CamelContextAware {
      * TODO Camel 4 - remove because it is now always empty. Instead we will
      * call EDEXRouteContext.isClustered
      */
-    private final Set<CamelContext> clusteredContexts = new HashSet<>();
+    private final Set<EDEXRouteContext> clusteredContexts = new HashSet<>();
 
     /**
      * State Manager for all contexts that are not clustered.
@@ -153,10 +150,9 @@ public class ContextManager implements CamelContextAware {
     private final AtomicBoolean shuttingDown = new AtomicBoolean(false);
 
     /**
-     * Dependency mappings for all camel contexts in the spring container. This
-     * should only be changed in a sync block. Otherwise mark as volatile.
+     * Dependency mappings for all camel contexts in the spring container.
      */
-    private ContextDependencyMapping dependencyMapping = null;
+    private volatile ContextDependencyMapping dependencyMapping = null;
 
     /**
      * Collection of beans required for startup that can be initialized off the
@@ -202,13 +198,14 @@ public class ContextManager implements CamelContextAware {
     }
 
     /**
-     * Get the {@link IContextStateManager} for the passed {@code CamelContext}.
+     * Get the {@link IContextStateManager} for the passed
+     * {@code EDEXRouteContext}.
      *
      * @param context
      * @return
      */
-    protected IContextStateManager getStateManager(CamelContext context) {
-        if (clusteredContexts.contains(context)) {
+    protected IContextStateManager getStateManager(EDEXRouteContext context) {
+        if (context.isClustered()) {
             return clusteredStateManager;
         }
 
@@ -217,18 +214,14 @@ public class ContextManager implements CamelContextAware {
 
     /**
      * Get the list of {@link IContextStateProcessor} for the specified
-     * {@code CamelContext}.
+     * {@code EDEXRouteContext}.
      *
      * @param context
-     *            the CamelContext
+     *            the EDEXRouteContext
      * @return this list of IContextStateProcessors
      */
     public List<IContextStateProcessor> getStateProcessor(
-            CamelContextLifecycle context) {
-        /*
-         * TODO Camel 4 - take EDEXRouteContext as argument. CamelContexts will
-         * not be passed into this method anymore.
-         */
+            EDEXRouteContext context) {
         return contextProcessors.get(context);
     }
 
@@ -241,17 +234,25 @@ public class ContextManager implements CamelContextAware {
      */
     public ContextDependencyMapping getDependencyMapping(
             boolean suppressExceptions) throws ConfigurationException {
-        synchronized (this) {
-            if (dependencyMapping == null) {
-                long t0 = System.currentTimeMillis();
-                dependencyMapping = new ContextDependencyMapping(
-                        getContextData(), suppressExceptions);
-                long t1 = System.currentTimeMillis();
-                statusHandler.info("Took " + (t1 - t0)
-                        + "ms to generate depedency mapping.");
+        if (dependencyMapping == null) {
+            routesLock.readLock().lock();
+            try {
+                if (dependencyMapping == null) {
+                    /*
+                     * TODO race condition is still possible, not a big deal in
+                     * this case, but we would prefer to avoid it.
+                     */
+                    long t0 = System.currentTimeMillis();
+                    dependencyMapping = new ContextDependencyMapping(
+                            routeContexts, suppressExceptions);
+                    long t1 = System.currentTimeMillis();
+                    statusHandler.info("Took " + (t1 - t0)
+                            + "ms to generate depedency mapping.");
+                }
+            } finally {
+                routesLock.readLock().unlock();
             }
         }
-
         return dependencyMapping;
 
     }
@@ -261,9 +262,7 @@ public class ContextManager implements CamelContextAware {
      * routes are dynamically added to the system.
      */
     public void clearDependencyMapping() {
-        synchronized (this) {
-            dependencyMapping = null;
-        }
+        dependencyMapping = null;
     }
 
     /**
@@ -273,34 +272,11 @@ public class ContextManager implements CamelContextAware {
     public void startContexts() {
         statusHandler.info("Context Manager starting contexts");
 
+        theCamelContext.start();
+        routesLock.readLock().lock();
         try {
-            ContextData cxtData = getContextData();
-
-            for (final CamelContext context : cxtData.getContexts()) {
-                /*
-                 * Enforce startup order so that internal endpoints start first
-                 * and shutdown last. Each route must have a unique number under
-                 * 1000. Camel documentation doesn't state if numbers can be
-                 * negative or not. Order is reverse of how they are found in
-                 * the file with internal types going first followed by external
-                 * types.
-                 */
-                int externalCount = 999;
-                int internalCount = externalCount - context.getRoutes().size();
-
-                for (Route route : context.getRoutes()) {
-                    if (EDEXRouteContext.routeIsInternal(route)) {
-                        route.setStartupOrder(internalCount);
-                        internalCount--;
-                    } else {
-                        route.setStartupOrder(externalCount);
-                        externalCount--;
-                    }
-                }
-            }
-
             List<Future<?>> callbacks = new LinkedList<>();
-            for (final CamelContext context : cxtData.getContexts()) {
+            for (final EDEXRouteContext context : routeContexts) {
                 final IContextStateManager stateManager = getStateManager(
                         context);
                 if (stateManager.isContextStartable(context)) {
@@ -328,14 +304,16 @@ public class ContextManager implements CamelContextAware {
             statusHandler.fatal(
                     "Error occurred starting contexts, shutting down", e);
             System.exit(1);
+        } finally {
+            routesLock.readLock().unlock();
         }
     }
 
     private class StartContext implements Runnable {
 
-        private CamelContext context;
+        private EDEXRouteContext context;
 
-        public StartContext(CamelContext context) {
+        public StartContext(EDEXRouteContext context) {
             this.context = context;
         }
 
@@ -428,44 +406,26 @@ public class ContextManager implements CamelContextAware {
 
             statusHandler.info("Context Manager stopping contexts");
 
+            routesLock.readLock().lock();
             try {
-                ContextData ctxData = getContextData();
-                List<CamelContext> contexts = ctxData.getContexts();
-                List<Future<Pair<CamelContext, Boolean>>> callbacks = new LinkedList<>();
+                List<Future<Pair<EDEXRouteContext, Boolean>>> callbacks = new LinkedList<>();
 
-                /*
-                 * Shut down all contexts except default, then shut down
-                 * default. Default is used for generic actions like sending
-                 * messages outside JVM in MessageProducer, which other contexts
-                 * may want to do during shutdown.
-                 */
-                CamelContext defaultContext = ctxData.getDefaultContext();
-                for (final CamelContext context : contexts) {
-                    if (context != defaultContext) {
-                        callbacks.add(service.submit(new StopContext(context)));
-                    }
+                for (EDEXRouteContext context : routeContexts) {
+                    callbacks.add(service.submit(new StopContext(context)));
                 }
 
-                List<CamelContext> failures = waitForCallbacks(callbacks,
+                List<EDEXRouteContext> failures = waitForCallbacks(callbacks,
                         "Waiting for contexts to shutdown: ", 1000);
 
-                if (defaultContext != null) {
-                    Future<Pair<CamelContext, Boolean>> callback = service
-                            .submit(new StopContext(defaultContext));
-
-                    List<Future<Pair<CamelContext, Boolean>>> defaultCallbacks = new ArrayList<>(
-                            Arrays.asList(callback));
-                    failures.addAll(waitForCallbacks(defaultCallbacks,
-                            "Waiting for default contexts to shutdown: ",
-                            1000));
-                }
-
-                for (CamelContext failure : failures) {
+                for (EDEXRouteContext failure : failures) {
                     statusHandler.error("Context [" + failure.getName()
                             + "] had a failure trying to stop");
                 }
             } catch (Throwable e) {
                 statusHandler.error("Error occurred during shutdown", e);
+            } finally {
+                routesLock.readLock().unlock();
+                theCamelContext.stop();
             }
         }
     }
@@ -473,15 +433,16 @@ public class ContextManager implements CamelContextAware {
     /**
      * Private Callable for stopping a context.
      */
-    private class StopContext implements Callable<Pair<CamelContext, Boolean>> {
-        private final CamelContext context;
+    private class StopContext
+            implements Callable<Pair<EDEXRouteContext, Boolean>> {
+        private final EDEXRouteContext context;
 
-        private StopContext(CamelContext context) {
+        private StopContext(EDEXRouteContext context) {
             this.context = context;
         }
 
         @Override
-        public Pair<CamelContext, Boolean> call() throws Exception {
+        public Pair<EDEXRouteContext, Boolean> call() throws Exception {
             boolean rval = false;
             IContextStateManager stateManager = getStateManager(context);
 
@@ -521,25 +482,25 @@ public class ContextManager implements CamelContextAware {
      * @param sleepInterval
      * @return
      */
-    private static List<CamelContext> waitForCallbacks(
-            List<Future<Pair<CamelContext, Boolean>>> callbacks, String message,
-            long sleepInterval) {
+    private static List<EDEXRouteContext> waitForCallbacks(
+            List<Future<Pair<EDEXRouteContext, Boolean>>> callbacks,
+            String message, long sleepInterval) {
         statusHandler.info(message + callbacks.size() + " remaining");
-        List<CamelContext> failures = new LinkedList<>();
+        List<EDEXRouteContext> failures = new LinkedList<>();
 
         while (!callbacks.isEmpty()) {
             boolean foundOne = false;
 
-            Iterator<Future<Pair<CamelContext, Boolean>>> callbackIter = callbacks
+            Iterator<Future<Pair<EDEXRouteContext, Boolean>>> callbackIter = callbacks
                     .iterator();
             while (callbackIter.hasNext()) {
-                Future<Pair<CamelContext, Boolean>> callback = callbackIter
+                Future<Pair<EDEXRouteContext, Boolean>> callback = callbackIter
                         .next();
                 if (callback.isDone()) {
                     foundOne = true;
                     callbackIter.remove();
                     try {
-                        Pair<CamelContext, Boolean> val = callback.get();
+                        Pair<EDEXRouteContext, Boolean> val = callback.get();
                         if (!val.getSecond().booleanValue()) {
                             failures.add(val.getFirst());
                         }
@@ -568,7 +529,7 @@ public class ContextManager implements CamelContextAware {
      */
     public void checkClusteredContexts() {
         if (!shuttingDown.get()) {
-            for (CamelContext camelContext : clusteredContexts) {
+            for (EDEXRouteContext camelContext : clusteredContexts) {
                 boolean activateRoute = true;
                 try {
                     IContextStateManager stateManager = getStateManager(

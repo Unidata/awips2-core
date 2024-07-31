@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -30,9 +31,10 @@ import java.util.stream.Collectors;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.CamelContextLifecycle;
-import org.apache.camel.Route;
 import org.apache.camel.RuntimeCamelException;
+import org.apache.camel.model.ProcessorDefinition;
 import org.apache.camel.model.RouteDefinition;
+import org.apache.camel.model.ToDefinition;
 import org.apache.camel.spi.RouteController;
 import org.apache.camel.support.service.ServiceSupport;
 import org.slf4j.Logger;
@@ -89,6 +91,8 @@ import com.raytheon.uf.edex.esb.camel.context.ContextManager;
  *                                     Start internal routes first and stop
  *                                     them last.
  * 2024-07-31   2037700    tgurney     Fix initialization
+ * 2024-07-31   2037700    tgurney     Add getToEndpoints. Fix context stop,
+ *                                     continue even if a route fails to stop.
  *
  * </pre>
  *
@@ -191,22 +195,6 @@ public class EDEXRouteContext extends ServiceSupport
                 .getEndpointTypeAndName(r.getEndpointUrl()).getFirst());
     }
 
-    /**
-     * TODO Camel 4 - remove this method after implementing new startup/shutdown
-     * code
-     *
-     * @return true if the route is internal to this JVM, false if the route
-     *         receives messages from outside the JVM
-     * @deprecated Outside classes should no longer need to know about the
-     *             concept of internal vs external routes.
-     */
-    @Deprecated
-    public static boolean routeIsInternal(Route r) {
-        return INTERNAL_ENDPOINT_TYPES.contains(ContextData
-                .getEndpointTypeAndName(r.getEndpoint().getEndpointUri())
-                .getFirst());
-    }
-
     /** Comparison key for sorting internal routes before external ones */
     private static int internalFirst(RouteDefinition r) {
         if (EDEXRouteContext.routeIsInternal(r)) {
@@ -255,6 +243,38 @@ public class EDEXRouteContext extends ServiceSupport
     public Set<String> getEndpointUrls() {
         return getRouteDefs().stream().map(RouteDefinition::getEndpointUrl)
                 .collect(Collectors.toUnmodifiableSet());
+    }
+
+    public Set<String> getToEndpoints() {
+        Set<String> endpointUris = new HashSet<>();
+        for (RouteDefinition r : getRouteDefs()) {
+            endpointUris.addAll(getToEndpoints(r));
+        }
+        return endpointUris;
+    }
+
+    /**
+     * Get URIs of all "to" endpoints in p.
+     *
+     * @param p
+     *            A route (a RouteDefinition is a ProcessorDefinition) or any
+     *            processor within a route.
+     * @return List of all endpoint URIs that the processor sends messages to.
+     */
+    private static Set<String> getToEndpoints(ProcessorDefinition<?> p) {
+        /* This function is recursive because processors may be nested. */
+        if (p instanceof ToDefinition toDef) {
+            return Set.of(toDef.getEndpointUri());
+        }
+        List<ProcessorDefinition<?>> outputs = p.getOutputs();
+        if (outputs == null || outputs.isEmpty()) {
+            return Set.of();
+        }
+        Set<String> rval = new HashSet<>();
+        for (ProcessorDefinition<?> pp : outputs) {
+            rval.addAll(getToEndpoints(pp));
+        }
+        return rval;
     }
 
     /** @return the bean name */
@@ -312,13 +332,29 @@ public class EDEXRouteContext extends ServiceSupport
 
     @Override
     protected void doStop() {
+        /*
+         * Unlike the other methods, this continues on and tries to stop all of
+         * the routes even if any one of them fails to stop. The reason is that
+         * we expect to call this method only when EDEX is shutting down. We
+         * make a best effort to stop as many routes as possible in a controlled
+         * way, since the whole system is about to go down momentarily.
+         *
+         * In any case when EDEX is not shutting down, call
+         * EDEXRouteContext.suspend() instead of this.
+         */
+        boolean allStopped = true;
         logInfo("stopping");
         for (RouteDefinition r : getRouteDefsInShutdownOrder()) {
             try {
                 getRouteController().stopRoute(r.getRouteId());
             } catch (Exception e) {
-                throw new RuntimeCamelException(e);
+                logger.error("Route " + r.getRouteId() + " failed to stop", e);
+                allStopped = false;
             }
+        }
+        if (!allStopped) {
+            throw new RuntimeCamelException(
+                    "One or more routes failed to stop in " + this);
         }
         logInfo("stopped");
     }
