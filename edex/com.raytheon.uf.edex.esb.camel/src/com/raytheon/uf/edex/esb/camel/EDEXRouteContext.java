@@ -41,6 +41,7 @@ import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.InitializingBean;
 
 import com.raytheon.uf.edex.core.modes.EdexMode;
+import com.raytheon.uf.edex.esb.camel.context.ContextData;
 import com.raytheon.uf.edex.esb.camel.context.ContextManager;
 
 /**
@@ -87,6 +88,7 @@ import com.raytheon.uf.edex.esb.camel.context.ContextManager;
  * 2024-07-24   2037700    tgurney     Add logging of state changes.
  *                                     Start internal routes first and stop
  *                                     them last.
+ * 2024-07-31   2037700    tgurney     Fix initialization
  *
  * </pre>
  *
@@ -144,8 +146,11 @@ public class EDEXRouteContext extends ServiceSupport
     private static final ContextManager contextManager = ContextManager
             .getInstance();
 
-    /** Route definitions created by the routeBuilder */
-    private volatile List<RouteDefinition> routeDefs = List.of();
+    /**
+     * Route definitions created by the routeBuilder. Access only through
+     * getRouteDefs() to prevent access before the list has been populated
+     */
+    private volatile List<RouteDefinition> routeDefs = null;
 
     public EDEXRouteContext(EDEXRouteBuilder routeBuilder) {
         this(routeBuilder, false);
@@ -168,9 +173,9 @@ public class EDEXRouteContext extends ServiceSupport
     @Override
     protected void doBuild() throws Exception {
         /*
-         * CamelContext.addRoutes has to be called first. The routes do not
-         * exist until then; RouteBuilder.getRoutes().getRoutes() would return
-         * empty list
+         * CamelContext.addRoutes has to be called before doing anything else.
+         * The routes do not exist until then;
+         * RouteBuilder.getRoutes().getRoutes() would return empty list
          */
         contextManager.getCamelContext().addRoutes(routeBuilder);
         routeDefs = List.copyOf(routeBuilder.getRoutes().getRoutes());
@@ -178,30 +183,12 @@ public class EDEXRouteContext extends ServiceSupport
     }
 
     /**
-     * @param URI
-     *            a route URI
-     * @return the type of endpoint that the route receives messages from.
-     *         Frequently-used examples include "direct", "seda", "quartz",
-     *         "timer", "jms-generic", "jms-durable"
-     */
-    private static String getEndpointType(String uri) {
-        if (uri == null) {
-            return null;
-        }
-        String[] parts = uri.split(":", 2);
-        if (parts.length < 2) {
-            return null;
-        }
-        return parts[0];
-    }
-
-    /**
      * @return true if the route is internal to this JVM, false if the route
      *         receives messages from outside the JVM
      */
     private static boolean routeIsInternal(RouteDefinition r) {
-        return INTERNAL_ENDPOINT_TYPES
-                .contains(getEndpointType(r.getEndpointUrl()));
+        return INTERNAL_ENDPOINT_TYPES.contains(ContextData
+                .getEndpointTypeAndName(r.getEndpointUrl()).getFirst());
     }
 
     /**
@@ -215,8 +202,9 @@ public class EDEXRouteContext extends ServiceSupport
      */
     @Deprecated
     public static boolean routeIsInternal(Route r) {
-        return INTERNAL_ENDPOINT_TYPES
-                .contains(getEndpointType(r.getEndpoint().getEndpointUri()));
+        return INTERNAL_ENDPOINT_TYPES.contains(ContextData
+                .getEndpointTypeAndName(r.getEndpoint().getEndpointUri())
+                .getFirst());
     }
 
     /** Comparison key for sorting internal routes before external ones */
@@ -232,11 +220,10 @@ public class EDEXRouteContext extends ServiceSupport
      *         order of the routes is unspecified.
      */
     public List<RouteDefinition> getRouteDefs() {
-        if (this.status < EDEXRouteContext.BUILT) {
+        if (routeDefs == null) {
             // Shouldn't be possible. But just in case
             throw new RuntimeException(
-                    "Tried to get routes from uninitialized EDEXRouteContext "
-                            + this);
+                    "Tried to get routes from uninitialized " + this);
         }
         return routeDefs;
     }
