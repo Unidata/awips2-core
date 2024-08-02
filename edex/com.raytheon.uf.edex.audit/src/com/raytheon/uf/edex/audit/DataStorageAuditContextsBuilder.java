@@ -18,8 +18,6 @@
  **/
 package com.raytheon.uf.edex.audit;
 
-import org.apache.camel.builder.RouteBuilder;
-import org.apache.camel.spring.SpringCamelContext;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
@@ -28,6 +26,10 @@ import org.springframework.context.ApplicationContextAware;
 
 import com.raytheon.uf.common.datastorage.audit.DataStorageAuditUtils;
 import com.raytheon.uf.edex.core.IMessageProducer;
+import com.raytheon.uf.edex.esb.camel.EDEXRouteBuilder;
+import com.raytheon.uf.edex.esb.camel.EDEXRouteContext;
+import com.raytheon.uf.edex.esb.camel.EDEXRouteContextFactory;
+import com.raytheon.uf.edex.esb.camel.context.ContextManager;
 
 /**
  * Class that dynamically initializes clustered contexts for auditor routes.
@@ -42,6 +44,7 @@ import com.raytheon.uf.edex.core.IMessageProducer;
  * Feb 10, 2023 9019       smoorthy    Migrate to separate plugin
  * Jul 24, 2024 2037700    tgurney     Remove clustering and state processor
  *                                     registration (temporary, Camel 4)
+ * Aug  2, 2024 2037700    tgurney     Change to use EDEXRouteContexts
  *
  * </pre>
  */
@@ -69,29 +72,21 @@ public class DataStorageAuditContextsBuilder
         for (int i = 1; i <= DataStorageAuditUtils.NUM_QUEUES; ++i) {
             DataStorageAuditer auditor = new DataStorageAuditer(messageProducer,
                     i);
-            SpringCamelContext camelContext = new SpringCamelContext(
-                    applicationContext);
-            String camelContextId = "clusteredDataStorageAuditContext" + i;
-            camelContext.setName(camelContextId);
+            EDEXRouteContextFactory ctxFactory = applicationContext
+                    .getBean(EDEXRouteContextFactory.class);
             DataStorageAuditRouteBuilder routeBuilder = new DataStorageAuditRouteBuilder(
                     auditor);
-            try {
-                camelContext.addRoutes(routeBuilder);
-            } catch (Exception e) {
-                throw new RuntimeException(
-                        "Error configuring data storage audit routes", e);
-            }
-            beanFactory.initializeBean(camelContext, camelContextId);
-            beanFactory.registerSingleton(camelContextId, camelContext);
-            // TODO Camel 4 - make clustered
-            // ContextManager.getInstance().registerClusteredContext(camelContext);
-            // TODO Camel 4 - register state processor
-            // ContextManager.getInstance()
-            // .registerContextStateProcessor(camelContext, auditor);
+            EDEXRouteContext routeCtx = ctxFactory
+                    .createClustered(routeBuilder);
+            String beanName = "clusteredDataStorageAuditContext" + i;
+            beanFactory.initializeBean(routeCtx, beanName);
+            beanFactory.registerSingleton(beanName, routeCtx);
+            ContextManager.getInstance().registerContextStateProcessor(routeCtx,
+                    auditor);
         }
     }
 
-    private static class DataStorageAuditRouteBuilder extends RouteBuilder {
+    private static class DataStorageAuditRouteBuilder extends EDEXRouteBuilder {
 
         private final DataStorageAuditer auditor;
 

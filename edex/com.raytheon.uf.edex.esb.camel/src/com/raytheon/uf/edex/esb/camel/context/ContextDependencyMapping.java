@@ -123,7 +123,7 @@ public class ContextDependencyMapping {
             if (routes != null) {
                 for (RouteDefinition route : routes) {
                     String uri = route.getEndpointUrl();
-                    Pair<String, String> typeAndName = ContextData
+                    Pair<String, String> typeAndName = EDEXRouteContext
                             .getEndpointTypeAndName(uri);
                     if (typeAndName != null && DEPENDENCY_ENDPOINT_TYPES
                             .contains(typeAndName.getFirst())) {
@@ -156,7 +156,7 @@ public class ContextDependencyMapping {
             Collection<String> endpointUris = context.getToEndpoints();
             if (endpointUris != null) {
                 for (String uri : endpointUris) {
-                    Pair<String, String> typeAndName = ContextData
+                    Pair<String, String> typeAndName = EDEXRouteContext
                             .getEndpointTypeAndName(uri);
                     if (typeAndName != null && DEPENDENCY_ENDPOINT_TYPES
                             .contains(typeAndName.getFirst())) {

@@ -27,6 +27,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.camel.CamelContext;
@@ -42,8 +44,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.BeanNameAware;
 import org.springframework.beans.factory.InitializingBean;
 
+import com.raytheon.uf.common.util.Pair;
 import com.raytheon.uf.edex.core.modes.EdexMode;
-import com.raytheon.uf.edex.esb.camel.context.ContextData;
 import com.raytheon.uf.edex.esb.camel.context.ContextManager;
 
 /**
@@ -93,6 +95,7 @@ import com.raytheon.uf.edex.esb.camel.context.ContextManager;
  * 2024-07-31   2037700    tgurney     Fix initialization
  * 2024-07-31   2037700    tgurney     Add getToEndpoints. Fix context stop,
  *                                     continue even if a route fails to stop.
+ * 2024-08-02   2037700    tgurney     Move URI parsing here from ContextData
  *
  * </pre>
  *
@@ -127,6 +130,13 @@ public class EDEXRouteContext extends ServiceSupport
 
     private static final Logger logger = LoggerFactory
             .getLogger(EDEXRouteContext.class);
+
+    /**
+     * Pulls the direct:name, seda:name, queue:name, topic:name section from the
+     * endpoint URI.
+     */
+    public static final Pattern endpointUriParsePattern = Pattern
+            .compile("([^:]+):(?://)?([^?]+)");
 
     /**
      * Endpoint types that are visible only within the EDEX JVM they were
@@ -187,11 +197,26 @@ public class EDEXRouteContext extends ServiceSupport
     }
 
     /**
+     * @param uri
+     * @return component type and endpoint name
+     */
+    public static Pair<String, String> getEndpointTypeAndName(String uri) {
+        Pair<String, String> rval = null;
+        Matcher m = endpointUriParsePattern.matcher(uri);
+        if (m.find()) {
+            String endpointType = m.group(1);
+            String endpointName = m.group(2);
+            rval = new Pair<>(endpointType, endpointName);
+        }
+        return rval;
+    }
+
+    /**
      * @return true if the route is internal to this JVM, false if the route
      *         receives messages from outside the JVM
      */
     private static boolean routeIsInternal(RouteDefinition r) {
-        return INTERNAL_ENDPOINT_TYPES.contains(ContextData
+        return INTERNAL_ENDPOINT_TYPES.contains(EDEXRouteContext
                 .getEndpointTypeAndName(r.getEndpointUrl()).getFirst());
     }
 

@@ -78,6 +78,8 @@ import com.raytheon.uf.edex.esb.camel.EDEXRouteContext;
  * Jul 24, 2024  2037700  tgurney   General refactoring to support EDEXRouteContext
  * Jul 29, 2024  2037700  tgurney   Replace ContextData with shim interface (Camel 4)
  * Jul 31, 2024, 2037700  tgurney   Perform startup/shutdown on EDEXRouteContexts
+ * Aug  2, 2024, 2037700  tgurney   Clustered context checking for EDEXRouteContexts
+ *
  *
  * </pre>
  *
@@ -113,12 +115,6 @@ public class ContextManager implements CamelContextAware {
      * Service used for start up and shut down threading.
      */
     private final ExecutorService service = Executors.newCachedThreadPool();
-
-    /*
-     * TODO Camel 4 - remove because it is now always empty. Instead we will
-     * call EDEXRouteContext.isClustered
-     */
-    private final Set<EDEXRouteContext> clusteredContexts = new HashSet<>();
 
     /**
      * State Manager for all contexts that are not clustered.
@@ -169,10 +165,6 @@ public class ContextManager implements CamelContextAware {
     }
 
     private ContextManager() {
-    }
-
-    public ContextData getContextData() {
-        return this::getCamelContext;
     }
 
     /**
@@ -523,36 +515,55 @@ public class ContextManager implements CamelContextAware {
         return failures;
     }
 
+    private Set<EDEXRouteContext> getClusteredContexts() {
+        Set<EDEXRouteContext> rval = new HashSet<>();
+        routesLock.readLock().lock();
+        try {
+            for (EDEXRouteContext ctx : routeContexts) {
+                if (ctx.isClustered()) {
+                    rval.add(ctx);
+                }
+            }
+        } finally {
+            routesLock.readLock().unlock();
+        }
+        return rval;
+    }
+
     /**
      * Checks the clustered contexts. If context is not running in the cluster
      * the context will be started.
      */
     public void checkClusteredContexts() {
-        if (!shuttingDown.get()) {
-            for (EDEXRouteContext camelContext : clusteredContexts) {
-                boolean activateRoute = true;
-                try {
-                    IContextStateManager stateManager = getStateManager(
-                            camelContext);
+        if (shuttingDown.get()) {
+            return;
+        }
+        Set<EDEXRouteContext> clusteredContexts = getClusteredContexts();
+        for (EDEXRouteContext context : clusteredContexts) {
+            if (shuttingDown.get()) {
+                return;
+            }
+            boolean activateRoute = true;
+            try {
+                IContextStateManager stateManager = getStateManager(context);
 
-                    if (stateManager.isContextStartable(camelContext)) {
-                        stateManager.startContext(camelContext);
-                    } else if (stateManager.isContextStoppable(camelContext)) {
-                        activateRoute = false;
-                        stateManager.stopContext(camelContext);
-                    }
-                } catch (Exception e) {
-                    StringBuilder msg = new StringBuilder();
-                    msg.append("Failed to ");
-                    if (activateRoute) {
-                        msg.append("start ");
-                    } else {
-                        msg.append("stop ");
-                    }
-                    msg.append("context ");
-                    msg.append(camelContext.getName());
-                    statusHandler.handle(Priority.ERROR, msg.toString(), e);
+                if (stateManager.isContextStartable(context)) {
+                    stateManager.startContext(context);
+                } else if (stateManager.isContextStoppable(context)) {
+                    activateRoute = false;
+                    stateManager.stopContext(context);
                 }
+            } catch (Exception e) {
+                StringBuilder msg = new StringBuilder();
+                msg.append("Failed to ");
+                if (activateRoute) {
+                    msg.append("start ");
+                } else {
+                    msg.append("stop ");
+                }
+                msg.append("context ");
+                msg.append(context.getName());
+                statusHandler.handle(Priority.ERROR, msg.toString(), e);
             }
         }
     }
