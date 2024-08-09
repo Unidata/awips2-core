@@ -10,19 +10,13 @@
         <property name="uncompressedDays" value="${purge.log.uncompressed.days}" />
         <property name="compressedDays" value="${purge.log.compressed.days}" />
     </bean>
-
-    <camelContext id="purgeLogsContext"
-        xmlns="http://camel.apache.org/schema/spring" errorHandlerRef="errorHandler">
-
-        <endpoint id="purgeLogsCron"
-            uri="quartz://purge/purgeLogScheduled/?cron=${purge.logs.cron}" />
-
-        <!-- schedule the timer to purge log directories -->
-        <route id="purgeLogScheduled">
-            <from uri="purgeLogsCron" />
-            <bean ref="purgeLogs" method="purge" />
-        </route>
-
-    </camelContext>
+    
+    <bean id="purgeLogsContext" factory-bean="routeContextFactory" factory-method="create">
+        <constructor-arg>
+            <bean class="com.raytheon.uf.edex.purgesrv.PurgeLogsContextRoutes">
+                <constructor-arg name="purgeLogsCron" value="${purge.logs.cron}" />
+            </bean>
+        </constructor-arg>
+    </bean>
 
 </beans>
