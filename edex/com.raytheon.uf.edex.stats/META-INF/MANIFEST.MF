@@ -21,5 +21,6 @@ Require-Bundle: com.raytheon.uf.common.serialization,
  com.raytheon.uf.common.status,
  javax.measure,
  org.hibernate,
- jakarta.xml.bind
+ jakarta.xml.bind,
+ com.raytheon.uf.edex.esb.camel
 Import-Package: com.raytheon.uf.common.units
