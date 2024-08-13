@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -33,11 +34,13 @@ import java.util.stream.Collectors;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.CamelContextLifecycle;
+import org.apache.camel.ExtendedCamelContext;
 import org.apache.camel.RuntimeCamelException;
 import org.apache.camel.model.ProcessorDefinition;
 import org.apache.camel.model.RouteDefinition;
 import org.apache.camel.model.ToDefinition;
 import org.apache.camel.spi.RouteController;
+import org.apache.camel.spi.RouteStartupOrder;
 import org.apache.camel.support.service.ServiceSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -96,6 +99,8 @@ import com.raytheon.uf.edex.esb.camel.context.ContextManager;
  * 2024-07-31   2037700    tgurney     Add getToEndpoints. Fix context stop,
  *                                     continue even if a route fails to stop.
  * 2024-08-02   2037700    tgurney     Move URI parsing here from ContextData
+ * 2024-08-08   2037700    tgurney     Slightly faster shutdown by sending all
+ *                                     routes to the ShutdownStrategy at once
  *
  * </pre>
  *
@@ -260,7 +265,7 @@ public class EDEXRouteContext extends ServiceSupport
     public List<RouteDefinition> getRouteDefsInShutdownOrder() {
         List<RouteDefinition> routeDefsTmp = new ArrayList<>(getRouteDefs());
         routeDefsTmp.sort(Comparator
-                .comparingInt(r -> -EDEXRouteContext.internalFirst(r)));
+                .comparingInt(EDEXRouteContext::internalFirst).reversed());
         return Collections.unmodifiableList(routeDefsTmp);
     }
 
@@ -358,26 +363,48 @@ public class EDEXRouteContext extends ServiceSupport
     @Override
     protected void doStop() {
         /*
-         * Unlike the other methods, this continues on and tries to stop all of
-         * the routes even if any one of them fails to stop. The reason is that
-         * we expect to call this method only when EDEX is shutting down. We
-         * make a best effort to stop as many routes as possible in a controlled
-         * way, since the whole system is about to go down momentarily.
+         * Unlike the other methods, tries to stop all of the routes even if any
+         * one of them fails to stop. The reason is that we expect to call this
+         * method only when EDEX is shutting down. We make a best effort to stop
+         * as many routes as possible in a controlled way, since the whole
+         * system is about to go down momentarily.
          *
          * In any case when EDEX is not shutting down, call
          * EDEXRouteContext.suspend() instead of this.
          */
-        boolean allStopped = true;
         logInfo("stopping");
+
+        CamelContext camelContext = ContextManager.getInstance()
+                .getCamelContext();
+        ExtendedCamelContext extCtx = camelContext.getCamelContextExtension();
+        List<RouteStartupOrder> rsos = new LinkedList<>();
+        /*
+         * This ugly code is necessary just because
+         * ShutdownStrategy.shutdownForced method takes a list of
+         * RouteStartupOrders (not a list of RouteDefinitions).
+         *
+         * getRouteStartupOrder() returns a list with one RouteStartupOrder
+         * object for every route in the CamelContext. We have to filter through
+         * these and take only the ones that are part of this EDEXRouteContext.
+         */
         for (RouteDefinition r : getRouteDefsInShutdownOrder()) {
-            try {
-                getRouteController().stopRoute(r.getRouteId());
-            } catch (Exception e) {
-                logger.error("Route " + r.getRouteId() + " failed to stop", e);
-                allStopped = false;
+            for (RouteStartupOrder rso : extCtx.getRouteStartupOrder()) {
+                if (r.getId().equals(rso.getRoute().getId())) {
+                    rsos.add(rso);
+                    /* Only one RouteStartupOrder per RouteDefinition */
+                    break;
+                }
             }
         }
-        if (!allStopped) {
+        try {
+            /*
+             * The reason for using ShutdownStrategy.shutdownForced instead of
+             * RouteController.stopRoute is that the ShutdownStrategy is more
+             * aggressive and handles all the routes at once.
+             */
+            camelContext.getShutdownStrategy().shutdownForced(camelContext,
+                    rsos);
+        } catch (Exception e) {
             throw new RuntimeCamelException(
                     "One or more routes failed to stop in " + this);
         }

@@ -31,6 +31,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -38,6 +39,9 @@ import javax.naming.ConfigurationException;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.CamelContextAware;
+import org.apache.camel.Endpoint;
+import org.apache.camel.component.quartz.QuartzEndpoint;
+import org.apache.camel.component.timer.TimerEndpoint;
 import org.apache.camel.model.RouteDefinition;
 
 import com.raytheon.uf.common.status.IUFStatusHandler;
@@ -53,8 +57,8 @@ import com.raytheon.uf.edex.esb.camel.EDEXRouteContext;
  * Tracks all contexts and is used to auto determine context dependencies and
  * start/stop them in the right order. Dynamically starts/stops a clustered
  * context and its associated routes so that only one context in the cluster is
- * running. This should mainly be used for reading from topics so that only box
- * is processing the topic data in the cluster for singleton type events.
+ * running. This should mainly be used for reading from topics so that only one
+ * box is processing the topic data in the cluster for singleton type events.
  *
  * <pre>
  * SOFTWARE HISTORY
@@ -79,6 +83,8 @@ import com.raytheon.uf.edex.esb.camel.EDEXRouteContext;
  * Jul 29, 2024  2037700  tgurney   Replace ContextData with shim interface (Camel 4)
  * Jul 31, 2024, 2037700  tgurney   Perform startup/shutdown on EDEXRouteContexts
  * Aug  2, 2024, 2037700  tgurney   Clustered context checking for EDEXRouteContexts
+ * Aug  8, 2024  2037700  tgurney   Set readable thread names. Stop timers before
+ *                                  stopping contexts.
  *
  *
  * </pre>
@@ -88,6 +94,9 @@ import com.raytheon.uf.edex.esb.camel.EDEXRouteContext;
 public class ContextManager implements CamelContextAware {
     private static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(ContextManager.class);
+
+    /** Thread number for context start/stop jobs */
+    private static final AtomicInteger threadNum = new AtomicInteger();
 
     private static ContextManager instance = new ContextManager();
 
@@ -130,7 +139,7 @@ public class ContextManager implements CamelContextAware {
 
     /**
      * Map of context processors that have been registered for a given context.
-     * Used to allow contexts to do custom worn on startup/shutdown.
+     * Used to allow contexts to do custom work on startup/shutdown.
      */
     private final Map<EDEXRouteContext, List<IContextStateProcessor>> contextProcessors = new HashMap<>();
 
@@ -311,18 +320,25 @@ public class ContextManager implements CamelContextAware {
 
         @Override
         public void run() {
+            int id = threadNum.getAndIncrement();
             try {
+                Thread.currentThread().setName(
+                        "EDEXContext-start-" + context.getName() + "-" + id);
                 IContextStateManager stateManager = getStateManager(context);
                 if (!stateManager.startContext(context)) {
-                    statusHandler.error("Context [" + context.getName()
-                            + "] failed to start, shutting down");
+                    statusHandler
+                            .error(context + " failed to start, shutting down");
                     System.exit(1);
                 }
             } catch (Throwable e) {
-                statusHandler.fatal(
-                        "Error occurred starting context: " + context.getName(),
-                        e);
+                statusHandler.fatal("Error occurred starting " + context, e);
                 System.exit(1);
+            } finally {
+                try {
+                    Thread.currentThread().setName("EDEXContext-idle-" + id);
+                } catch (Exception e) {
+                    statusHandler.debug(e.getLocalizedMessage(), e);
+                }
             }
         }
 
@@ -400,6 +416,16 @@ public class ContextManager implements CamelContextAware {
 
             routesLock.readLock().lock();
             try {
+                /*
+                 * Stopping a route does not stop any timer that triggers it so
+                 * we have to stop all timers separately.
+                 */
+                for (Endpoint e : theCamelContext.getEndpoints()) {
+                    if (e instanceof QuartzEndpoint
+                            || e instanceof TimerEndpoint) {
+                        e.stop();
+                    }
+                }
                 List<Future<Pair<EDEXRouteContext, Boolean>>> callbacks = new LinkedList<>();
 
                 for (EDEXRouteContext context : routeContexts) {
@@ -435,32 +461,41 @@ public class ContextManager implements CamelContextAware {
 
         @Override
         public Pair<EDEXRouteContext, Boolean> call() throws Exception {
-            boolean rval = false;
-            IContextStateManager stateManager = getStateManager(context);
+            int id = threadNum.getAndIncrement();
+            try {
+                Thread.currentThread().setName(
+                        "EDEXContext-stop-" + context.getName() + "-" + id);
+                boolean rval = false;
+                IContextStateManager stateManager = getStateManager(context);
 
-            if (stateManager.isContextStoppable(context)) {
-                try {
-                    statusHandler.info(
-                            "Stopping context [" + context.getName() + "]");
-                    rval = stateManager.stopContext(context);
+                if (stateManager.isContextStoppable(context)) {
+                    try {
+                        statusHandler.info("Stopping context " + context);
+                        rval = stateManager.stopContext(context);
 
-                    if (!rval) {
-                        statusHandler.error("Context [" + context.getName()
-                                + "] failed to stop");
+                        if (!rval) {
+                            statusHandler.error(context + " failed to stop");
+                        }
+                    } catch (Throwable e) {
+                        statusHandler
+                                .fatal("Error occurred stopping " + context, e);
                     }
-                } catch (Throwable e) {
-                    statusHandler.fatal("Error occurred stopping context: "
-                            + context.getName(), e);
+                } else {
+                    /*
+                     * dependency context that will be called by a future
+                     * shutdown after its dependencies have shut down
+                     */
+                    rval = true;
                 }
-            } else {
-                /*
-                 * dependency context that will be called by a future shutdown
-                 * after its dependencies have shut down
-                 */
-                rval = true;
-            }
 
-            return new Pair<>(context, rval);
+                return new Pair<>(context, rval);
+            } finally {
+                try {
+                    Thread.currentThread().setName("EDEXContext-idle-" + id);
+                } catch (Exception e) {
+                    statusHandler.debug(e.getLocalizedMessage(), e);
+                }
+            }
         }
     }
 
