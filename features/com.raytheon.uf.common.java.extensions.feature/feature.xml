@@ -36,6 +36,12 @@
          version="0.0.0"/>
 
    <plugin
+         id="jakarta.jws"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"/>
+
+   <plugin
          id="jakarta.annotation"
          download-size="0"
          install-size="0"
@@ -61,6 +67,12 @@
 
    <plugin
          id="javax.xml.ws"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"/>
+
+    <plugin
+         id="jakarta.xml.ws"
          download-size="0"
          install-size="0"
          version="0.0.0"/>

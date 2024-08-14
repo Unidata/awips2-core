@@ -7,7 +7,7 @@ import java.lang.reflect.Proxy;
 import java.net.MalformedURLException;
 import java.net.URL;
 
-import javax.jws.WebService;
+import jakarta.jws.WebService;
 
 import org.apache.commons.lang3.Validate;
 import org.slf4j.Logger;
