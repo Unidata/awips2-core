@@ -1,0 +1,10 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: EDEX Routes Plug-in
+Bundle-SymbolicName: com.raytheon.uf.edex.routes
+Bundle-Version: 1.24.0.qualifier
+Bundle-Vendor: Raytheon
+Bundle-RequiredExecutionEnvironment: JavaSE-17
+Require-Bundle: org.apache.camel;visibility:=reexport
+Export-Package: com.raytheon.uf.edex.routes
+
