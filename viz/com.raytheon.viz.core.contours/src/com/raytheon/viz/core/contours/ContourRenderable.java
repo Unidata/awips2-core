@@ -40,7 +40,6 @@ import com.raytheon.uf.viz.core.drawables.PaintProperties;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.map.IMapDescriptor;
 import com.raytheon.uf.viz.core.map.MapDescriptor;
-import com.raytheon.viz.core.contours.ContourSupport.ContourGroup;
 
 /**
  * Generalized contour renderable
@@ -63,12 +62,12 @@ import com.raytheon.viz.core.contours.ContourSupport.ContourGroup;
  * Jul 31, 2019  66719    ksunil    Ignore smoothingDistance of 0 or less.
  * Dec 06, 2021  8341     randerso  Added use of getResourceId for contour
  *                                  logging
+ * Aug 20, 2024  2037631  mapeters  Cleanup contour disposal
  *
  * </pre>
  *
  * @author chammack
  */
-
 public abstract class ContourRenderable implements IRenderable {
 
     private ContourGroup[] contourGroup;
@@ -371,16 +370,8 @@ public abstract class ContourRenderable implements IRenderable {
                             if (cg != null) {
                                 if (cg != contourGroup[i]) {
                                     // Dispose old wireframe shapes
-                                    if (contourGroup[i] != null
-                                            && contourGroup[i].posValueShape != null) {
-                                        contourGroup[i].posValueShape.dispose();
-                                    }
-
-                                    if (contourGroup[i] != null
-                                            && contourGroup[i].negValueShape != null) {
-                                        contourGroup[i].negValueShape.dispose();
-                                    }
-
+                                    ContourSupport.disposeContourGroups(
+                                            contourGroup[i]);
                                     contourGroup[i] = cg;
                                     contourGroup[i].posValueShape.compile();
                                     contourGroup[i].negValueShape.compile();
@@ -427,20 +418,7 @@ public abstract class ContourRenderable implements IRenderable {
      * Dispose the renderable
      */
     public void dispose() {
-        if (contourGroup != null) {
-            for (ContourGroup c : contourGroup) {
-                if (c == null) {
-                    continue;
-                }
-
-                if (c.posValueShape != null) {
-                    c.posValueShape.dispose();
-                }
-                if (c.negValueShape != null) {
-                    c.negValueShape.dispose();
-                }
-            }
-        }
+        ContourSupport.disposeContourGroups(contourGroup);
         Set<String> keys = requestMap.keySet();
         for (String key : keys) {
             requestMap.get(key).dispose();
