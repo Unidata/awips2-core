@@ -20,10 +20,8 @@
 
 package com.raytheon.uf.edex.requestsrv;
 
-import org.apache.camel.Exchange;
-import org.apache.camel.Processor;
-
 import com.raytheon.uf.edex.esb.camel.EDEXRouteBuilder;
+import com.raytheon.uf.edex.routes.EDEXHttpRequestFormatParser;
 
 /**
  * Camel routes converted from file "request-service.xml", context
@@ -36,13 +34,13 @@ import com.raytheon.uf.edex.esb.camel.EDEXRouteBuilder;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * 2024-07-11   2037702    aford       Initial creation (from auto-generated)
+ * 2024-08-20   2037798    tgurney     Extract RequestFormatParser to new class
+ *                                     called EDEXHttpRequestFormatParser
  *
  * </pre>
  */
 
 public class RequestServiceCamelRoutes extends EDEXRouteBuilder {
-
-    private static final String FORMAT_HEADER = "format";
 
     private final String edexHttpPort;
 
@@ -67,47 +65,12 @@ public class RequestServiceCamelRoutes extends EDEXRouteBuilder {
         // @formatter:off
         from(requestServiceEndpoint)
                 .noStreamCaching()
-                .process(new RequestFormatParser())
+                .process(new EDEXHttpRequestFormatParser())
                 .to("bean:httpServiceExecutor?method=execute("
                         + "${body}, "
-                        + "${in.header." + FORMAT_HEADER + "}, "
+                        + "${in.header." + EDEXHttpRequestFormatParser.FORMAT_HEADER + "}, "
                         + "${in.header.accept-encoding}, "
                         + "${in.header.CamelHttpServletResponse})");
         // @formatter:on
     }
-
-    /**
-     * This class is a custom camel processor that is used to parse out the
-     * format from the path parameter used in the request. This is used with the
-     * camel jetty component instead of using the camel REST component because
-     * disabling stream caching on the REST component does not seem to be
-     * possible as of camel 4.4.
-     */
-    private class RequestFormatParser implements Processor {
-
-        /**
-         * Sets the format header on the exchange object by parsing out the path
-         * parameter in the request or using the content-type header if the path
-         * parameter is not provided.
-         *
-         * @param exchange
-         *            The camel Exchange object to process.
-         */
-        @Override
-        public void process(Exchange exchange) throws Exception {
-            String format = null;
-            String uri = exchange.getIn().getHeader("CamelHttpUri",
-                    String.class);
-            String[] uriParts = uri.split("/");
-            if (uriParts.length > 2) {
-                format = uriParts[uriParts.length - 1];
-            } else {
-                format = exchange.getIn().getHeader("content-type",
-                        String.class);
-            }
-            exchange.getIn().setHeader(FORMAT_HEADER, format);
-        }
-
-    }
-
 }
