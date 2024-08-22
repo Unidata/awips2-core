@@ -29,65 +29,18 @@
         <property name="outgoingDirectory" value="${edex.home}/data/outgoing"/>
     </bean>
 
-    <camelContext id="clusteredpurgeContext" xmlns="http://camel.apache.org/schema/spring"
-        errorHandlerRef="errorHandler">
-
-        <endpoint id="purgeOutgoingCron" uri="quartz://purge/purgeOutgoingScheduled/?cron=${purge.outgoing.cron}"/>
-        <endpoint id="purgeOrphanTimer" uri="timer://purgeOrphan?fixedRate=true&amp;period=${purge.orphan.period}"/>
-
-        <route id="purgeByRequest">
-            <from uri="jms-generic:queue:purgeRequest" />
-            <doTry>
-                <bean ref="purge" method="purge" />
-                <doCatch>
-                    <exception>java.lang.Throwable</exception>
-                    <to
-                        uri="log:purge?level=ERROR" />
-                </doCatch>
-            </doTry>
-        </route>
-
-
-        <!-- schedule the timer to purge outgoing directory -->
-        <route id="purgeOutgoingScheduled">
-            <from uri="purgeOutgoingCron" />
-            <bean ref="purgeOutgoing" method="purge" />
-        </route>
-
-        <route id="purgeOrphanScheduled">
-            <from uri="purgeOrphanTimer" />
-            <doTry>
-                <bean ref="purgeManager" method="purgeOrphanedData" />
-                <doCatch>
-                    <exception>java.lang.Throwable</exception>
-                    <to
-                        uri="log:purge?level=ERROR" />
-                </doCatch>
-            </doTry>
-        </route>
-    </camelContext>
-
-    <camelContext id="purgeContext" xmlns="http://camel.apache.org/schema/spring"
-        errorHandlerRef="errorHandler">
-
-        <endpoint id="purgeCron" uri="quartz://purge/purgeScheduled/?cron=${purge.cron}"/>
-
-        <!-- Purge on Scheduled timer -->
-        <route id="purgeScheduled">
-            <from uri="purgeCron" />
-            <doTry>
-                <bean ref="purgeManager" method="executePurge" />
-                <doCatch>
-                    <exception>java.lang.Throwable</exception>
-                    <to
-                        uri="log:purge?level=ERROR" />
-                </doCatch>
-            </doTry>
-        </route>
-    </camelContext>
-
-    <bean factory-bean="contextManager" factory-method="registerClusteredContext">
-        <constructor-arg ref="clusteredpurgeContext" />
+    <bean id="clusteredPurgeContext" factory-bean="routeContextFactory" factory-method="createClustered">
+        <constructor-arg>
+            <bean class="com.raytheon.uf.edex.purgesrv.ClusteredPurgeContextRoutes" >
+                <constructor-arg name="purgeOutgoingCron" value="${purge.outgoing.cron}" />
+                <constructor-arg name="purgeOrphanPeriod" value="${purge.orphan.period}" />
+            </bean>
+        </constructor-arg>
     </bean>
 
+    <bean id="purgeContext" factory-bean="routeContextFactory" factory-method="create">
+        <constructor-arg>
+            <bean class="com.raytheon.uf.edex.purgesrv.PurgeContextRoutes" />
+        </constructor-arg>
+    </bean>
 </beans>
