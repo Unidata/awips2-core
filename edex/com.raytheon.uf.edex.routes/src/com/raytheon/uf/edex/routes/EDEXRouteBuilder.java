@@ -17,7 +17,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.edex.esb.camel;
+package com.raytheon.uf.edex.routes;
 
 import org.apache.camel.builder.RouteBuilder;
 

@@ -20,7 +20,7 @@
 
 package com.raytheon.uf.edex.requestsrv;
 
-import com.raytheon.uf.edex.esb.camel.EDEXRouteBuilder;
+import com.raytheon.uf.edex.routes.EDEXRouteBuilder;
 import com.raytheon.uf.edex.routes.EDEXHttpRequestFormatParser;
 
 /**

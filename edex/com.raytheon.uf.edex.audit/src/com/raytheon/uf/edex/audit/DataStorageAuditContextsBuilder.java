@@ -26,7 +26,7 @@ import org.springframework.context.ApplicationContextAware;
 
 import com.raytheon.uf.common.datastorage.audit.DataStorageAuditUtils;
 import com.raytheon.uf.edex.core.IMessageProducer;
-import com.raytheon.uf.edex.esb.camel.EDEXRouteBuilder;
+import com.raytheon.uf.edex.routes.EDEXRouteBuilder;
 import com.raytheon.uf.edex.esb.camel.EDEXRouteContext;
 import com.raytheon.uf.edex.esb.camel.EDEXRouteContextFactory;
 import com.raytheon.uf.edex.esb.camel.context.ContextManager;

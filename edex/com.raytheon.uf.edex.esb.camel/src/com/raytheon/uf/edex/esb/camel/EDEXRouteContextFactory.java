@@ -19,6 +19,8 @@
  **/
 package com.raytheon.uf.edex.esb.camel;
 
+import com.raytheon.uf.edex.routes.EDEXRouteBuilder;
+
 /**
  * Factory for creating {@link EDEXRouteContext} objects.
  *

@@ -20,7 +20,7 @@
 
 package com.raytheon.uf.edex.distribution;
 
-import com.raytheon.uf.edex.esb.camel.EDEXRouteBuilder;
+import com.raytheon.uf.edex.routes.EDEXRouteBuilder;
 
 /**
  * Camel routes converted from file "distribution-spring.xml", context "distro"

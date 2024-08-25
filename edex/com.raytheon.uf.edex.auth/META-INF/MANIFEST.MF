@@ -17,7 +17,7 @@ Require-Bundle: com.raytheon.uf.common.localization,
  org.springframework,
  org.apache.shiro,
  org.slf4j,
- com.raytheon.uf.edex.esb.camel
+ com.raytheon.uf.edex.routes
 Export-Package: com.raytheon.uf.edex.auth,
  com.raytheon.uf.edex.auth.req,
  com.raytheon.uf.edex.auth.resp

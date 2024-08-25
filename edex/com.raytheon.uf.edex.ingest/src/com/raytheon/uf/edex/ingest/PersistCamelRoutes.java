@@ -20,7 +20,7 @@
 
 package com.raytheon.uf.edex.ingest;
 
-import com.raytheon.uf.edex.esb.camel.EDEXRouteBuilder;
+import com.raytheon.uf.edex.routes.EDEXRouteBuilder;
 
 /**
  * Camel routes converted from file "persist-ingest.xml", context "persist-camel"

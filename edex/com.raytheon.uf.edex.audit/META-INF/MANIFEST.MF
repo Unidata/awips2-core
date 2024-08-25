@@ -11,6 +11,7 @@ Require-Bundle: com.raytheon.uf.edex.core,
  org.apache.commons.lang3,
  com.raytheon.uf.common.status,
  org.apache.camel,
+ com.raytheon.uf.edex.routes,
  com.raytheon.uf.edex.esb.camel,
  org.slf4j
 Export-Package: com.raytheon.uf.edex.audit

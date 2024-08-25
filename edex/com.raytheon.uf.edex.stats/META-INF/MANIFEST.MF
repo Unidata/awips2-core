@@ -22,5 +22,5 @@ Require-Bundle: com.raytheon.uf.common.serialization,
  javax.measure,
  org.hibernate,
  jakarta.xml.bind,
- com.raytheon.uf.edex.esb.camel
+ com.raytheon.uf.edex.routes
 Import-Package: com.raytheon.uf.common.units

@@ -20,7 +20,7 @@
 
 package com.raytheon.uf.edex.localization.http;
 
-import com.raytheon.uf.edex.esb.camel.EDEXRouteBuilder;
+import com.raytheon.uf.edex.routes.EDEXRouteBuilder;
 
 /**
  * Camel routes converted from file "localization-http-request.xml", context

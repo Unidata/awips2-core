@@ -11,6 +11,6 @@ Require-Bundle: com.raytheon.uf.common.serialization,
  org.apache.commons.lang3,
  org.slf4j,
  jakarta.xml.bind,
- com.raytheon.uf.edex.esb.camel
+ com.raytheon.uf.edex.routes
 Import-Package: org.apache.camel
 Export-Package: com.raytheon.uf.edex.distribution

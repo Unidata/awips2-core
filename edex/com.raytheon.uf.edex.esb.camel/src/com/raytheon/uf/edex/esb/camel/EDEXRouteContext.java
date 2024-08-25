@@ -50,6 +50,7 @@ import org.springframework.beans.factory.InitializingBean;
 import com.raytheon.uf.common.util.Pair;
 import com.raytheon.uf.edex.core.modes.EdexMode;
 import com.raytheon.uf.edex.esb.camel.context.ContextManager;
+import com.raytheon.uf.edex.routes.EDEXRouteBuilder;
 
 /**
  * <p>

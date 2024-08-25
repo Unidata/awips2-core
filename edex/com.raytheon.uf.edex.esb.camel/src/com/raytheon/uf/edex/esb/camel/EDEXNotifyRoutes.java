@@ -20,6 +20,8 @@
 
 package com.raytheon.uf.edex.esb.camel;
 
+import com.raytheon.uf.edex.routes.EDEXRouteBuilder;
+
 /**
  * Camel routes converted from file "edex.xml", context "camel"
  *
