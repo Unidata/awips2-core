@@ -102,6 +102,8 @@ import com.raytheon.uf.edex.routes.EDEXRouteBuilder;
  * 2024-08-02   2037700    tgurney     Move URI parsing here from ContextData
  * 2024-08-08   2037700    tgurney     Slightly faster shutdown by sending all
  *                                     routes to the ShutdownStrategy at once
+ * 2024-08-27   2037700    tgurney     Fix shutdown order, properly reverse
+ *                                     startup order
  *
  * </pre>
  *
@@ -248,26 +250,25 @@ public class EDEXRouteContext extends ServiceSupport
     }
 
     /**
-     * @return unmodifiable list of all routes contained in this context. Routes
-     *         that should be started first are ordered first.
+     * @return list of all routes contained in this context. Routes that should
+     *         be started first are ordered first. List is a modifiable copy
      */
-    public List<RouteDefinition> getRouteDefsInStartupOrder() {
+    private List<RouteDefinition> getRouteDefsInStartupOrder() {
         List<RouteDefinition> routeDefsTmp = new ArrayList<>(getRouteDefs());
         routeDefsTmp
                 .sort(Comparator.comparingInt(EDEXRouteContext::internalFirst));
-        return Collections.unmodifiableList(routeDefsTmp);
+        return routeDefsTmp;
     }
 
     /**
      * @return unmodifiable list of all routes contained in this context. Routes
      *         that should be shut down first (according to inter-context
-     *         relationships) are ordered first.
+     *         relationships) are ordered first. List is a modifiable copy
      */
-    public List<RouteDefinition> getRouteDefsInShutdownOrder() {
-        List<RouteDefinition> routeDefsTmp = new ArrayList<>(getRouteDefs());
-        routeDefsTmp.sort(Comparator
-                .comparingInt(EDEXRouteContext::internalFirst).reversed());
-        return Collections.unmodifiableList(routeDefsTmp);
+    private List<RouteDefinition> getRouteDefsInShutdownOrder() {
+        List<RouteDefinition> routeDefsTmp = getRouteDefsInStartupOrder();
+        Collections.reverse(routeDefsTmp);
+        return routeDefsTmp;
     }
 
     /** @return set of endpoint URLs for all routes in this context */
