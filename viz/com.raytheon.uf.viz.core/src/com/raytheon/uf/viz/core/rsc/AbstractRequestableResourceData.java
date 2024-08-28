@@ -98,6 +98,7 @@ import com.raytheon.uf.viz.datacube.DataCubeContainer;
  * Dec 14, 2022  23218 mgamazaychikov Make defaultParser protected
  * Jul 15, 2024  2037624  mapeters  Make invalidateAvailableTimesCache() public,
  *                                  remove isObjectsEqual()
+ * Sep 06, 2024  2036517  mapeters  Add convenience getters for constraints
  *
  * </pre>
  *
@@ -654,6 +655,32 @@ public abstract class AbstractRequestableResourceData
      */
     public void setRetrieveData(boolean retrieveData) {
         this.retrieveData = retrieveData;
+    }
+
+    /**
+     * @param constraintKey
+     * @return request constraint for the given key, or null if no constraint
+     *         exists for that key
+     */
+    public RequestConstraint getConstraint(String constraintKey) {
+        Map<String, RequestConstraint> metadataMap = getMetadataMap();
+        if (metadataMap != null) {
+            return metadataMap.get(constraintKey);
+        }
+        return null;
+    }
+
+    /**
+     * @param constraintKey
+     * @return request constraint value for the given key, or null if no
+     *         constraint exists for that key
+     */
+    public String getConstraintValue(String constraintKey) {
+        RequestConstraint constraint = getConstraint(constraintKey);
+        if (constraint != null) {
+            return constraint.getConstraintValue();
+        }
+        return null;
     }
 
     @Override
