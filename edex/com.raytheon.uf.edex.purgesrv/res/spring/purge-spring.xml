@@ -40,7 +40,9 @@
 
     <bean id="purgeContext" factory-bean="routeContextFactory" factory-method="create">
         <constructor-arg>
-            <bean class="com.raytheon.uf.edex.purgesrv.PurgeContextRoutes" />
+            <bean class="com.raytheon.uf.edex.purgesrv.PurgeContextRoutes">
+                <constructor-arg name="purgeCron" value="${purge.cron}" />
+            </bean>
         </constructor-arg>
     </bean>
 </beans>
