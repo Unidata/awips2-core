@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -25,20 +25,21 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 
-import com.raytheon.uf.common.inventory.data.AbstractRequestableData;
-import com.raytheon.uf.common.inventory.data.CubeRequestableData;
-import com.raytheon.uf.common.inventory.exception.DataCubeException;
-import com.raytheon.uf.common.inventory.TimeAndSpace;
-import com.raytheon.uf.common.inventory.TimeAndSpaceMatcher;
-import com.raytheon.uf.common.inventory.TimeAndSpaceMatcher.MatchResult;
-import com.raytheon.uf.common.inventory.tree.AbstractRequestableNode;
-import com.raytheon.uf.common.inventory.tree.CubeLevel;
 import com.raytheon.uf.common.dataplugin.level.Level;
 import com.raytheon.uf.common.derivparam.inv.AvailabilityContainer;
 import com.raytheon.uf.common.derivparam.library.DerivParamDesc;
 import com.raytheon.uf.common.derivparam.library.DerivParamMethod;
+import com.raytheon.uf.common.inventory.TimeAndSpace;
+import com.raytheon.uf.common.inventory.TimeAndSpaceMatcher;
+import com.raytheon.uf.common.inventory.TimeAndSpaceMatcher.MatchResult;
+import com.raytheon.uf.common.inventory.data.AbstractRequestableData;
+import com.raytheon.uf.common.inventory.data.CubeRequestableData;
+import com.raytheon.uf.common.inventory.exception.DataCubeException;
+import com.raytheon.uf.common.inventory.tree.AbstractRequestableNode;
+import com.raytheon.uf.common.inventory.tree.CubeLevel;
 
 /**
  * Provided a mechanism for requesting data for an entire 3D cube. If a Level is
@@ -50,18 +51,19 @@ import com.raytheon.uf.common.derivparam.library.DerivParamMethod;
  * the level nodes it represents, these should be sorted by the requesting node.
  * Finally it attempts to merge any requests to avoid the overhead of multiple
  * requests to EDEX.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Apr 13, 2010 #4473      rjpeter      Initial creation
- * 
+ * Apr 13, 2010 4473       rjpeter     Initial creation
+ * Jul 15, 2024 2037624    mapeters    Extract portions of getData to new
+ *                                     methods to allow overriding
+ *
  * </pre>
- * 
+ *
  * @author bsteffen
- * @version 1.0
  */
 public abstract class AbstractCubeLevelNode extends AbstractDerivedDataNode {
 
@@ -81,9 +83,7 @@ public abstract class AbstractCubeLevelNode extends AbstractDerivedDataNode {
         this.setValue("3D");
     }
 
-    public AbstractCubeLevelNode(
-            Level level,
-            String modelName,
+    public AbstractCubeLevelNode(Level level, String modelName,
             List<CubeLevel<AbstractRequestableNode, AbstractRequestableNode>> levels) {
         this.setLevel(level);
         this.levels = levels;
@@ -91,11 +91,8 @@ public abstract class AbstractCubeLevelNode extends AbstractDerivedDataNode {
         this.setValue("3D");
     }
 
-    public AbstractCubeLevelNode(
-            Level level,
-            DerivParamDesc desc,
-            DerivParamMethod method,
-            String modelName,
+    public AbstractCubeLevelNode(Level level, DerivParamDesc desc,
+            DerivParamMethod method, String modelName,
             List<CubeLevel<AbstractRequestableNode, AbstractRequestableNode>> levels) {
         super(level, desc, method, modelName);
         this.levels = levels;
@@ -112,7 +109,7 @@ public abstract class AbstractCubeLevelNode extends AbstractDerivedDataNode {
             Set<TimeAndSpace> availability,
             AvailabilityContainer availabilityContainer)
             throws DataCubeException {
-        Map<AbstractRequestableNode, Set<TimeAndSpace>> result = new HashMap<AbstractRequestableNode, Set<TimeAndSpace>>();
+        Map<AbstractRequestableNode, Set<TimeAndSpace>> result = new HashMap<>();
         for (CubeLevel<AbstractRequestableNode, AbstractRequestableNode> level : levels) {
             result.put(level.getParam(), availability);
             result.put(level.getPressure(), availability);
@@ -121,50 +118,40 @@ public abstract class AbstractCubeLevelNode extends AbstractDerivedDataNode {
     }
 
     @Override
-    public Set<AbstractRequestableData> getData(
-            Set<TimeAndSpace> availability,
+    public Set<AbstractRequestableData> getData(Set<TimeAndSpace> availability,
             Map<AbstractRequestableNode, Set<AbstractRequestableData>> dependencyData)
             throws DataCubeException {
-        Map<TimeAndSpace, List<AbstractRequestableData>> paramMap = new HashMap<TimeAndSpace, List<AbstractRequestableData>>();
-        Map<TimeAndSpace, List<AbstractRequestableData>> presMap = new HashMap<TimeAndSpace, List<AbstractRequestableData>>();
+        Map<TimeAndSpace, List<AbstractRequestableData>> paramMap = new HashMap<>();
+        Map<TimeAndSpace, List<AbstractRequestableData>> presMap = new HashMap<>();
         for (CubeLevel<AbstractRequestableNode, AbstractRequestableNode> level : levels) {
-            Set<AbstractRequestableData> paramRecs = dependencyData.get(level
-                    .getParam());
+            Set<AbstractRequestableData> paramRecs = dependencyData
+                    .get(level.getParam());
             for (AbstractRequestableData paramRec : paramRecs) {
                 TimeAndSpace ast = paramRec.getTimeAndSpace();
-                List<AbstractRequestableData> paramList = paramMap.get(ast);
-                if (paramList == null) {
-                    paramList = new ArrayList<AbstractRequestableData>();
-                    paramMap.put(ast, paramList);
-                }
-                paramList.add(paramRec);
+                paramMap.computeIfAbsent(ast, k -> new ArrayList<>())
+                        .add(paramRec);
             }
-            Set<AbstractRequestableData> presRecs = dependencyData.get(level
-                    .getPressure());
+            Set<AbstractRequestableData> presRecs = dependencyData
+                    .get(level.getPressure());
             for (AbstractRequestableData presRec : presRecs) {
                 TimeAndSpace ast = presRec.getTimeAndSpace();
-                List<AbstractRequestableData> presList = presMap.get(ast);
-                if (presList == null) {
-                    presList = new ArrayList<AbstractRequestableData>();
-                    presMap.put(ast, presList);
-                }
-                presList.add(presRec);
+                presMap.computeIfAbsent(ast, k -> new ArrayList<>())
+                        .add(presRec);
             }
-
         }
         Map<TimeAndSpace, MatchResult> matches = new TimeAndSpaceMatcher()
                 .match(paramMap.keySet(), presMap.keySet());
-        Set<AbstractRequestableData> records = new HashSet<AbstractRequestableData>();
+        Set<AbstractRequestableData> records = new HashSet<>();
         for (Entry<TimeAndSpace, MatchResult> match : matches.entrySet()) {
-            List<AbstractRequestableData> paramList = paramMap.get(match
-                    .getValue().get1());
-            CubeRequestableData record = new CubeRequestableData(
+            List<AbstractRequestableData> paramList = getParamData(paramMap,
+                    match.getValue().get1());
+            CubeRequestableData record = createCubeRequestableData(
                     paramList.get(0));
             for (AbstractRequestableData paramRec : paramList) {
                 record.addParam(paramRec);
             }
-            List<AbstractRequestableData> presList = presMap.get(match
-                    .getValue().get2());
+            List<AbstractRequestableData> presList = presMap
+                    .get(match.getValue().get2());
             for (AbstractRequestableData presRec : presList) {
                 record.addPressure(presRec);
             }
@@ -179,14 +166,25 @@ public abstract class AbstractCubeLevelNode extends AbstractDerivedDataNode {
         return records;
     }
 
+    protected List<AbstractRequestableData> getParamData(
+            Map<TimeAndSpace, List<AbstractRequestableData>> paramMap,
+            TimeAndSpace timeAndSpace) {
+        return paramMap.get(timeAndSpace);
+    }
+
+    protected CubeRequestableData createCubeRequestableData(
+            AbstractRequestableData dataToCopy) {
+        return new CubeRequestableData(dataToCopy);
+    }
+
     @Override
     public Set<TimeAndSpace> getAvailability(
             Map<AbstractRequestableNode, Set<TimeAndSpace>> availability)
             throws DataCubeException {
         // things in one are available for one level
-        Set<TimeAndSpace> one = new HashSet<TimeAndSpace>();
+        Set<TimeAndSpace> one = new HashSet<>();
         // things in two are available for two levels.
-        Set<TimeAndSpace> two = new HashSet<TimeAndSpace>();
+        Set<TimeAndSpace> two = new HashSet<>();
 
         for (CubeLevel<AbstractRequestableNode, AbstractRequestableNode> level : levels) {
             for (TimeAndSpace time : availability.get(level.getParam())) {
@@ -200,15 +198,9 @@ public abstract class AbstractCubeLevelNode extends AbstractDerivedDataNode {
         return two;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @seecom.raytheon.uf.viz.derivparam.tree.AbstractRequestableLevelNode#
-     * getDependencies()
-     */
+    @Override
     public List<Dependency> getDependencies() {
-        List<Dependency> dependencies = new ArrayList<Dependency>(
-                levels.size() * 2);
+        List<Dependency> dependencies = new ArrayList<>(levels.size() * 2);
         for (CubeLevel<AbstractRequestableNode, AbstractRequestableNode> level : levels) {
             dependencies.add(new Dependency(level.getPressure(), 0));
             dependencies.add(new Dependency(level.getParam(), 0));
@@ -216,11 +208,6 @@ public abstract class AbstractCubeLevelNode extends AbstractDerivedDataNode {
         return dependencies;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#hashCode()
-     */
     @Override
     public int hashCode() {
         final int prime = 31;
@@ -229,25 +216,21 @@ public abstract class AbstractCubeLevelNode extends AbstractDerivedDataNode {
         return result;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#equals(java.lang.Object)
-     */
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (!super.equals(obj))
+        }
+        if (!super.equals(obj)) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
+        }
         AbstractCubeLevelNode other = (AbstractCubeLevelNode) obj;
-        if (levels == null) {
-            if (other.levels != null)
-                return false;
-        } else if (!levels.equals(other.levels))
+        if (!Objects.equals(levels, other.levels)) {
             return false;
+        }
         return true;
     }
 
