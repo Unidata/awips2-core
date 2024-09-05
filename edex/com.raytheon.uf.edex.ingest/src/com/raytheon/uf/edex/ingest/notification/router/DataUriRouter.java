@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -38,20 +38,21 @@ import com.raytheon.uf.edex.core.EdexException;
  * Routes DataUri Notifications to a destination uri. Notification msg will be
  * sent immediately to the routes for inner jvm calls, routes over jms will be
  * queued and sent in gzipped batches.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Nov 19, 2013  2170     rjpeter   Initial creation
  * Oct 30, 2015  4710     bclement  ByteArrayOutputStream renamed to
  *                                  PooledByteArrayOutputStream
  * Jun 28, 2016  5679     rjpeter   Moved PluginNotifierConfig to common.
- * 
+ * Sep  5, 2024  2037700  tgurney   Remove vm and direct-vm components (Camel 4)
+ *
  * </pre>
- * 
+ *
  * @author rjpeter
  */
 public class DataUriRouter implements INotificationRouter {
@@ -64,7 +65,7 @@ public class DataUriRouter implements INotificationRouter {
     /**
      * Data URIs that have not been sent.
      */
-    private final ConcurrentLinkedQueue<String> uris = new ConcurrentLinkedQueue<String>();
+    private final ConcurrentLinkedQueue<String> uris = new ConcurrentLinkedQueue<>();
 
     /**
      * Flag if this route stays in the jvm.
@@ -77,13 +78,13 @@ public class DataUriRouter implements INotificationRouter {
     private final String route;
 
     /**
-     * 
+     *
      * @param config
      */
     public DataUriRouter(PluginNotifierConfig config) {
         EndpointType type = config.getEndpointType();
-        isInternal = EndpointType.DIRECTVM.equals(type)
-                || EndpointType.VM.equals(type);
+        isInternal = EndpointType.DIRECT.equals(type)
+                || EndpointType.SEDA.equals(type);
         route = config.getEndpointUri();
     }
 
@@ -99,7 +100,7 @@ public class DataUriRouter implements INotificationRouter {
 
     /**
      * Creates a DataURINotificationMessage.
-     * 
+     *
      * @return
      */
     protected synchronized DataURINotificationMessage createMessage() {
@@ -148,7 +149,7 @@ public class DataUriRouter implements INotificationRouter {
     /**
      * Thrift encodes an object and then gzip's the binary data. Should only be
      * used for sending data outside the jvm.
-     * 
+     *
      * @param msg
      * @return
      * @throws SerializationException
@@ -162,8 +163,8 @@ public class DataUriRouter implements INotificationRouter {
         try {
             gzippedURIs = new GZIPOutputStream(baos, GZIP_BUFFER_SIZE);
         } catch (IOException e) {
-            throw new EdexException(
-                    "Failed to prepare the gzipped data stream", e);
+            throw new EdexException("Failed to prepare the gzipped data stream",
+                    e);
         }
 
         try {
