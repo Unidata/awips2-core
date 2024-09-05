@@ -26,10 +26,10 @@ import org.springframework.context.ApplicationContextAware;
 
 import com.raytheon.uf.common.datastorage.audit.DataStorageAuditUtils;
 import com.raytheon.uf.edex.core.IMessageProducer;
-import com.raytheon.uf.edex.routes.EDEXRouteBuilder;
 import com.raytheon.uf.edex.esb.camel.EDEXRouteContext;
 import com.raytheon.uf.edex.esb.camel.EDEXRouteContextFactory;
 import com.raytheon.uf.edex.esb.camel.context.ContextManager;
+import com.raytheon.uf.edex.routes.EDEXRouteBuilder;
 
 /**
  * Class that dynamically initializes clustered contexts for auditor routes.
@@ -45,6 +45,9 @@ import com.raytheon.uf.edex.esb.camel.context.ContextManager;
  * Jul 24, 2024 2037700    tgurney     Remove clustering and state processor
  *                                     registration (temporary, Camel 4)
  * Aug  2, 2024 2037700    tgurney     Change to use EDEXRouteContexts
+ * Sep  5, 2024 2037700    tgurney     Set id on routes without an id. Accept
+ *                                     ContextManager constructor arg for
+ *                                     dependency tracking purposes.
  *
  * </pre>
  */
@@ -56,8 +59,19 @@ public class DataStorageAuditContextsBuilder
 
     private ApplicationContext applicationContext;
 
-    public DataStorageAuditContextsBuilder(IMessageProducer messageProducer) {
+    private ContextManager contextManager;
+
+    /*
+     * ContextManager is a static singleton, but still have to let Spring inject
+     * it in this case so that it will recognize the dependency relationship
+     * from this class -> ContextManager -> the CamelContext. Otherwise the
+     * CamelContext might not exist when this class is instantiated which will
+     * cause it to throw an exception in the postProcessBeanFactory method.
+     */
+    public DataStorageAuditContextsBuilder(IMessageProducer messageProducer,
+            ContextManager contextManager) {
         this.messageProducer = messageProducer;
+        this.contextManager = contextManager;
     }
 
     @Override
@@ -81,8 +95,7 @@ public class DataStorageAuditContextsBuilder
             String beanName = "clusteredDataStorageAuditContext" + i;
             beanFactory.initializeBean(routeCtx, beanName);
             beanFactory.registerSingleton(beanName, routeCtx);
-            ContextManager.getInstance().registerContextStateProcessor(routeCtx,
-                    auditor);
+            contextManager.registerContextStateProcessor(routeCtx, auditor);
         }
     }
 
@@ -105,13 +118,15 @@ public class DataStorageAuditContextsBuilder
                     + "?threadName=DataStorageAudit" + id;
             from(auditEventQueueUri)
                     .bean("serializationUtil", "transformFromThrift")
-                    .bean(auditorBeanId, "processEvent");
+                    .bean(auditorBeanId, "processEvent")
+                    .setId("processAuditEvent-" + id);
 
             String auditerCron = System
                     .getProperty("data.storage.auditer.cleanup.cron");
             String auditCleanupQuartzUri = "quartz://DataStorageAuditCleanup"
                     + id + "/?cron=" + auditerCron;
-            from(auditCleanupQuartzUri).bean(auditorBeanId, "cleanup");
+            from(auditCleanupQuartzUri).bean(auditorBeanId, "cleanup")
+                    .setId(auditorBeanId);
         }
     }
 }

@@ -38,7 +38,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import javax.naming.ConfigurationException;
 
 import org.apache.camel.CamelContext;
-import org.apache.camel.CamelContextAware;
 import org.apache.camel.Endpoint;
 import org.apache.camel.component.quartz.QuartzEndpoint;
 import org.apache.camel.component.timer.TimerEndpoint;
@@ -85,13 +84,15 @@ import com.raytheon.uf.edex.esb.camel.EDEXRouteContext;
  * Aug  2, 2024, 2037700  tgurney   Clustered context checking for EDEXRouteContexts
  * Aug  8, 2024  2037700  tgurney   Set readable thread names. Stop timers before
  *                                  stopping contexts.
+ * Sep  5, 2024  2037700  tgurney   Manually inject the Camel context via spring
+ *                                  instead of using CamelContextAware interface
  *
  *
  * </pre>
  *
  * @author rjpeter
  */
-public class ContextManager implements CamelContextAware {
+public class ContextManager {
     private static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(ContextManager.class);
 
@@ -101,7 +102,7 @@ public class ContextManager implements CamelContextAware {
     private static ContextManager instance = new ContextManager();
 
     /** The one application-wide CamelContext */
-    private CamelContext theCamelContext;
+    private CamelContext camelContext;
 
     /** All route contexts known to this instance of EDEX */
     private final Set<EDEXRouteContext> routeContexts = new HashSet<>();
@@ -273,7 +274,7 @@ public class ContextManager implements CamelContextAware {
     public void startContexts() {
         statusHandler.info("Context Manager starting contexts");
 
-        theCamelContext.start();
+        camelContext.start();
         routesLock.readLock().lock();
         try {
             List<Future<?>> callbacks = new LinkedList<>();
@@ -420,7 +421,7 @@ public class ContextManager implements CamelContextAware {
                  * Stopping a route does not stop any timer that triggers it so
                  * we have to stop all timers separately.
                  */
-                for (Endpoint e : theCamelContext.getEndpoints()) {
+                for (Endpoint e : camelContext.getEndpoints()) {
                     if (e instanceof QuartzEndpoint
                             || e instanceof TimerEndpoint) {
                         e.stop();
@@ -443,7 +444,7 @@ public class ContextManager implements CamelContextAware {
                 statusHandler.error("Error occurred during shutdown", e);
             } finally {
                 routesLock.readLock().unlock();
-                theCamelContext.stop();
+                camelContext.stop();
             }
         }
     }
@@ -678,13 +679,20 @@ public class ContextManager implements CamelContextAware {
         }
     }
 
-    @Override
     public CamelContext getCamelContext() {
-        return theCamelContext;
+        return camelContext;
     }
 
-    @Override
+    /**
+     * Only for Spring to inject the CamelContext. This makes Spring aware that
+     * ContextManager depends on the CamelContext.
+     *
+     * If instead we were to use the CamelContextAware interface, Spring would
+     * not be aware of this dependency relationship, which can lead to
+     * situations where ContextManager is being accessed before the CamelContext
+     * exists, which is potentially catastrophic.
+     */
     public void setCamelContext(CamelContext camelContext) {
-        this.theCamelContext = camelContext;
+        this.camelContext = camelContext;
     }
 }
