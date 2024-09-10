@@ -19,8 +19,6 @@
 
    <plugin
          id="org.apache.ws.commons.schema"
-         download-size="0"
-         install-size="0"
-         version="2.3.1"/>
+         version="0.0.0"/>
 
 </feature>
