@@ -4,7 +4,7 @@ Bundle-Name: Security
 Bundle-SymbolicName: com.raytheon.uf.common.security
 Bundle-Version: 1.14.0.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-17
 Require-Bundle: org.apache.commons.codec,
  com.raytheon.uf.common.status
 Export-Package: com.raytheon.uf.common.security.certificate,

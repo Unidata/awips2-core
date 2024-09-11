@@ -4,7 +4,7 @@ Bundle-Name: Localization Http
 Bundle-SymbolicName: com.raytheon.uf.edex.localization.http
 Bundle-Version: 1.18.0.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-11
+Bundle-RequiredExecutionEnvironment: JavaSE-17
 Require-Bundle: com.raytheon.uf.common.http,
  com.raytheon.uf.common.localization,
  jakarta.servlet,

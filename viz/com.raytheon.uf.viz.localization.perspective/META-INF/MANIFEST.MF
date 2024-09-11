@@ -33,7 +33,7 @@ Require-Bundle: org.python.pydev,
  com.raytheon.uf.common.python,
  jakarta.xml.bind
 Bundle-ActivationPolicy: lazy
-Bundle-RequiredExecutionEnvironment: JavaSE-11
+Bundle-RequiredExecutionEnvironment: JavaSE-17
 Export-Package: com.raytheon.uf.viz.localization.perspective.adapter,
  com.raytheon.uf.viz.localization.perspective.editor,
  com.raytheon.uf.viz.localization.perspective.service,

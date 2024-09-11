@@ -31,7 +31,7 @@ Require-Bundle: org.eclipse.core.runtime,
  org.slf4j,
  jakarta.annotation,
  jakarta.inject
-Bundle-RequiredExecutionEnvironment: JavaSE-11
+Bundle-RequiredExecutionEnvironment: JavaSE-17
 Bundle-ActivationPolicy: lazy
 Export-Package: com.raytheon.uf.viz.personalities.cave.component,
  com.raytheon.uf.viz.personalities.cave.dialog,

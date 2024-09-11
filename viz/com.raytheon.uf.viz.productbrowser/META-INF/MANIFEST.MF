@@ -7,7 +7,7 @@ Eclipse-BundleShape: dir
 Bundle-Activator: com.raytheon.uf.viz.productbrowser.Activator
 Bundle-Vendor: Raytheon
 Bundle-ActivationPolicy: lazy
-Bundle-RequiredExecutionEnvironment: JavaSE-11
+Bundle-RequiredExecutionEnvironment: JavaSE-17
 Export-Package: com.raytheon.uf.viz.productbrowser,
  com.raytheon.uf.viz.productbrowser.pref
 Require-Bundle: org.eclipse.core.runtime,

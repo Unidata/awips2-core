@@ -7,7 +7,7 @@ Eclipse-BundleShape: dir
 Bundle-Activator: com.raytheon.viz.ui.UiPlugin
 Bundle-ActivationPolicy: lazy
 Bundle-Vendor: Raytheon
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-17
 Require-Bundle: org.eclipse.ui;visibility:=reexport,
  com.raytheon.uf.viz.core,
  org.eclipse.core.runtime,
