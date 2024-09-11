@@ -21,7 +21,7 @@ Require-Bundle: org.eclipse.core.runtime,
  com.raytheon.uf.common.dataplugin.maps,
  com.raytheon.uf.common.colormap,
  jakarta.xml.bind
-Bundle-RequiredExecutionEnvironment: JavaSE-11
+Bundle-RequiredExecutionEnvironment: JavaSE-17
 Bundle-ActivationPolicy: lazy
 Export-Package: com.raytheon.uf.viz.core.maps,
  com.raytheon.uf.viz.core.maps.actions,

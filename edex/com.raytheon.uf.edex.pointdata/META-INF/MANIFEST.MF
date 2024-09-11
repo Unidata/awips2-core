@@ -4,7 +4,7 @@ Bundle-Name: PointData Plug-in
 Bundle-SymbolicName: com.raytheon.uf.edex.pointdata
 Bundle-Version: 1.18.0.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-11
+Bundle-RequiredExecutionEnvironment: JavaSE-17
 Bundle-ActivationPolicy: lazy
 Require-Bundle: com.raytheon.uf.common.pointdata;visibility:=reexport,
  com.raytheon.uf.common.serialization,

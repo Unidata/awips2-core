@@ -4,7 +4,7 @@ Bundle-Name: Database
 Bundle-SymbolicName: com.raytheon.uf.edex.database
 Bundle-Version: 1.18.1.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-11
+Bundle-RequiredExecutionEnvironment: JavaSE-17
 Require-Bundle: com.raytheon.uf.common.dataaccess,
  com.raytheon.uf.common.dataplugin,
  com.raytheon.uf.common.dataquery,

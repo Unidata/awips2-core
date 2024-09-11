@@ -12,7 +12,7 @@ Require-Bundle: com.raytheon.edex.common,
  jakarta.xml.bind,
  com.raytheon.uf.edex.routes
 Export-Package: com.raytheon.uf.edex.ingest
-Bundle-RequiredExecutionEnvironment: JavaSE-11
+Bundle-RequiredExecutionEnvironment: JavaSE-17
 Import-Package: com.raytheon.uf.edex.core,
  com.raytheon.uf.common.status,
  com.raytheon.uf.edex.database.plugin

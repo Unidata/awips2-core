@@ -4,7 +4,7 @@ Bundle-Name: Dataquery
 Bundle-SymbolicName: com.raytheon.uf.common.dataquery
 Bundle-Version: 1.18.0.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-11
+Bundle-RequiredExecutionEnvironment: JavaSE-17
 Export-Package: com.raytheon.uf.common.dataquery,
  com.raytheon.uf.common.dataquery.db,
  com.raytheon.uf.common.dataquery.requests,
