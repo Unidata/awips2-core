@@ -19,8 +19,6 @@
 
    <plugin
          id="org.joda.time"
-         download-size="0"
-         install-size="0"
-         version="2.9.9"/>
+         version="0.0.0"/>
 
 </feature>
