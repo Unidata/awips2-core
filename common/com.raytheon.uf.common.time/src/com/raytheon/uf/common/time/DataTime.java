@@ -84,6 +84,7 @@ import com.raytheon.uf.common.time.util.TimeUtil;
  *                                   getDisplayString() to fix things that use
  *                                   it for DB queries
  * Apr 02, 2024  2037091  mapeters   Include level type in equals/hashCode
+ * Sep 17, 2024  2037943  mapeters   Make equals(Object) final
  *
  * </pre>
  *
@@ -521,19 +522,23 @@ public class DataTime implements Comparable<DataTime>, Serializable, Cloneable {
     }
 
     @Override
-    public boolean equals(Object obj) {
+    public final boolean equals(Object obj) {
+        /*
+         * Final implementation so that subclasses override the below method
+         * that all equals operations go through.
+         */
         return equals(obj, false);
     }
 
     public boolean equals(Object obj, boolean ignoreSpatial) {
 
-        if ((obj == null) || !(obj instanceof DataTime)) {
+        if (!(obj instanceof DataTime)) {
             return false;
         }
 
         DataTime rhs = (DataTime) obj;
 
-        if (((DataTime) obj).getRefTime() == null) {
+        if (rhs.getRefTime() == null) {
             return fcstTime == rhs.fcstTime;
         }
 
