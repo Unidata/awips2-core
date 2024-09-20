@@ -47,7 +47,7 @@ public class PurgeLogsContextRoutes extends EDEXRouteBuilder {
     @Override
     public void configure() throws Exception {
         // @formatter:off
-        from("quartz://purge/purgeLogScheduled/?cron=" + this.purgeLogsCron)
+        from("cron:purge/purgeLogScheduled?schedule=" + this.purgeLogsCron)
               .bean("purgeLogs", "purge")
               .setId("purgeLogScheduled");
         // @formatter:on

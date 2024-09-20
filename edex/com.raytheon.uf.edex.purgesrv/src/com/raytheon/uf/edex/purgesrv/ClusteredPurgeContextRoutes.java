@@ -102,11 +102,11 @@ public class ClusteredPurgeContextRoutes extends EDEXRouteBuilder {
           .endDoTry()
           .end()
           .setId("purgeByRequest");
-        
-        from("quartz://purge/purgeOutgoingScheduled/?cron=" + this.purgeOutgoingCron)
+
+        from("cron:purge/purgeOutgoingScheduled?schedule=" + this.purgeOutgoingCron)
           .bean("purgeOutgoing", "purge")
           .setId("purgeOutgoingScheduled");
-        
+
         from("timer://purgeOrphan?fixedRate=true&period=" + this.purgeOrphanPeriod)
           .doTry()
               .bean("purgeManager", "purgeOrphanedData")

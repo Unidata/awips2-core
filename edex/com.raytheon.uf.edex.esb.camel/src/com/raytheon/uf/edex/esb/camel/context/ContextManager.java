@@ -39,7 +39,7 @@ import javax.naming.ConfigurationException;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.Endpoint;
-import org.apache.camel.component.quartz.QuartzEndpoint;
+import org.apache.camel.component.cron.CronEndpoint;
 import org.apache.camel.component.timer.TimerEndpoint;
 import org.apache.camel.model.RouteDefinition;
 
@@ -422,7 +422,7 @@ public class ContextManager {
                  * we have to stop all timers separately.
                  */
                 for (Endpoint e : camelContext.getEndpoints()) {
-                    if (e instanceof QuartzEndpoint
+                    if (e instanceof CronEndpoint
                             || e instanceof TimerEndpoint) {
                         e.stop();
                     }

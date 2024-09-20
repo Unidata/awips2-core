@@ -123,8 +123,8 @@ public class DataStorageAuditContextsBuilder
 
             String auditerCron = System
                     .getProperty("data.storage.auditer.cleanup.cron");
-            String auditCleanupQuartzUri = "quartz://DataStorageAuditCleanup"
-                    + id + "/?cron=" + auditerCron;
+            String auditCleanupQuartzUri = "cron:DataStorageAuditCleanup" + id
+                    + "?schedule=" + auditerCron;
             from(auditCleanupQuartzUri).bean(auditorBeanId, "cleanup")
                     .setId(auditorBeanId);
         }

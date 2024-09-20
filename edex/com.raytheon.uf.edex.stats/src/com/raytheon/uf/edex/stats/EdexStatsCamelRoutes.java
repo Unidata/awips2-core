@@ -23,7 +23,8 @@ package com.raytheon.uf.edex.stats;
 import com.raytheon.uf.edex.routes.EDEXRouteBuilder;
 
 /**
- * Camel routes converted from file "stats-ingest.xml", context "edexStats-camel"
+ * Camel routes converted from file "stats-ingest.xml", context
+ * "edexStats-camel"
  *
  * <pre>
  *
@@ -36,7 +37,6 @@ import com.raytheon.uf.edex.routes.EDEXRouteBuilder;
  * </pre>
  */
 
-
 public class EdexStatsCamelRoutes extends EDEXRouteBuilder {
 
     private final String statsScanInterval;
@@ -45,7 +45,8 @@ public class EdexStatsCamelRoutes extends EDEXRouteBuilder {
 
     private final String statsPurgeCron;
 
-    public EdexStatsCamelRoutes(String statsScanInterval, String statsAggregateToCsvCron, String statsPurgeCron) {
+    public EdexStatsCamelRoutes(String statsScanInterval,
+            String statsAggregateToCsvCron, String statsPurgeCron) {
         this.statsScanInterval = statsScanInterval;
         this.statsAggregateToCsvCron = statsAggregateToCsvCron;
         this.statsPurgeCron = statsPurgeCron;
@@ -53,6 +54,7 @@ public class EdexStatsCamelRoutes extends EDEXRouteBuilder {
 
     @Override
     public void configure() throws Exception {
+        //@formatter:off
         from("timer://scanStats?period=" + this.statsScanInterval + "m")
           .doTry()
           .bean("aggregateManager", "scan")
@@ -61,7 +63,7 @@ public class EdexStatsCamelRoutes extends EDEXRouteBuilder {
           .endDoTry()
           .end()
           .setId("statsTableScan");
-        from("quartz://stats/aggrToCsv/?cron=" + this.statsAggregateToCsvCron)
+        from("cron:stats/aggrToCsv?schedule=" + this.statsAggregateToCsvCron)
           .doTry()
           .bean("aggregateManager", "offlineAggregates")
           .doCatch(Throwable.class)
@@ -69,7 +71,7 @@ public class EdexStatsCamelRoutes extends EDEXRouteBuilder {
           .endDoTry()
           .end()
           .setId("statsAggrToCsv");
-        from("quartz://stats/purge/?cron=" + this.statsPurgeCron + "")
+        from("cron:stats/purge?schedule=" + this.statsPurgeCron)
           .doTry()
           .bean("statsPurge", "purge")
           .doCatch(Throwable.class)
@@ -77,5 +79,6 @@ public class EdexStatsCamelRoutes extends EDEXRouteBuilder {
           .endDoTry()
           .end()
           .setId("statsPurgeRoute");
+        //@formatter:on
     }
 }

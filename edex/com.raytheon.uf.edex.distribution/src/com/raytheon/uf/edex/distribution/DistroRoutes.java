@@ -36,7 +36,6 @@ import com.raytheon.uf.edex.routes.EDEXRouteBuilder;
  * </pre>
  */
 
-
 public class DistroRoutes extends EDEXRouteBuilder {
 
     private final String distributionCron;
@@ -47,6 +46,7 @@ public class DistroRoutes extends EDEXRouteBuilder {
 
     @Override
     public void configure() throws Exception {
+        //@formatter:off
         from("jms-durable:queue:external.dropbox?concurrentConsumers=5&maxConcurrentConsumers=5")
           .doTry()
               .bean("distributionSrv", "route")
@@ -71,7 +71,7 @@ public class DistroRoutes extends EDEXRouteBuilder {
           .endDoTry()
           .end()
           .setId("radarserverDistribution");
-        from("quartz://refreshDist/refreshDistRoute/?cron=" + this.distributionCron)
+        from("cron:refreshDist/refreshDistRoute?schedule=" + this.distributionCron)
           .doTry()
               .bean("distributionPatterns", "refresh")
           .doCatch(Throwable.class)
@@ -79,5 +79,6 @@ public class DistroRoutes extends EDEXRouteBuilder {
           .endDoTry()
           .end()
           .setId("refreshDistributionPatterns");
+        //@formatter:on
     }
 }
