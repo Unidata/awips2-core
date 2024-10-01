@@ -1078,6 +1078,10 @@
         <DatabaseLevel levelName="FH" levelOneValue="1000.0" unit="ft" />
         <DatabaseLevel levelName="FH" levelOneValue="304.0" unit="m" />
     </Level>
+    <Level displayName="1.5 kft MSL" key="1.5kft" group="S">
+        <DatabaseLevel levelName="FH" levelOneValue="1500.0" unit="ft" />
+        <DatabaseLevel levelName="FH" levelOneValue="457.0" unit="m" />
+    </Level>
     <Level displayName="2 kft MSL" key="2kft" group="S">
         <DatabaseLevel levelName="FH" levelOneValue="2000.0" unit="ft" />
         <DatabaseLevel levelName="FH" levelOneValue="609.0" unit="m" />
