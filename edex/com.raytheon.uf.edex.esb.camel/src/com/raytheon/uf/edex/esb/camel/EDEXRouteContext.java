@@ -151,7 +151,7 @@ public class EDEXRouteContext extends ServiceSupport
      * created in. We want to start these routes first and stop them last.
      */
     private static final Set<String> INTERNAL_ENDPOINT_TYPES = Set.of("direct",
-            "seda", "timer", "quartz");
+            "seda", "timer", "cron");
 
     /**
      * Name of this object as a Spring bean. Don't set this manually. The only
