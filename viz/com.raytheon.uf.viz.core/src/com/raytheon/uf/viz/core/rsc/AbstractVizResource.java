@@ -51,6 +51,7 @@ import com.raytheon.uf.viz.core.rsc.IResourceDataChanged.ChangeType;
 import com.raytheon.uf.viz.core.rsc.RenderingOrderFactory.ResourceOrder;
 import com.raytheon.uf.viz.core.rsc.capabilities.AbstractCapability;
 import com.raytheon.uf.viz.core.rsc.capabilities.Capabilities;
+import com.raytheon.uf.viz.core.rsc.capabilities.ICapabilityProvider;
 
 /**
  * Provides a base implementation for creating visualizations that participate
@@ -86,14 +87,16 @@ import com.raytheon.uf.viz.core.rsc.capabilities.Capabilities;
  * Feb 18, 2021  8343     mchan      Added performance logging to capture how look
  *                                   took to initialize and paint a resource
  * Dec 06, 2021  8341     randerso   Added getResourceId for contour logging
- * Feb 21, 2023  23465    dhaines    Paint logging should only happen when it takes 
- *                                   > 500ms                                   
+ * Feb 21, 2023  23465    dhaines    Paint logging should only happen when it takes
+ *                                   > 500ms
+ * Aug 23, 2024  2037631  mapeters   Implement ICapabilityProvider
  *
  * </pre>
  *
  * @author chammack
  */
-public abstract class AbstractVizResource<T extends AbstractResourceData, D extends IDescriptor> {
+public abstract class AbstractVizResource<T extends AbstractResourceData, D extends IDescriptor>
+        implements ICapabilityProvider {
 
     protected static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(AbstractVizResource.class);
@@ -251,19 +254,12 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
         return resourceData;
     }
 
-    /**
-     * Return back a capability for the resource
-     */
+    @Override
     public <C extends AbstractCapability> C getCapability(Class<C> capability) {
         return getCapabilities().getCapability(getResourceData(), capability);
     }
 
-    /**
-     * Check for capability in resource.
-     *
-     * @param capability
-     * @return true if resource has the capability; false otherwise
-     */
+    @Override
     public boolean hasCapability(
             Class<? extends AbstractCapability> capability) {
         return getLoadProperties().getCapabilities().hasCapability(capability);
@@ -551,10 +547,10 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
                 paintInternal(target, paintProps);
                 long elapsedTime = System.currentTimeMillis() - startTime;
                 if (elapsedTime >= 500) {
-	                perfLog.logDuration(
-	                        "painting: " + this.getClass().getSimpleName() + " "
-	                                + this.getSafeName(),
-	                        elapsedTime);
+                    perfLog.logDuration(
+                            "painting: " + this.getClass().getSimpleName() + " "
+                                    + this.getSafeName(),
+                            elapsedTime);
                 }
             } catch (VizException e) {
                 updatePaintStatus(PaintStatus.ERROR);

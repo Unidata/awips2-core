@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -52,10 +52,10 @@ import tech.units.indriya.format.SimpleUnitFormat;
 
 /**
  * Singleton Level Factory for getting Level objects
- * 
+ *
  * <pre>
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- --------------------------
  * Sep 03, 2009           rjpeter     Initial creation.
@@ -63,33 +63,41 @@ import tech.units.indriya.format.SimpleUnitFormat;
  * Jan 23, 2014  2711     bsteffen    Add getAllLevels.
  * Sep 09, 2014  3356     njensen     Always use default LevelRetrievalAdapter
  *                                     Remove CommunicationException
- * 
+ * Aug 20, 2024  2037631  mapeters    Wrap instance in LazyHolder
+ *
  * </pre>
- * 
+ *
  * @author rjpeter
- * @version 1.0
  */
 public class LevelFactory {
-    private static final transient IUFStatusHandler statusHandler = UFStatus
+
+    private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(LevelFactory.class);
 
     public static final String UNKNOWN_LEVEL = "UNKNOWN";
 
     private static final String MASTER_LEVEL_FILENAME = "/level/masterLevels.xml";
 
-    private static LevelFactory instance = new LevelFactory();
+    /**
+     * Initialization-on-demand holder to prevent instantiation until
+     * getInstance() is actually called. Specifically needed for unit tests to
+     * be able to mock getInstance().
+     */
+    private static class LazyHolder {
+        private static LevelFactory instance = new LevelFactory();
+    }
 
     // contains the master levels
-    private Map<String, MasterLevel> masterLevelCache = new HashMap<String, MasterLevel>();
+    private Map<String, MasterLevel> masterLevelCache = new HashMap<>();
 
     // level stub to its full level
-    private Map<Level, Level> levelCache = new HashMap<Level, Level>();
+    private Map<Level, Level> levelCache = new HashMap<>();
 
     // level id to its full level
-    private Map<Long, Level> levelCacheById = new HashMap<Long, Level>();
+    private Map<Long, Level> levelCacheById = new HashMap<>();
 
     // level id String to its full level
-    private Map<String, Level> levelCacheByIdAsString = new HashMap<String, Level>();
+    private Map<String, Level> levelCacheByIdAsString = new HashMap<>();
 
     private ILevelRetrievalAdapter retrievalAdapter = null;
 
@@ -100,7 +108,7 @@ public class LevelFactory {
     private static final double INVALID_LEVEL = Level.getInvalidLevelValue();
 
     public static LevelFactory getInstance() {
-        return instance;
+        return LazyHolder.instance;
     }
 
     private LevelFactory() {
@@ -170,9 +178,9 @@ public class LevelFactory {
 
                 // check units, if units is null assume default units or level
                 // has no units
-                if ((unit != null)
-                        && (unit.trim().length() > 0)
-                        && ((levelOneValue != INVALID_LEVEL) || (levelTwoValue != INVALID_LEVEL))) {
+                if ((unit != null) && (unit.trim().length() > 0)
+                        && ((levelOneValue != INVALID_LEVEL)
+                                || (levelTwoValue != INVALID_LEVEL))) {
                     Unit<?> masterUnit = masterLevel.getUnit();
                     if (masterUnit != null) {
                         Unit<?> incomingUnit = SimpleUnitFormat
@@ -209,7 +217,7 @@ public class LevelFactory {
         if (hasRequestedAllLevels) {
             loadAllLevels();
         }
-        return new ArrayList<Level>(levelCacheById.values());
+        return new ArrayList<>(levelCacheById.values());
     }
 
     private MasterLevel loadMasterLevel(MasterLevel level, boolean createFlag) {
@@ -279,8 +287,8 @@ public class LevelFactory {
 
             if (rval != null) {
                 // replace MasterLevel with cached master level
-                rval.setMasterLevel(getMasterLevel(rval.getMasterLevel()
-                        .getName()));
+                rval.setMasterLevel(
+                        getMasterLevel(rval.getMasterLevel().getName()));
 
                 cacheLevel(rval);
             }
@@ -328,10 +336,9 @@ public class LevelFactory {
                     cacheLevel(rval);
                 }
             } catch (NumberFormatException e) {
-                statusHandler
-                        .handle(Priority.PROBLEM,
-                                "Error occurred trying to lookup level information, received level id that was not a number.",
-                                e);
+                statusHandler.handle(Priority.PROBLEM,
+                        "Error occurred trying to lookup level information, received level id that was not a number.",
+                        e);
             }
         }
 
