@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -21,35 +21,35 @@ package com.raytheon.viz.core.map;
 
 import java.awt.geom.Point2D;
 import java.util.ArrayList;
+import java.util.List;
 
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.geotools.referencing.GeodeticCalculator;
-
 import org.locationtech.jts.geom.Coordinate;
 
 /**
  * Utility methods for geographic calculations
- * 
+ *
  * <pre>
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Dec 13, 2007            njensen     Initial creation
- * 
+ * Aug 20, 2024 2037631    mapeters    Add getDistance, splitLineWithDistances
+ *
  * </pre>
- * 
+ *
  * @author njensen
- * @version 1.0
  */
-
 public class GeoUtil {
 
     private GeoUtil() {
-
     }
 
     /**
      * Rounds an azimuth to a 45 degree increment
-     * 
+     *
      * @param azimuth
      *            the azimuth to round
      * @return the rounded azimuth
@@ -57,15 +57,16 @@ public class GeoUtil {
     public static final int roundAzimuth(double azimuth) {
         double intAzimuth = (Math.round(azimuth / 45)) * 45;
 
-        while (intAzimuth < 0)
+        while (intAzimuth < 0) {
             intAzimuth += 360;
+        }
 
         return (int) intAzimuth;
     }
 
     /**
      * Rounds an azimuth to an approximately 22.5 degree increment
-     * 
+     *
      * @param azimuth
      *            the azimuth to round
      * @return the rounded azimuth
@@ -73,15 +74,16 @@ public class GeoUtil {
     public static final int roundAzimuth16Directions(double azimuth) {
         double intAzimuth = Math.round((Math.round(azimuth / 22.5)) * 22.5);
 
-        while (intAzimuth < 0)
+        while (intAzimuth < 0) {
             intAzimuth += 360;
+        }
 
         return (int) intAzimuth;
     }
 
     /**
      * Converts an azimuth to a common String representation
-     * 
+     *
      * @param azimuth
      *            the azimuth to express as a String
      * @param abbrev
@@ -219,7 +221,7 @@ public class GeoUtil {
 
     /**
      * Splits a line that is composed to two endpoints into multiple points
-     * 
+     *
      * @param lineBegin
      *            the first point on the line
      * @param lineEnd
@@ -234,7 +236,7 @@ public class GeoUtil {
         if (nPoints < 3) {
             result = new Coordinate[] { lineBegin, lineEnd };
         } else {
-            ArrayList<Coordinate> list = new ArrayList<Coordinate>();
+            ArrayList<Coordinate> list = new ArrayList<>();
             GeodeticCalculator gc = new GeodeticCalculator();
             gc.setStartingGeographicPoint(lineBegin.x, lineBegin.y);
             gc.setDestinationGeographicPoint(lineEnd.x, lineEnd.y);
@@ -268,7 +270,7 @@ public class GeoUtil {
             distances[j] = gc.getOrthodromicDistance();
             totalDistance += distances[j];
         }
-        double distancePerSegment = new Float(totalDistance / (numPoints - 1));
+        double distancePerSegment = (float) totalDistance / (numPoints - 1);
         Coordinate[] lineData = new Coordinate[numPoints];
         int index = 0;
         double remaining = 0;
@@ -289,8 +291,63 @@ public class GeoUtil {
     }
 
     /**
+     * Split the line with the given vertices into the given number of points.
+     * This also calculates the distance of each point along the line, from the
+     * line's very first vertex.
+     *
+     * The vertices themselves are guaranteed to be included in the returned
+     * list. As a result, the returned coordinates may not be equally spaced out
+     * for multi-segment lines, unlike other splitLine methods in here.
+     *
+     * @param numPoints
+     *            the number of points to split the line into. The returned list
+     *            may be slightly larger for multi-segment lines, due to
+     *            rounding when dividing this number among the segments.
+     * @param lineVertices
+     *            the vertices of the line to split
+     * @return list of (coordinate, distance) pairs along the line (distance is
+     *         in meters)
+     */
+    public static List<Pair<Coordinate, Double>> splitLineWithDistances(
+            int numPoints, Coordinate... lineVertices) {
+        double totalDistance = 0d;
+        List<LineSegment> lineSegs = new ArrayList<>();
+        Coordinate prevVertex = null;
+        for (Coordinate vertex : lineVertices) {
+            if (prevVertex != null) {
+                LineSegment seg = new LineSegment(prevVertex, vertex);
+                totalDistance += seg.distance;
+                lineSegs.add(seg);
+            }
+            prevVertex = vertex;
+        }
+
+        List<Pair<Coordinate, Double>> coordAndDistanceList = new ArrayList<>();
+        double prevSegsDistance = 0d;
+        for (LineSegment seg : lineSegs) {
+            int segNumPoints = (int) Math
+                    .ceil(numPoints * (seg.distance / totalDistance));
+
+            Coordinate[] segCoords = splitLine(seg.startCoord, seg.endCoord,
+                    segNumPoints);
+            for (Coordinate segCoord : segCoords) {
+                /*
+                 * Add previous segments' total distance so that this is the
+                 * distance from the line's first overall vertex
+                 */
+                double distance = getDistance(seg.startCoord, segCoord)
+                        + prevSegsDistance;
+                coordAndDistanceList.add(ImmutablePair.of(segCoord, distance));
+            }
+            prevSegsDistance += seg.distance;
+        }
+
+        return coordAndDistanceList;
+    }
+
+    /**
      * Determines the lat/lon of a distance along a line
-     * 
+     *
      * @param lineStart
      *            the start of the line
      * @param lineEnd
@@ -311,8 +368,21 @@ public class GeoUtil {
     }
 
     /**
+     * @param lonLat1
+     * @param lonLat2
+     * @return distance between the given coordinates, in meters
+     */
+    public static double getDistance(Coordinate lonLat1, Coordinate lonLat2) {
+        // Default calculator uses WGS84 ellipsoid with meters unit
+        GeodeticCalculator gc = new GeodeticCalculator();
+        gc.setStartingGeographicPoint(lonLat1.x, lonLat1.y);
+        gc.setDestinationGeographicPoint(lonLat2.x, lonLat2.y);
+        return gc.getOrthodromicDistance();
+    }
+
+    /**
      * Formats a coordinate into a standard string
-     * 
+     *
      * @param coord
      *            the coordinate to format
      * @return a String representation of the coordinate
@@ -335,15 +405,18 @@ public class GeoUtil {
         return String.format("%.2f%s %.2f%s", y, yPrefix, x, xPrefix);
     }
 
-    public static void main(String[] args) {
-        Coordinate start = new Coordinate(-95.9, 41.3);
-        Coordinate end = new Coordinate(-92.39, 33.88);
+    private static class LineSegment {
 
-        Coordinate[] line = GeoUtil.splitLine(start, end, 5);
-        for (Coordinate c : line) {
-            System.out.println(c);
+        public final Coordinate startCoord;
+
+        public final Coordinate endCoord;
+
+        public final double distance;
+
+        public LineSegment(Coordinate startCoord, Coordinate endCoord) {
+            this.startCoord = startCoord;
+            this.endCoord = endCoord;
+            this.distance = getDistance(startCoord, endCoord);
         }
-
     }
-
 }

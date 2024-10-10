@@ -23,10 +23,8 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
@@ -34,7 +32,6 @@ import java.util.stream.Stream;
 
 import org.apache.commons.collections.map.LRUMap;
 import org.apache.commons.lang.ArrayUtils;
-import org.eclipse.swt.graphics.RGB;
 import org.geotools.api.coverage.grid.GridEnvelope;
 import org.geotools.api.geometry.Bounds;
 import org.geotools.api.referencing.crs.CoordinateReferenceSystem;
@@ -51,7 +48,6 @@ import org.geotools.geometry.jts.JTS;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.referencing.operation.DefaultMathTransformFactory;
 import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.Geometry;
 
 import com.raytheon.uf.common.geospatial.CRSCache;
 import com.raytheon.uf.common.geospatial.MapUtil;
@@ -71,7 +67,6 @@ import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.PerformanceStatus;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
-import com.raytheon.uf.common.style.BaseLabelingPreferences;
 import com.raytheon.uf.common.style.ContourLabelingPreferences;
 import com.raytheon.uf.common.style.IncrementLabelingPreferences;
 import com.raytheon.uf.common.style.ValuesLabelingPreferences;
@@ -79,15 +74,9 @@ import com.raytheon.uf.common.style.contour.ContourPreferences;
 import com.raytheon.uf.common.util.GridUtil;
 import com.raytheon.uf.common.wxmath.Constants;
 import com.raytheon.uf.common.wxmath.DistFilter;
-import com.raytheon.uf.viz.core.DrawableString;
 import com.raytheon.uf.viz.core.IExtent;
 import com.raytheon.uf.viz.core.IGraphicsTarget;
-import com.raytheon.uf.viz.core.IGraphicsTarget.HorizontalAlignment;
-import com.raytheon.uf.viz.core.IGraphicsTarget.LineStyle;
-import com.raytheon.uf.viz.core.IGraphicsTarget.VerticalAlignment;
 import com.raytheon.uf.viz.core.PixelExtent;
-import com.raytheon.uf.viz.core.RGBColors;
-import com.raytheon.uf.viz.core.drawables.IFont;
 import com.raytheon.uf.viz.core.drawables.IWireframeShape;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.map.IMapDescriptor;
@@ -146,6 +135,8 @@ import com.raytheon.viz.core.interval.XFormFunctions;
  * Dec 06, 2021  8341     randerso      Added use of getResourceId for contour
  *                                      logging
  * May 07, 2024  2037231  aford         Upgrade GeoTools to 31
+ * Aug 15, 2024  2037631  mapeters      Extract ContourGroup to new file, add
+ *                                      disposeContourGroups()
  *
  * </pre>
  *
@@ -157,7 +148,7 @@ public class ContourSupport {
             .getHandler(ContourSupport.class);
 
     private static final IPerformanceStatusHandler perfLog = PerformanceStatus
-            .getHandler("ContourSupport");
+            .getHandler(ContourSupport.class.getSimpleName());
 
     /*
      * By default contour any data source that is passed in. This is much more
@@ -184,125 +175,6 @@ public class ContourSupport {
 
     private ContourSupport() {
         // No constructor
-    }
-
-    /**
-     * Data structure for contouring
-     */
-    public static class ContourGroup {
-        public double zoomLevel;
-
-        public IWireframeShape posValueShape;
-
-        public IWireframeShape negValueShape;
-
-        // holds map of unique labeling preferences to frame shape
-        public Map<BaseLabelingPreferences, IWireframeShape> labeledValuesMap = new HashMap<>();
-
-        public ContourGroup parent;
-
-        public PixelExtent lastUsedPixelExtent;
-
-        public double lastDensity;
-
-        public double lastPixelDensity;
-
-        public Geometry contourGeometry;
-
-        public String minMark;
-
-        public String[] minVals;
-
-        public double[][] minLabelPoints;
-
-        public String maxMark;
-
-        public String[] maxVals;
-
-        public double[][] maxLabelPoints;
-
-        public void drawContours(IGraphicsTarget target, RGB color,
-                float lineWidth, LineStyle posLineStyle, LineStyle negLineStyle,
-                IFont contourLabelFont, IFont minMaxLabelFont)
-                throws VizException {
-
-            target.drawWireframeShape(posValueShape, color, lineWidth,
-                    posLineStyle, contourLabelFont);
-            target.drawWireframeShape(negValueShape, color, lineWidth,
-                    negLineStyle, contourLabelFont);
-
-            for (Map.Entry<BaseLabelingPreferences, IWireframeShape> entry : labeledValuesMap
-                    .entrySet()) {
-                RGB col = color;
-                Float thickness = lineWidth;
-                LineStyle lStyle;
-                // Items with no specific styles are bucketed in the
-                // posValueShape/negValueShape
-                BaseLabelingPreferences label = entry.getKey();
-
-                try {
-                    lStyle = LineStyle.valueOf(label.getLinePattern());
-                } catch (@SuppressWarnings("squid:S1166")
-                Exception e) {
-                    lStyle = LineStyle.DEFAULT;
-                }
-
-                if (label.getColor() != null) {
-                    // if incorrect color is specified, "white" is returned.
-                    col = RGBColors.getRGBColor(label.getColor());
-                }
-                if (label.getThickness() > 0) {
-                    thickness = (float) label.getThickness();
-                }
-                target.drawWireframeShape(entry.getValue(), col, thickness,
-                        lStyle, contourLabelFont);
-            }
-
-            drawLabels(target, minMaxLabelFont, color, maxLabelPoints, maxVals,
-                    maxMark);
-            drawLabels(target, minMaxLabelFont, color, minLabelPoints, minVals,
-                    minMark);
-        }
-
-        private void drawLabels(IGraphicsTarget target, IFont labelFont,
-                RGB color, double[][] labelPoints, String[] vals, String mark)
-                throws VizException {
-            if (labelPoints != null) {
-                int size = labelPoints.length;
-                boolean isMark = mark != null;
-                boolean isVal = vals != null;
-                VerticalAlignment markVert = VerticalAlignment.MIDDLE;
-                VerticalAlignment valVert = VerticalAlignment.MIDDLE;
-                if (isMark && isVal) {
-                    markVert = VerticalAlignment.BOTTOM;
-                    valVert = VerticalAlignment.TOP;
-                }
-                List<DrawableString> strings = new ArrayList<>(size);
-                for (int i = 0; i < size; i++) {
-                    double point[] = labelPoints[i];
-                    if (isMark) {
-                        DrawableString string = new DrawableString(mark, color);
-                        string.font = labelFont;
-                        string.setCoordinates(point[0], point[1], 1.0);
-                        string.horizontalAlignment = HorizontalAlignment.CENTER;
-                        string.verticallAlignment = markVert;
-                        strings.add(string);
-                    }
-                    if (isVal) {
-                        DrawableString string = new DrawableString(vals[i],
-                                color);
-                        string.font = labelFont;
-                        string.setCoordinates(point[0], point[1], 1.0);
-                        string.horizontalAlignment = HorizontalAlignment.CENTER;
-                        string.verticallAlignment = valVert;
-                        strings.add(string);
-                    }
-                }
-                // draw all strings in a bulk operation for better performance
-                target.drawStrings(strings);
-            }
-        }
-
     }
 
     /**
@@ -932,9 +804,8 @@ public class ContourSupport {
             ReferencedEnvelope screenCRSEnvelope = mapGeometry2D
                     .gridToWorld(screenGridEnvelope);
 
-            Bounds subgridCRSEnvelope = MapUtil
-                    .reprojectAndIntersect(screenCRSEnvelope,
-                            imageGridGeometry.getEnvelope());
+            Bounds subgridCRSEnvelope = MapUtil.reprojectAndIntersect(
+                    screenCRSEnvelope, imageGridGeometry.getEnvelope());
 
             GridEnvelope2D subgridEnv = imageGeometry2D
                     .worldToGrid(new ReferencedEnvelope(subgridCRSEnvelope));
@@ -2082,4 +1953,21 @@ public class ContourSupport {
 
     }
 
+    /**
+     * Dispose all the given contour groups' resources.
+     *
+     * @param groups
+     *            contour groups to dispose
+     */
+    public static void disposeContourGroups(ContourGroup... groups) {
+        if (groups == null) {
+            return;
+        }
+
+        for (ContourGroup group : groups) {
+            if (group != null) {
+                group.dispose();
+            }
+        }
+    }
 }

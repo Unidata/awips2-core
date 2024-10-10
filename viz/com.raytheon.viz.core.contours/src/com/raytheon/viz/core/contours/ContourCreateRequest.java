@@ -28,7 +28,6 @@ import com.raytheon.uf.common.style.contour.ContourPreferences;
 import com.raytheon.uf.viz.core.IExtent;
 import com.raytheon.uf.viz.core.IGraphicsTarget;
 import com.raytheon.uf.viz.core.map.IMapDescriptor;
-import com.raytheon.viz.core.contours.ContourSupport.ContourGroup;
 
 /**
  * ContourCreateRequest
@@ -47,6 +46,7 @@ import com.raytheon.viz.core.contours.ContourSupport.ContourGroup;
  * Feb 27, 2014  2791     bsteffen    Switch from IDataRecord to DataSource
  * Dec 06, 2021  8341     randerso    Added use of getResourceId for contour
  *                                    logging
+ * Aug 20, 2024  2037631  mapeters    Cleanup contour disposal
  *
  * </pre>
  *
@@ -226,8 +226,7 @@ public class ContourCreateRequest {
         if (!this.disposed) {
             this.contourGroup = contourGroup;
         } else {
-            contourGroup.negValueShape.dispose();
-            contourGroup.posValueShape.dispose();
+            contourGroup.dispose();
         }
     }
 

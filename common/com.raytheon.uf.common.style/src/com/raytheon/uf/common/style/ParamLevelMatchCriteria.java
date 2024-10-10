@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -22,6 +22,7 @@ package com.raytheon.uf.common.style;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 import jakarta.xml.bind.annotation.XmlAccessType;
 import jakarta.xml.bind.annotation.XmlAccessorType;
@@ -34,8 +35,8 @@ import com.raytheon.uf.common.style.level.RangeLevel;
 import com.raytheon.uf.common.style.level.SingleLevel;
 
 /**
- * 
- * 
+ *
+ *
  * <pre>
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
@@ -46,9 +47,9 @@ import com.raytheon.uf.common.style.level.SingleLevel;
  *                                      Updated the matches method.
  * Jan 04, 2019      7696  bsteffen    Matches with a creating entity will
  *                                     score higher than those without.
- * 
+ * Apr 22, 2024   2035776  bines       Added function to match regex values
  * </pre>
- * 
+ *
  * @author chammack
  */
 @XmlAccessorType(XmlAccessType.NONE)
@@ -136,6 +137,34 @@ public class ParamLevelMatchCriteria extends MatchCriteria {
         this.isLogarithmic = isLogarithmic;
     }
 
+    /**
+     * Checks if there is a regex value match between a list and given item.
+     * Pattern matching is handled both ways in case there are regex values in
+     * the list
+     *
+     * @param itemsList
+     *            List of items to compare
+     * @param itemToMatch
+     *            Item to compare
+     * @return foundMatch If a match is found
+     */
+    protected boolean regexMatches(List<String> itemsList, String itemToMatch) {
+        boolean foundMatch = false;
+        if (itemsList.contains(itemToMatch)) {
+            foundMatch = true;
+        } else {
+            for (String item : itemsList) {
+                // Account for regex value possibly being in the list
+                if (Pattern.matches(itemToMatch, item)
+                        || Pattern.matches(item, itemToMatch)) {
+                    foundMatch = true;
+                    break;
+                }
+            }
+        }
+        return foundMatch;
+    }
+
     @Override
     public int matches(MatchCriteria criteria) throws StyleException {
         int returnValue = -1;
@@ -155,17 +184,21 @@ public class ParamLevelMatchCriteria extends MatchCriteria {
                         "ParamLevelMatchCriteria does not support matching against multiple levels.");
             }
 
-            boolean paramMatches = imgCriteria.getParameterNames().contains(
-                    paramName);
+            boolean paramMatches = imgCriteria.getParameterNames()
+                    .contains(paramName);
             boolean entityMatches = true;
             if (!this.creatingEntityNames.isEmpty()
                     && !imgCriteria.creatingEntityNames.isEmpty()) {
-                // If we both specifiy an entity and it doesn't match then this
+                // If we both specify an entity and it doesn't match then this
                 // rule doesn't match
-                List<String> matchingEntities = new ArrayList<>(
-                        imgCriteria.creatingEntityNames);
-                matchingEntities.retainAll(this.creatingEntityNames);
-                entityMatches = !matchingEntities.isEmpty();
+                entityMatches = false;
+                for (String entity : imgCriteria.creatingEntityNames) {
+                    // Check if there is a match, else continue
+                    if (regexMatches(this.creatingEntityNames, entity)) {
+                        entityMatches = true;
+                        break;
+                    }
+                }
             }
             if (entityMatches && paramMatches) {
                 if (imgCriteria.getLevels().isEmpty()) {
@@ -176,7 +209,7 @@ public class ParamLevelMatchCriteria extends MatchCriteria {
 
                 } else if (level instanceof SingleLevel) {
                     for (Level imgLevel : imgCriteria.getLevels()) {
-                        if (imgLevel instanceof RangeLevel) {   
+                        if (imgLevel instanceof RangeLevel) {
                             // if criteria is a range and the level falls within
                             // it
                             if (level.getType().equals(imgLevel.getType())) {
@@ -211,17 +244,17 @@ public class ParamLevelMatchCriteria extends MatchCriteria {
 
                     }
                 }
-                if (returnValue > 0){
+                if (returnValue > 0) {
                     if (this.creatingEntityNames != null
-                            && !this.creatingEntityNames.isEmpty()
-                            && imgCriteria.getCreatingEntityNames().contains(
-                                    this.creatingEntityNames.get(0))) {
-                        returnValue *= 2;
+                            && !this.creatingEntityNames.isEmpty()) {
+                        if (regexMatches(imgCriteria.getCreatingEntityNames(),
+                                this.creatingEntityNames.get(0))) {
+                            returnValue *= 2;
+                        }
                     }
                 }
             }
         }
-
         return returnValue;
     }
 }

@@ -189,6 +189,7 @@ import tech.units.indriya.quantity.Quantities;
  * Dec 06, 2021  8341     randerso     Added use of getResourceId for contour
  *                                     logging
  * Dec 20, 2023  2036519  mapeters     Prevent keeping unnecessary data in memory
+ * Jul 15, 2024  2037624  mapeters     Make getPluginDataObjects() public
  *
  * </pre>
  *
@@ -1221,7 +1222,7 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
         return getPluginDataObjects(getTimeForResource());
     }
 
-    protected List<PluginDataObject> getPluginDataObjects(DataTime time) {
+    public List<PluginDataObject> getPluginDataObjects(DataTime time) {
         if (time == null) {
             return null;
         }

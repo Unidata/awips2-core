@@ -2,7 +2,7 @@
 <feature
       id="com.raytheon.uf.edex.foss.org.apache.xml.security.feature"
       label="org.apache.xml.security Feature"
-      version="2.2.3"
+      version="2.2.6"
       provider-name="RAYTHEON">
 
    <description url="http://www.example.com/description">

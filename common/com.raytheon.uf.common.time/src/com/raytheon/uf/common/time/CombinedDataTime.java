@@ -10,21 +10,21 @@ import jakarta.xml.bind.annotation.XmlTransient;
 /**
  * A single DataTime object representing 2 DataTimes, useful for products which
  * are a combination of other products with potentially different times.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- --------------------------
  * Jan 10, 2011           rgeorge     Initial creation
  * Aug 08, 2013  2245     bsteffen    Make all DataTime comparisons consistent.
  * Oct 28, 2013  2491     bsteffen    Add @XmlTransient
- * 
+ * Sep 17, 2024  2037943  mapeters    Remove unnecessary equals(Object) override
+ *
  * </pre>
- * 
+ *
  * @author rgeorge
- * @version 1.0
  */
 @XmlTransient
 public class CombinedDataTime extends DataTime {
@@ -41,7 +41,8 @@ public class CombinedDataTime extends DataTime {
      * @param dataTime
      */
 
-    public CombinedDataTime(DataTime primaryDataTime, DataTime secondaryDataTime) {
+    public CombinedDataTime(DataTime primaryDataTime,
+            DataTime secondaryDataTime) {
         super();
         if (secondaryDataTime instanceof CombinedDataTime
                 || primaryDataTime == secondaryDataTime) {
@@ -71,11 +72,7 @@ public class CombinedDataTime extends DataTime {
         return secondaryDataTime;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.common.time.DataTime#isVisible()
-     */
+    @Override
     public boolean isVisible() {
         return (getAdditionalDataTime() != null) && visible;
     }
@@ -84,10 +81,8 @@ public class CombinedDataTime extends DataTime {
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime
-                * result
-                + ((secondaryDataTime == null) ? 0 : secondaryDataTime
-                        .hashCode());
+        result = prime * result + ((secondaryDataTime == null) ? 0
+                : secondaryDataTime.hashCode());
         result = prime * result + fcstTime;
         result = prime * result
                 + ((levelValue == null) ? 0 : levelValue.hashCode());
@@ -98,8 +93,9 @@ public class CombinedDataTime extends DataTime {
             Iterator<FLAG> i = utilityFlags.iterator();
             while (i.hasNext()) {
                 FLAG obj = i.next();
-                if (obj != null)
+                if (obj != null) {
                     h += obj.ordinal();
+                }
             }
             result = prime * result + h;
         }
@@ -111,22 +107,7 @@ public class CombinedDataTime extends DataTime {
         return result;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#equals(java.lang.Object)
-     */
     @Override
-    public boolean equals(Object obj) {
-        return equals(obj, false);
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.common.time.DataTime#equals(java.lang.Object,
-     * boolean)
-     */
     public boolean equals(Object obj, boolean ignoreSpatial) {
 
         if (obj == null || !(obj instanceof DataTime)) {
@@ -140,30 +121,24 @@ public class CombinedDataTime extends DataTime {
         }
         if (that instanceof CombinedDataTime) {
 
-            if (this.secondaryDataTime != null
-                    && !this.secondaryDataTime
-                            .equals(((CombinedDataTime) that).secondaryDataTime)) {
+            if (this.secondaryDataTime != null && !this.secondaryDataTime
+                    .equals(((CombinedDataTime) that).secondaryDataTime)) {
                 return false;
             }
         }
 
         if (ignoreSpatial) {
-            return (primaryDataTime.fcstTime == that.fcstTime && primaryDataTime.validPeriod
-                    .equals(that.validPeriod));
+            return (primaryDataTime.fcstTime == that.fcstTime
+                    && primaryDataTime.validPeriod.equals(that.validPeriod));
         } else {
-            return (primaryDataTime.fcstTime == that.fcstTime && primaryDataTime.levelValue
-                    .equals(that.levelValue));
+            return (primaryDataTime.fcstTime == that.fcstTime
+                    && primaryDataTime.levelValue.equals(that.levelValue));
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.common.time.DataTime#toString()
-     */
     @Override
     public String toString() {
-        StringBuffer buffer = new StringBuffer();
+        StringBuilder buffer = new StringBuilder();
         buffer.append(super.toString());
         if (this.secondaryDataTime != null) {
             buffer.append(this.secondaryDataTime.toString());
@@ -184,6 +159,7 @@ public class CombinedDataTime extends DataTime {
     /**
      * @return the valid time
      */
+    @Override
     public Calendar getValidTime() {
         Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
         long primary = refTime.getTime() + (1000 * fcstTime);
@@ -203,6 +179,7 @@ public class CombinedDataTime extends DataTime {
     /**
      * @return a time matching forecast time in seconds
      */
+    @Override
     public long getMatchFcst() {
         long primary = 60 * (fcstTime / 60);
         long secondary = 60 * (secondaryDataTime.fcstTime / 60);
@@ -219,6 +196,7 @@ public class CombinedDataTime extends DataTime {
     /**
      * @return a time matching ref time
      */
+    @Override
     public long getMatchRef() {
         long primary = refTime.getTime();
         long secondary = secondaryDataTime.refTime.getTime();
@@ -233,13 +211,14 @@ public class CombinedDataTime extends DataTime {
     }
 
     /**
-     * 
+     *
      * @return get the matching valid time
      */
+    @Override
     public long getMatchValid() {
         long primary = refTime.getTime() + 60 * ((fcstTime * 1000) / 60);
-        long secondary = secondaryDataTime.refTime.getTime() + 60
-                * ((secondaryDataTime.fcstTime * 1000) / 60);
+        long secondary = secondaryDataTime.refTime.getTime()
+                + 60 * ((secondaryDataTime.fcstTime * 1000) / 60);
         if (fcstTime < secondaryDataTime.fcstTime) {
             return (long) (secondary - (secondary - primary) * 0.75);
         } else if (fcstTime > secondaryDataTime.fcstTime) {

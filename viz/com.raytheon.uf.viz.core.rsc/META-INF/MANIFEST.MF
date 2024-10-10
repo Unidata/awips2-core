@@ -24,4 +24,5 @@ Export-Package: com.raytheon.uf.viz.core.rsc,
  com.raytheon.uf.viz.core.rsc.sampling,
  com.raytheon.uf.viz.core.rsc.sampling.actions,
  com.raytheon.uf.viz.core.rsc.tools,
- com.raytheon.uf.viz.core.rsc.tools.action
+ com.raytheon.uf.viz.core.rsc.tools.action,
+ com.raytheon.uf.viz.core.rsc.util
