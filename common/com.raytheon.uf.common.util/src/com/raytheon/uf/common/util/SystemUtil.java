@@ -53,6 +53,7 @@ import com.raytheon.uf.common.util.collections.BoundedMap;
  * Nov 19, 2020  8239     randerso  Use short hostname instead of FQDN
  * Sep 29, 2021  8608     mapeters  Added no-arg {@link #getClientID()}
  * Feb 13, 2023  9020     tgurney   getLocalAddress skip dummy interfaces
+ * Aug 26, 2024       tmeyer@ucar   Revert #8239 to still use FQDN
  *
  * </pre>
  *
@@ -62,9 +63,6 @@ public class SystemUtil {
 
     private static final Map<InetAddress, String> hostNameCache = Collections
             .synchronizedMap(new BoundedMap<InetAddress, String>(100));
-
-    private static final Pattern DOTTED_DECIMAL_PATTERN = Pattern
-            .compile("\\d+\\.\\d+\\.\\d+\\.\\d+");
 
     protected static String hostName;
 
@@ -157,16 +155,6 @@ public class SystemUtil {
         String hostName = hostNameCache.get(address);
         if (hostName == null) {
             hostName = address.getHostName();
-
-            /* if host name is not a dotted decimal IP address */
-            Matcher m = DOTTED_DECIMAL_PATTERN.matcher(hostName);
-            if (!m.matches()) {
-                /* if hostName is FQDN remove domain */
-                int dot = hostName.indexOf('.');
-                if (dot != -1) {
-                    hostName = hostName.substring(0, dot);
-                }
-            }
 
             hostNameCache.put(address, hostName);
         }

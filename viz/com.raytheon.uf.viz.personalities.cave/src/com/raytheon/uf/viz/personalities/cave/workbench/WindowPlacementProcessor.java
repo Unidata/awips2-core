@@ -102,7 +102,7 @@ public class WindowPlacementProcessor {
             Integer height = args.getInteger("-height");
             if (height == null) {
                 if (firstTime) {
-                    height = bounds.height;
+                    height = bounds.height-40;
                 } else {
                     // use saved height unless greater than monitor height
                     height = Math.min(bounds.height, window.getHeight());

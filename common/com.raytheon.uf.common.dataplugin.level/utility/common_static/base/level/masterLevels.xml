@@ -102,4 +102,8 @@
     <masterLevel name="WCONUS" type="" unitString="" description="West CONUS Satellite Sector" />
     <masterLevel name="WMESO1" type="" unitString="" description="West Mesoscale 1 Satellite Sector" />
     <masterLevel name="WMESO2" type="" unitString="" description="West Mesoscale 2 Satellite Sector" />
+<!-- turb contours -->
+    <masterLevel name="30-33kft" type="" unitString="" description="30-33 kft" />
+    <masterLevel name="34-37kft" type="" unitString="" description="34-37 kft" />
+    <masterLevel name="38-41kft" type="" unitString="" description="38-41 kft" />
 </masterLevelContainer>
