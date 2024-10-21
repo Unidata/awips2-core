@@ -303,13 +303,13 @@ public class ColorMapSliderComp extends Composite {
 
         try {
             displayAbsMax = colorMapToDisplay.convert(cmapAbsoluteMax);
-        } catch (NumberFormatException e) {
+        } catch (IllegalArgumentException e) {
             displayAbsMax = Double.NaN;
         }
 
         try {
             displayAbsMin = colorMapToDisplay.convert(cmapAbsoluteMin);
-        } catch (NumberFormatException e) {
+        } catch (IllegalArgumentException e) {
             displayAbsMin = Double.NaN;
         }
 

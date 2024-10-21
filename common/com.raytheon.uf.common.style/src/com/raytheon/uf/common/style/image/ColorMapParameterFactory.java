@@ -306,7 +306,7 @@ public class ColorMapParameterFactory {
                     displayMin = (dataToDisplay != null)
                             ? (float) dataToDisplay.convert(colormapMin)
                             : colormapMin;
-                } catch (NumberFormatException e) {
+                } catch (IllegalArgumentException e) {
                     // set value to NaN, which will cause the displayMin to be
                     // set to the minimum value.
                     displayMin = Float.NaN;
@@ -316,7 +316,7 @@ public class ColorMapParameterFactory {
                     displayMax = (dataToDisplay != null)
                             ? (float) dataToDisplay.convert(colormapMax)
                             : colormapMax;
-                } catch (NumberFormatException e) {
+                } catch (IllegalArgumentException e) {
                     // set value to NaN, which will cause the displayMax to be
                     // set to the smallest max value.
                     displayMax = Float.NaN;

@@ -645,7 +645,7 @@ public class TileSetRenderable implements IRenderable {
                         try {
                             dataValue = UnitConv.getConverterToUnchecked(
                                     dataUnit, resultUnit).convert(dataValue);
-                        } catch (NumberFormatException e) {
+                        } catch (IllegalArgumentException e) {
                             dataValue = Double.NaN;
                         }
                     } else {

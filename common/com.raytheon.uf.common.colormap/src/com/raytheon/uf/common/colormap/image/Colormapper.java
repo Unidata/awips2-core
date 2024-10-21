@@ -132,7 +132,7 @@ public class Colormapper {
                 if (converter != null) {
                     try {
                         cmapValue = converter.convert(dataValue);
-                    } catch (NumberFormatException e) {
+                    } catch (IllegalArgumentException e) {
                         cmapValue = Double.NaN;
                     }
                 }

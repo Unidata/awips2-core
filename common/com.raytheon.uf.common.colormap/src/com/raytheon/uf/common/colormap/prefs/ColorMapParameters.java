@@ -318,7 +318,7 @@ public class ColorMapParameters {
         if (displayToColorMap != null) {
             try {
                 colorMapValue = (float) displayToColorMap.convert(dispValue);
-            } catch (NumberFormatException e) {
+            } catch (IllegalArgumentException e) {
                 colorMapValue = Float.NaN;
             }
         }
