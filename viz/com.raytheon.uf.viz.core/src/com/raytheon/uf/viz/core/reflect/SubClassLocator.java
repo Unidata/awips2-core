@@ -60,6 +60,7 @@ import com.raytheon.uf.viz.core.Activator;
  * Aug 13, 2014  3500     bclement    uses BundleSynchronizer
  * Aug 22, 2014  3500     bclement    removed sync on OSGi internals
  * Jun 23, 2017  6316     njensen     Exclude javax
+ * Oct 22, 2024  2037205  aford       Exclude jakarta
  * 
  * </pre>
  * 
@@ -140,7 +141,8 @@ public class SubClassLocator implements ISubClassLocator {
             Map<String, Set<Class<?>>> recursiveClasses) {
         String bundleName = bundle.getSymbolicName();
         if (bundleName.startsWith("org.eclipse")
-                || bundleName.startsWith("javax")) {
+                || bundleName.startsWith("javax")
+                || bundleName.startsWith("jakarta")) {
             /*
              * org.eclipse.osgi has no class loader and must be skipped,
              * skipping the rest of org.eclipse just saves time.
