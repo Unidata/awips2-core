@@ -21,18 +21,10 @@ package com.raytheon.uf.common.serialization.jaxb;
 
 import java.io.IOException;
 
-import jakarta.xml.bind.JAXBException;
-import jakarta.xml.bind.UnmarshalException;
-import jakarta.xml.bind.UnmarshallerHandler;
-import jakarta.xml.bind.ValidationEventHandler;
-import jakarta.xml.bind.helpers.AbstractUnmarshallerImpl;
+import javax.xml.stream.XMLEventReader;
+import javax.xml.stream.XMLStreamReader;
+import javax.xml.transform.Source;
 import javax.xml.validation.Schema;
-
-import org.w3c.dom.Node;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
-import org.xml.sax.XMLReader;
-import org.xml.sax.helpers.DefaultHandler;
 
 import org.glassfish.jaxb.runtime.v2.runtime.JaxBeanInfo;
 import org.glassfish.jaxb.runtime.v2.runtime.unmarshaller.InterningXmlVisitor;
@@ -40,27 +32,41 @@ import org.glassfish.jaxb.runtime.v2.runtime.unmarshaller.SAXConnector;
 import org.glassfish.jaxb.runtime.v2.runtime.unmarshaller.UnmarshallerImpl;
 import org.glassfish.jaxb.runtime.v2.runtime.unmarshaller.UnmarshallingContext;
 import org.glassfish.jaxb.runtime.v2.runtime.unmarshaller.XmlVisitor;
+import org.w3c.dom.Node;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import org.xml.sax.XMLReader;
+import org.xml.sax.helpers.DefaultHandler;
+
+import jakarta.xml.bind.JAXBElement;
+import jakarta.xml.bind.JAXBException;
+import jakarta.xml.bind.UnmarshalException;
+import jakarta.xml.bind.UnmarshallerHandler;
+import jakarta.xml.bind.ValidationEventHandler;
+import jakarta.xml.bind.helpers.AbstractUnmarshallerImpl;
 
 /**
  * Custom JAXB Unmarshaller, used to set custom content handler. Delegates
  * everything else.
  *
- * This class will only be used by a JAXBManager when {@link JaxbDummyObject} is
- * included in the classes provided to its constructor.
- * 
+ * This class will only be used by a JAXBManager when the JAXBManager
+ * is created using the useCustomJaxbContextFactory flag set to true.
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Sep 13, 2011            mschenke    Initial creation
  * May 21, 2015 4496       nabowle     Set custom entity resolver to prevent
  *                                     external entities from being loaded when
  *                                     unmarshalling from a reader.
- * 
+ * Oct 24, 2024 2037223    aford       Overriding more methods for JAXB upgrade
+ *                                     and updating javadoc
+ *
  * </pre>
- * 
+ *
  * @author mschenke
  * @version 1.0
  */
@@ -169,6 +175,45 @@ public class CustomJAXBUnmarshaller extends AbstractUnmarshallerImpl {
             h = new InterningXmlVisitor(h);
         }
         return new SAXConnector(h, null);
+    }
+
+    @Override
+    public <T> JAXBElement<T> unmarshal(Source source, Class<T> expectedType)
+            throws JAXBException {
+        return delegate.unmarshal(source, expectedType);
+    }
+
+    @Override
+    public Object unmarshal(Source source) throws JAXBException {
+        return delegate.unmarshal(source);
+    }
+
+    @Override
+    public Object unmarshal(XMLEventReader reader) throws JAXBException {
+        return delegate.unmarshal(reader);
+    }
+
+    @Override
+    public Object unmarshal(XMLStreamReader reader) throws JAXBException {
+        return delegate.unmarshal(reader);
+    }
+
+    @Override
+    public <T> JAXBElement<T> unmarshal(Node node, Class<T> expectedType)
+            throws JAXBException {
+        return delegate.unmarshal(node, expectedType);
+    }
+
+    @Override
+    public <T> JAXBElement<T> unmarshal(XMLStreamReader reader,
+            Class<T> expectedType) throws JAXBException {
+        return delegate.unmarshal(reader, expectedType);
+    }
+
+    @Override
+    public <T> JAXBElement<T> unmarshal(XMLEventReader reader,
+            Class<T> expectedType) throws JAXBException {
+        return delegate.unmarshal(reader, expectedType);
     }
 
     /*

@@ -58,6 +58,8 @@ import com.raytheon.uf.common.util.ServiceLoaderUtil;
  * Jul 15, 2014 3373       bclement     jaxb manager api changes
  * Sep 04, 2014 3582       mapeters     Deprecated all JAXB/XML methods.
  * Mar 15, 2023 9076       smoorthy     Add method for Gzip stream.
+ * Oct 25, 2024 2037223    aford        JAXB upgrade - Configure JAXB Manager to
+ *                                      Use Custom JAXB Context Factory
  * </pre>
  * 
  * @author chammack
@@ -67,6 +69,8 @@ import com.raytheon.uf.common.util.ServiceLoaderUtil;
 public final class SerializationUtil {
 
     private static volatile JAXBManager jaxbManager;
+
+    private static final boolean USE_CUSTOM_JAXB_CONTEXT_FACTORY = true;
 
     /**
      * Buffer size.
@@ -103,7 +107,11 @@ public final class SerializationUtil {
                                     IJaxbableClassesLocator.class,
                                     SerializableManager.getInstance())
                             .getJaxbables();
-                    jaxbManager = result = new JAXBManager(true,
+
+                    // configure to use a custom JAXB Context Factory
+                    boolean pooling = true;
+                    jaxbManager = result = new JAXBManager(pooling,
+                            USE_CUSTOM_JAXB_CONTEXT_FACTORY,
                             jaxbClasses.toArray(new Class[jaxbClasses.size()]));
 
                 }
@@ -122,7 +130,8 @@ public final class SerializationUtil {
      */
     @Deprecated
     public static JAXBContext getJaxbContext() throws JAXBException {
-        return getJaxbManager().getJaxbContext();
+        return getJaxbManager()
+                .getJaxbContext(USE_CUSTOM_JAXB_CONTEXT_FACTORY);
     }
 
     /**

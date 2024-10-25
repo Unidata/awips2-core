@@ -32,8 +32,8 @@ import jakarta.xml.bind.Unmarshaller;
  *
  * This class is created by
  * {@link SerializationContextFactory#createContext(Class[], java.util.Map)}
- * when a call to {@link JAXBContext#newInstance(Class...)} includes
- * {@link JaxbDummyObject}.
+ * when a JAXBManager has been configured with the useCustomJaxbContextFactory
+ * flag set to true.
  *
  * <pre>
  *
@@ -43,6 +43,8 @@ import jakarta.xml.bind.Unmarshaller;
  * ------------ ---------- ----------- --------------------------
  * Sep 13, 2011            mschenke     Initial creation
  * Jun 04, 2015 4496       nabowle      Updated javadoc.
+ * Oct 25, 2024 2037223    aford        JAXB Upgrade - updated comments to reflect
+ *                                      changes to custom context initialization
  *
  * </pre>
  *

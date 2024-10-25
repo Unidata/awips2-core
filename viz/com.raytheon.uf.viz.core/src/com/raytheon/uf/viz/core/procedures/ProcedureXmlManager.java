@@ -33,7 +33,6 @@ import org.eclipse.core.runtime.jobs.Job;
 import com.raytheon.uf.common.serialization.JAXBManager;
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.serialization.jaxb.JAXBClassLocator;
-import com.raytheon.uf.common.serialization.jaxb.JaxbDummyObject;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -55,6 +54,8 @@ import com.raytheon.uf.viz.core.rsc.ResourceGroup;
  * Oct 18, 2013  2491     bsteffen    Initial creation
  * Jul 14, 2014  3373     bclement    jaxb manager api changes
  * Jun 05, 2015  4401     bkowal      Added {@link #unmarshal(InputStream)}.
+ * Oct 25, 2024  2037223  aford       JAXB upgrade - Configure JAXB Manager to
+ *                                    Use Custom JAXB Context Factory
  * 
  * </pre>
  * 
@@ -111,21 +112,20 @@ public class ProcedureXmlManager {
                 Procedure.class);
         locator.save();
 
-        Class<?>[] jaxbClasses = new Class<?>[classes.size() + 1];
+        Class<?>[] jaxbClasses = new Class<?>[classes.size()];
         classes.toArray(jaxbClasses);
-        /*
-         * Add JaxbDummyObject at the begining so properties are loaded
-         * correctly
-         */
-        jaxbClasses[jaxbClasses.length - 1] = jaxbClasses[0];
-        jaxbClasses[0] = JaxbDummyObject.class;
 
         try {
-            return new JAXBManager(true, jaxbClasses);
+            // configure to use a custom JAXB Context Factory
+            boolean pooling = true;
+            boolean useCustomJaxbContextFactory = true;
+            return new JAXBManager(pooling, useCustomJaxbContextFactory,
+                    jaxbClasses);
         } catch (JAXBException e) {
             statusHandler.handle(Priority.PROBLEM,
                     ProcedureXmlManager.class.getSimpleName()
-                            + " Failed to initialize.", e);
+                            + " Failed to initialize.",
+                    e);
         }
         return null;
 
