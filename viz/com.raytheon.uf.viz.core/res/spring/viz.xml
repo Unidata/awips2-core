@@ -57,7 +57,7 @@
    </bean>
 
    <bean class="com.raytheon.uf.common.geospatial.LogRedirector" factory-method="setGeotoolsLogFactory">
-        <constructor-arg value="org.geotools.util.logging.Log4JLoggerFactory"/>
+        <constructor-arg value="org.geotools.util.logging.LogbackLoggerFactory"/>
    </bean>
 
    <bean class="com.raytheon.uf.common.geospatial.SpatialQueryFactory"
