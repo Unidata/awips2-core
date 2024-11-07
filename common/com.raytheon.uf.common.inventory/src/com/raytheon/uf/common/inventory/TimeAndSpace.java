@@ -19,6 +19,7 @@
  **/
 package com.raytheon.uf.common.inventory;
 
+import java.util.Comparator;
 import java.util.Objects;
 
 import org.geotools.coverage.grid.GridGeometry2D;
@@ -42,6 +43,7 @@ import com.raytheon.uf.common.time.DataTime;
  * Mar 07, 2024  2036814  sharbison   Sort the times in LinkedLists for
  *                                    reliable derived parameter results.
  * Jul 15, 2024  2037624  mapeters    Add matches(), isVirtual()
+ * Sep 17, 2024  2037943  mapeters    Prevent NPEs with time-agnostic values
  *
  * </pre>
  *
@@ -59,7 +61,7 @@ public class TimeAndSpace implements Comparable<TimeAndSpace> {
         private static final long serialVersionUID = 1L;
 
         @Override
-        public boolean equals(Object obj) {
+        public boolean equals(Object obj, boolean ignoreSpatial) {
             return this == obj;
         }
 
@@ -198,35 +200,32 @@ public class TimeAndSpace implements Comparable<TimeAndSpace> {
     }
 
     /**
-     * Sort the times for reliable derived parameter results.
+     * Sort the times so that newer/better times come first for reliable derived
+     * parameter results.
      */
     @Override
     public int compareTo(TimeAndSpace timeAndSpace) {
-        // Compare the forecast time and if equal compare the reference time.
+        // Compare the reference time and if equal compare the forecast time.
         // Example of sorted TimeAndSpace:
         // fcstTime = 583200 refTime = 2024-02-29 12:00:00.0
-        // fcstTime = 583200 refTime = 2024-02-29 06:00:00.0
         // fcstTime = 604800 refTime = 2024-02-29 12:00:00.0
+        // fcstTime = 583200 refTime = 2024-02-29 06:00:00.0
         // fcstTime = 604800 refTime = 2024-02-29 06:00:00.0
 
-        if (getTime().getFcstTime() > timeAndSpace.getTime().getFcstTime()) {
-            return 1;
-        } else if (getTime().getFcstTime() == timeAndSpace.getTime()
-                .getFcstTime()) {
-            // If forecast time is equal then compare the reference time.
-            if (getTime().getRefTime().getTime() < timeAndSpace.getTime()
-                    .getRefTime().getTime()) {
-                // Insert the 'newer' refTime first in the results.
-                return 1;
-            } else if (getTime().getRefTime().getTime() == timeAndSpace
-                    .getTime().getRefTime().getTime()) {
-                return 0;
-            } else {
-                return -1;
-            }
-        } else {
-            return -1;
+        /*
+         * Sort reference time in reverse/descending order so that newer/better
+         * reference times come first in the results, also putting time-agnostic
+         * TimeAndSpace values (null reference time) last.
+         */
+        int refTimeComparison = Objects.compare(time.getRefTime(),
+                timeAndSpace.getTime().getRefTime(),
+                Comparator.nullsLast(Comparator.reverseOrder()));
+        if (refTimeComparison != 0) {
+            return refTimeComparison;
         }
+        // If reference time is equal then compare the forecast time.
+        return Integer.compare(time.getFcstTime(),
+                timeAndSpace.getTime().getFcstTime());
     }
 
 }

@@ -40,6 +40,7 @@ import com.raytheon.uf.common.time.DataTime;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jul 24, 2024 2037624    mapeters    Initial creation
+ * Sep 17, 2024 2037943    mapeters    Test compareTo()
  *
  * </pre>
  *
@@ -89,5 +90,50 @@ class TestTimeAndSpace {
         }
 
         assertEquals(expectedResult, actualResult);
+    }
+
+    static Stream<Arguments> provideParamsForCompareTo() {
+        /*
+         * Setup 3 times with same valid time (18Z) but differing
+         * reference/forecast time combos
+         */
+        TimeAndSpace tas18NonFcst = new TimeAndSpace(
+                new DataTime("2024-01-01_18:00:00.0"));
+        TimeAndSpace tas18OldFcst = new TimeAndSpace(
+                new DataTime("2024-01-01_06:00:00.0 (12)"));
+        TimeAndSpace tas18NewFcst = new TimeAndSpace(
+                new DataTime("2024-01-01_12:00:00.0 (6)"));
+        TimeAndSpace tasAgnostic = new TimeAndSpace();
+
+        /*
+         * Newer/better times should be considered less than worse times so that
+         * they appear earlier in sorted collections
+         */
+        return Stream.of(
+                // Non-forecast time better than forecast time
+                Arguments.of(tas18NonFcst, tas18NewFcst, -1),
+                // Newer forecast better than older forecast
+                Arguments.of(tas18NewFcst, tas18OldFcst, -1),
+                // Non-forecast time better than agnostic
+                Arguments.of(tas18NonFcst, tasAgnostic, -1),
+                // Forecast time better than agnostic
+                Arguments.of(tas18NewFcst, tasAgnostic, -1),
+                // Agnostic times are equals
+                Arguments.of(tasAgnostic, tasAgnostic, 0),
+                // Matching non-forecast times are equal
+                Arguments.of(tas18NonFcst, tas18NonFcst, 0),
+                // Matching forecast times are equal
+                Arguments.of(tas18NewFcst, tas18NewFcst, 0));
+    }
+
+    @ParameterizedTest
+    @MethodSource("provideParamsForCompareTo")
+    void testCompareTo(TimeAndSpace tas1, TimeAndSpace tas2,
+            int expectedResult) {
+        int actualResult = tas1.compareTo(tas2);
+        int actualResultReversed = tas2.compareTo(tas1);
+
+        assertEquals(expectedResult, actualResult);
+        assertEquals(-expectedResult, actualResultReversed);
     }
 }

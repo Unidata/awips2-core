@@ -31,6 +31,9 @@ import jep.SubInterpreter;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
+
 /**
  * Interfaces to a native Python interpreter with Jep.
  *
