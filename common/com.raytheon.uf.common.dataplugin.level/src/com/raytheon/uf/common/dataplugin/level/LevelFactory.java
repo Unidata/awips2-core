@@ -63,6 +63,7 @@ import tech.units.indriya.format.SimpleUnitFormat;
  * Jan 23, 2014  2711     bsteffen    Add getAllLevels.
  * Sep 09, 2014  3356     njensen     Always use default LevelRetrievalAdapter
  *                                     Remove CommunicationException
+ * Aug 16, 2024  2036853  zfazal      Make getAllLevels correctly use cache of levels
  * Aug 20, 2024  2037631  mapeters    Wrap instance in LazyHolder
  *
  * </pre>
@@ -214,7 +215,7 @@ public class LevelFactory {
     }
 
     public Collection<Level> getAllLevels() {
-        if (hasRequestedAllLevels) {
+        if (!hasRequestedAllLevels) {
             loadAllLevels();
         }
         return new ArrayList<>(levelCacheById.values());

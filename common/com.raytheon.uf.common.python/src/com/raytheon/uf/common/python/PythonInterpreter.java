@@ -28,6 +28,9 @@ import jep.JepException;
 import jep.NamingConventionClassEnquirer;
 import jep.SubInterpreter;
 
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
+
 /**
  * Interfaces to a native Python interpreter with Jep.
  *
@@ -49,6 +52,7 @@ import jep.SubInterpreter;
  * Dec 19, 2017   7149     njensen     Get shared modules from config file
  * Jun 03, 2019   7852     dgilling    Update code for jep 3.8.
  * Jun 07, 2023  2034261   tgurney     Fixes for Jep 4 upgrade
+ * Aug 12, 2024   2037920  jkelmer     Added timing logging to dispose method
  *
  * </pre>
  *
@@ -63,6 +67,9 @@ public abstract class PythonInterpreter implements AutoCloseable {
             + "         g[i] = None\n\n";
 
     protected Jep jep;
+
+    private static final IUFStatusHandler statusHandler =
+    		UFStatus.getHandler(PythonInterpreter.class);
 
     /**
      * Constructor
@@ -186,8 +193,15 @@ public abstract class PythonInterpreter implements AutoCloseable {
      * @throws JepException
      */
     public void dispose() throws JepException {
+        //JFK - added timing logging to identify performance issues
+        long t0 = System.currentTimeMillis();
         cleanupGlobals();
+        long t1 = System.currentTimeMillis();
         jep.close();
+        long t2 = System.currentTimeMillis();
+
+        statusHandler.info("cleanupGlobals took: "+(t1-t0)+" ms");
+        statusHandler.info("jep.Close took: "+(t2-t1)+" ms");
     }
 
     public void cleanupGlobals() {
