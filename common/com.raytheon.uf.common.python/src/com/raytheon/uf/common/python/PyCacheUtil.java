@@ -39,9 +39,8 @@ import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 
-import jep.Jep;
+import jep.JepConfig;
 import jep.JepException;
-import jep.SubInterpreter;
 
 /**
  * Methods for working with the pycache and compiled Python files
@@ -54,6 +53,8 @@ import jep.SubInterpreter;
  * ------------ ---------- ----------- --------------------------
  * Sep 12, 2019 7917       tgurney     Initial creation
  * Jun 07, 2023 2034261    tgurney     Fixes for Jep 4 upgrade
+ * Aug 12, 2024 2037843    njensen     Switch from SubInterpreter to PythonEval
+ *                                     so shared modules are correctly initialized
  *
  * </pre>
  *
@@ -79,7 +80,7 @@ public class PyCacheUtil {
     private static Pattern compiledFilePattern;
 
     static {
-        try (Jep jep = new SubInterpreter()) {
+        try (PythonEval jep = new PythonEval(new JepConfig())) {
             jep.eval("import sys");
             cacheTag = Objects
                     .toString(jep.getValue("sys.implementation.cache_tag"));

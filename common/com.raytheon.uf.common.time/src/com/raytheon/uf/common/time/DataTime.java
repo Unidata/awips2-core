@@ -28,6 +28,7 @@ import java.util.Comparator;
 import java.util.Date;
 import java.util.EnumSet;
 import java.util.GregorianCalendar;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -82,6 +83,8 @@ import com.raytheon.uf.common.time.util.TimeUtil;
  * Jul 13, 2023  2035884  mapeters   Undo inclusion of level value in
  *                                   getDisplayString() to fix things that use
  *                                   it for DB queries
+ * Apr 02, 2024  2037091  mapeters   Include level type in equals/hashCode
+ * Sep 17, 2024  2037943  mapeters   Make equals(Object) final
  *
  * </pre>
  *
@@ -519,19 +522,23 @@ public class DataTime implements Comparable<DataTime>, Serializable, Cloneable {
     }
 
     @Override
-    public boolean equals(Object obj) {
+    public final boolean equals(Object obj) {
+        /*
+         * Final implementation so that subclasses override the below method
+         * that all equals operations go through.
+         */
         return equals(obj, false);
     }
 
     public boolean equals(Object obj, boolean ignoreSpatial) {
 
-        if ((obj == null) || !(obj instanceof DataTime)) {
+        if (!(obj instanceof DataTime)) {
             return false;
         }
 
         DataTime rhs = (DataTime) obj;
 
-        if (((DataTime) obj).getRefTime() == null) {
+        if (rhs.getRefTime() == null) {
             return fcstTime == rhs.fcstTime;
         }
 
@@ -544,7 +551,8 @@ public class DataTime implements Comparable<DataTime>, Serializable, Cloneable {
         } else {
             return (rt1.equals(rt2) && (fcstTime == rhs.fcstTime)
                     && validPeriod.equals(rhs.validPeriod)
-                    && levelValue.equals(rhs.levelValue));
+                    && levelValue.equals(rhs.levelValue)
+                    && Objects.equals(levelType, rhs.levelType));
         }
     }
 
@@ -822,6 +830,7 @@ public class DataTime implements Comparable<DataTime>, Serializable, Cloneable {
             hashBuilder.append(validPeriod.getEnd());
         }
         hashBuilder.append(levelValue);
+        hashBuilder.append(levelType);
         return hashBuilder.toHashCode();
     }
 

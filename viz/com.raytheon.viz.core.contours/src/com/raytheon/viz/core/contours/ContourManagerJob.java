@@ -28,7 +28,6 @@ import org.eclipse.core.runtime.jobs.Job;
 
 import com.raytheon.uf.common.status.IPerformanceStatusHandler;
 import com.raytheon.uf.common.status.PerformanceStatus;
-import com.raytheon.viz.core.contours.ContourSupport.ContourGroup;
 
 /**
  * ContourManagerJob
