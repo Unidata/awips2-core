@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -25,19 +25,19 @@ import java.util.Comparator;
  * Provides configurable comparisons of DataTimes. This can which
  * characteristics of a DataTime object, reference time, valid time, or forecast
  * time, affect how relational operators >, <, >=, and <= behave.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- --------------------------
  * Aug 08, 2013  2245     bsteffen    Initial creation
  * Oct 14, 2013  2468     bsteffen    Use Date for validTime comparisons.
  * Jun 11, 2014  3265     bsteffen    Add support for null.
- * 
+ *
  * </pre>
- * 
+ *
  * @author bsteffen
  * @version 1.0
  */
@@ -45,7 +45,7 @@ import java.util.Comparator;
 public class DataTimeComparator implements Comparator<DataTime> {
 
     /** Defines possible time sort keys */
-    public static enum SortKey {
+    public enum SortKey {
         INITIAL_TIME, FORECAST_TIME, VALID_TIME
     }
 
@@ -70,7 +70,7 @@ public class DataTimeComparator implements Comparator<DataTime> {
      * This routine determines which characteristics of a DataTime object,
      * reference time, valid time, or forecast time, affect how relational
      * operators >, <, >=, and <= behave.
-     * 
+     *
      * @param majorKey
      *            the major sort key
      * @param minorKey
@@ -118,19 +118,20 @@ public class DataTimeComparator implements Comparator<DataTime> {
         }
     }
 
-    private int compareNoMatch(SortKey sortKey, DataTime time1, DataTime time2) {
+    private int compareNoMatch(SortKey sortKey, DataTime time1,
+            DataTime time2) {
         switch (sortKey) {
         case INITIAL_TIME:
-            return longCompare(time1.getRefTime().getTime(), time2
-                    .getRefTime().getTime());
+            return longCompare(time1.getRefTime().getTime(),
+                    time2.getRefTime().getTime());
         case FORECAST_TIME:
             return integerCompare(time1.getFcstTime(), time2.getFcstTime());
         case VALID_TIME:
-            return longCompare(time1.getValidTimeAsDate().getTime(), time2
-                    .getValidTimeAsDate().getTime());
+            return longCompare(time1.getValidTimeAsDate().getTime(),
+                    time2.getValidTimeAsDate().getTime());
         default:
-            throw new IllegalArgumentException(String.valueOf(sortKey)
-                    + " is not a recognized SortKey.");
+            throw new IllegalArgumentException(
+                    String.valueOf(sortKey) + " is not a recognized SortKey.");
         }
     }
 
@@ -143,19 +144,20 @@ public class DataTimeComparator implements Comparator<DataTime> {
         case VALID_TIME:
             return longCompare(time1.getMatchValid(), time2.getMatchValid());
         default:
-            throw new IllegalArgumentException(String.valueOf(sortKey)
-                    + " is not a recognized SortKey.");
+            throw new IllegalArgumentException(
+                    String.valueOf(sortKey) + " is not a recognized SortKey.");
         }
     }
 
     private int compareLevel(DataTime time1, DataTime time2) {
+        // TODO this should check levelType as well
         return Double.compare(time1.getLevelValue(), time2.getLevelValue());
     }
 
     /**
      * For valid period the rules arbitrary but we need some rules to make the
      * comparator consistent.
-     * 
+     *
      * 1. Not null periods are greater than null periods. <br />
      * 2. Longer periods are greater than shorter periods <br />
      * 3. Periods that start later are greater than periods that start earlier.
@@ -192,6 +194,5 @@ public class DataTimeComparator implements Comparator<DataTime> {
     private int longCompare(long x, long y) {
         return (x < y) ? -1 : ((x == y) ? 0 : 1);
     }
-
 
 }
