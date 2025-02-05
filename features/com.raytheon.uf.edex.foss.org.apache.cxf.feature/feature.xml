@@ -2,7 +2,7 @@
 <feature
       id="com.raytheon.uf.edex.foss.org.apache.cxf.feature"
       label="org.apache.cxf Feature"
-      version="4.0.5"
+      version="4.0.6"
       provider-name="RAYTHEON">
 
    <description url="http://www.example.com/description">
