@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -35,11 +35,11 @@ import com.raytheon.uf.viz.core.rsc.IResourceGroup;
  * Default IFrameCoordinator implementation, functionality was originally in
  * AbstractDescriptor but became too d2d dependent so it was decided to move
  * into separate class so other people may provide different implementations.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer    Description
  * ------------- -------- --------- --------------------------
  * Oct 18, 2011           mschenke  Initial creation
@@ -47,16 +47,17 @@ import com.raytheon.uf.viz.core.rsc.IResourceGroup;
  * Aug 07, 2015  4700     bsteffen  Add support for SPACE_AND_TIME
  * Oct 09, 2015  4863     bsteffen  Maintain same valid time when frame
  *                                  times change.
- * 
+ * Mar 07, 2025  2038488  mapeters  Add getFrameIndex, matchFrameChange
+ *
  * </pre>
- * 
+ *
  * @author mschenke
  */
 public class FrameCoordinator implements IFrameCoordinator {
 
     /** Interface for determining if a frame is valid */
-    public static interface IFrameValidator {
-        public boolean isValid(DataTime frame);
+    public interface IFrameValidator {
+        boolean isValid(DataTime frame);
     }
 
     private class FrameValidator implements IFrameValidator {
@@ -76,15 +77,11 @@ public class FrameCoordinator implements IFrameCoordinator {
     /**
      * Default validator, should ONLY check visible flag on the DataTime
      */
-    private static final IFrameValidator DEFAULT_VALIDATOR = new IFrameValidator() {
-        @Override
-        public boolean isValid(DataTime frame) {
-            return frame.isVisible();
-        }
-    };
+    private static final IFrameValidator DEFAULT_VALIDATOR = frame -> frame
+            .isVisible();
 
     /** Descriptor frames are coordinated for */
-    protected IDescriptor descriptor;
+    protected final IDescriptor descriptor;
 
     /** Current animation mode */
     protected AnimationMode currentAnimationMode;
@@ -97,7 +94,7 @@ public class FrameCoordinator implements IFrameCoordinator {
 
     /**
      * FrameCoordinator constructor
-     * 
+     *
      * @param descriptor
      *            the descriptor to coordinate frames for
      */
@@ -110,25 +107,11 @@ public class FrameCoordinator implements IFrameCoordinator {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.drawables.IFrameCoordinator#changeFrame(java
-     * .util.Date)
-     */
     @Override
     public void changeFrame(Date frameTime) {
         changeFrame(new DataTime(frameTime));
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.drawables.IFrameCoordinator#changeFrame(com.
-     * raytheon.uf.common.time.DataTime)
-     */
     @Override
     public void changeFrame(DataTime frameTime) {
         // Default behavior for now
@@ -141,7 +124,8 @@ public class FrameCoordinator implements IFrameCoordinator {
     }
 
     @Override
-    public void changeFrame(FrameChangeOperation operation, FrameChangeMode mode) {
+    public void changeFrame(FrameChangeOperation operation,
+            FrameChangeMode mode) {
         // Grab the current frame information
         FramesInfo info = descriptor.getFramesInfo();
         int frameIndex = info.getFrameIndex();
@@ -152,7 +136,6 @@ public class FrameCoordinator implements IFrameCoordinator {
 
         // This validator makes it so no times with no data will be skipped
         IFrameValidator validator = new FrameValidator(info);
-        // IFrameValidator validator = DEFAULT_VALIDATOR;
         DataTime[] frames = info.getFrameTimes();
         int newIndex = frameIndex;
 
@@ -261,9 +244,9 @@ public class FrameCoordinator implements IFrameCoordinator {
                             getNextDataTimeIndex(frames, frameIndex,
                                     loopProperties.getMode(), validator)));
                 } else if (currentAnimationMode == AnimationMode.Temporal) {
-                    descriptor.setFramesInfo(new FramesInfo(getNextTimeIndex(
-                            frames, frameIndex, loopProperties.getMode(),
-                            validator)));
+                    descriptor.setFramesInfo(
+                            new FramesInfo(getNextTimeIndex(frames, frameIndex,
+                                    loopProperties.getMode(), validator)));
                 } else if (currentAnimationMode == AnimationMode.Vertical) {
                     descriptor.setFramesInfo(new FramesInfo(
                             getNextVerticalIndex(frames, frameIndex,
@@ -281,7 +264,7 @@ public class FrameCoordinator implements IFrameCoordinator {
     /**
      * Given the frames, and current index, return the index of the last
      * vertical frame.
-     * 
+     *
      * @param frames
      *            current frames
      * @param dataIndex
@@ -307,7 +290,7 @@ public class FrameCoordinator implements IFrameCoordinator {
      * Returns the first index into timesteps that has a different levelValue as
      * the DataTime at dataIndex but same time. Uses the DataTime.isVisible flag
      * to determine if a frame is valid or not
-     * 
+     *
      * @param frames
      *            frames to use
      * @param dataIndex
@@ -331,7 +314,7 @@ public class FrameCoordinator implements IFrameCoordinator {
 
     /**
      * Get the last time index for the frames starting at the current index.
-     * 
+     *
      * @param frames
      *            frames to use
      * @param dataIndex
@@ -357,7 +340,7 @@ public class FrameCoordinator implements IFrameCoordinator {
 
     /**
      * Returns the first datatime with same levelValue as DataTime at dataIndex.
-     * 
+     *
      * @param frames
      *            frame times to use
      * @param dataIndex
@@ -384,7 +367,7 @@ public class FrameCoordinator implements IFrameCoordinator {
     /**
      * Get the last data time index for the frames starting at the current
      * index.
-     * 
+     *
      * @param frames
      *            frames to use
      * @param dataIndex
@@ -407,7 +390,7 @@ public class FrameCoordinator implements IFrameCoordinator {
 
     /**
      * Returns the first datatime that is valid
-     * 
+     *
      * @param frames
      *            frame times to use
      * @param dataIndex
@@ -431,7 +414,7 @@ public class FrameCoordinator implements IFrameCoordinator {
     /**
      * Given the FrameChangeOperation, figure out the next time to display
      * taking the levelValue at the times into account
-     * 
+     *
      * @param dataIndex
      *            index to start at
      * @param op
@@ -494,7 +477,7 @@ public class FrameCoordinator implements IFrameCoordinator {
     /**
      * Given the LoopMode, figure out the next time to display taking the
      * levelValue at the times into account
-     * 
+     *
      * @param dataIndex
      *            index to start at
      * @param op
@@ -521,7 +504,8 @@ public class FrameCoordinator implements IFrameCoordinator {
             if (getFirstTimeIndex(frames, dataIndex, validator) == dataIndex) {
                 next = getNextTimeIndex(frames, dataIndex, LoopMode.Forward,
                         validator);
-            } else if (getLastTimeIndex(frames, dataIndex, validator) == dataIndex) {
+            } else if (getLastTimeIndex(frames, dataIndex,
+                    validator) == dataIndex) {
                 next = getNextTimeIndex(frames, dataIndex, LoopMode.Backward,
                         validator);
             } else if (loopDirection > 0) {
@@ -540,7 +524,7 @@ public class FrameCoordinator implements IFrameCoordinator {
     /**
      * Given the FrameChangeOperation, figure out the next vertical level to
      * display given the dataTime at dataIndex
-     * 
+     *
      * @param dataIndex
      *            index to get dataTime
      * @param op
@@ -602,7 +586,7 @@ public class FrameCoordinator implements IFrameCoordinator {
     /**
      * Given the LoopMode, figure out the next vertical level to display given
      * the dataTime at dataIndex
-     * 
+     *
      * @param dataIndex
      *            index to get dataTime
      * @param op
@@ -626,15 +610,17 @@ public class FrameCoordinator implements IFrameCoordinator {
             break;
         }
         case Cycle: {
-            if (getFirstVerticalIndex(frames, dataIndex, validator) == dataIndex) {
-                next = getNextVerticalIndex(frames, dataIndex,
-                        LoopMode.Forward, validator);
-            } else if (getLastVerticalIndex(frames, dataIndex, validator) == dataIndex) {
+            if (getFirstVerticalIndex(frames, dataIndex,
+                    validator) == dataIndex) {
+                next = getNextVerticalIndex(frames, dataIndex, LoopMode.Forward,
+                        validator);
+            } else if (getLastVerticalIndex(frames, dataIndex,
+                    validator) == dataIndex) {
                 next = getNextVerticalIndex(frames, dataIndex,
                         LoopMode.Backward, validator);
             } else if (loopDirection > 0) {
-                next = getNextVerticalIndex(frames, dataIndex,
-                        LoopMode.Forward, validator);
+                next = getNextVerticalIndex(frames, dataIndex, LoopMode.Forward,
+                        validator);
             } else if (loopDirection < 0) {
                 next = getNextVerticalIndex(frames, dataIndex,
                         LoopMode.Backward, validator);
@@ -658,7 +644,7 @@ public class FrameCoordinator implements IFrameCoordinator {
             long earliestTimeAtLowestLevel = Long.MAX_VALUE;
             for (int i = 0; i < frames.length; i += 1) {
                 DataTime dtime = frames[i];
-                double level = dtime.getLevelValue().doubleValue();
+                double level = dtime.getLevelValue();
                 long time = dtime.getValidTimeAsDate().getTime();
                 if (!validator.isValid(dtime)) {
                     continue;
@@ -679,7 +665,7 @@ public class FrameCoordinator implements IFrameCoordinator {
             long latestTimeAtHighestLevel = Long.MIN_VALUE;
             for (int i = 0; i < frames.length; i += 1) {
                 DataTime dtime = frames[i];
-                double level = dtime.getLevelValue().doubleValue();
+                double level = dtime.getLevelValue();
                 long time = dtime.getValidTimeAsDate().getTime();
                 if (!validator.isValid(dtime)) {
                     continue;
@@ -702,7 +688,7 @@ public class FrameCoordinator implements IFrameCoordinator {
             long earliestTimeAtLowestLevel = Long.MAX_VALUE;
             for (int i = 0; i < frames.length; i += 1) {
                 DataTime dtime = frames[i];
-                double level = dtime.getLevelValue().doubleValue();
+                double level = dtime.getLevelValue();
                 long time = dtime.getValidTimeAsDate().getTime();
                 if (!validator.isValid(dtime)) {
                     continue;
@@ -712,13 +698,13 @@ public class FrameCoordinator implements IFrameCoordinator {
                     next = i;
                 }
             }
-            if(next == dataIndex){
+            if (next == dataIndex) {
                 /* Second try to find the earliest time at the next level up. */
                 double lowestLevel = Double.POSITIVE_INFINITY;
                 earliestTimeAtLowestLevel = Long.MAX_VALUE;
                 for (int i = 0; i < frames.length; i += 1) {
                     DataTime dtime = frames[i];
-                    double level = dtime.getLevelValue().doubleValue();
+                    double level = dtime.getLevelValue();
                     long time = dtime.getValidTimeAsDate().getTime();
                     if (!validator.isValid(dtime)) {
                         continue;
@@ -726,12 +712,13 @@ public class FrameCoordinator implements IFrameCoordinator {
                         lowestLevel = level;
                         earliestTimeAtLowestLevel = time;
                         next = i;
-                    } else if(level == lowestLevel && earliestTimeAtLowestLevel > time){
+                    } else if (level == lowestLevel
+                            && earliestTimeAtLowestLevel > time) {
                         earliestTimeAtLowestLevel = time;
                         next = i;
                     }
                 }
-                if(next == dataIndex){
+                if (next == dataIndex) {
                     /*
                      * If there is still nothing then the current frame must be
                      * the last frame so loop back to the first frame.
@@ -749,7 +736,7 @@ public class FrameCoordinator implements IFrameCoordinator {
             long latestTimeAtHighestLevel = Long.MIN_VALUE;
             for (int i = 0; i < frames.length; i += 1) {
                 DataTime dtime = frames[i];
-                double level = dtime.getLevelValue().doubleValue();
+                double level = dtime.getLevelValue();
                 long time = dtime.getValidTimeAsDate().getTime();
                 if (!validator.isValid(dtime)) {
                     continue;
@@ -768,7 +755,7 @@ public class FrameCoordinator implements IFrameCoordinator {
                 latestTimeAtHighestLevel = Long.MIN_VALUE;
                 for (int i = 0; i < frames.length; i += 1) {
                     DataTime dtime = frames[i];
-                    double level = dtime.getLevelValue().doubleValue();
+                    double level = dtime.getLevelValue();
                     long time = dtime.getValidTimeAsDate().getTime();
                     if (!validator.isValid(dtime)) {
                         continue;
@@ -800,7 +787,7 @@ public class FrameCoordinator implements IFrameCoordinator {
     /**
      * Given the FrameChangeOperation, figure out the next time/level to display
      * looping through time and space
-     * 
+     *
      * @param dataIndex
      *            index to start at
      * @param op
@@ -861,7 +848,7 @@ public class FrameCoordinator implements IFrameCoordinator {
     /**
      * Given the LoopMode, figure out the next time/level to display looping
      * through time and space
-     * 
+     *
      * @param dataIndex
      *            index to start at
      * @param op
@@ -918,7 +905,7 @@ public class FrameCoordinator implements IFrameCoordinator {
 
     /**
      * Determine if the frame time is valid and should be used
-     * 
+     *
      * @param time
      * @return
      */
@@ -937,7 +924,8 @@ public class FrameCoordinator implements IFrameCoordinator {
                         descriptor, frameIdx, frameInfo)) {
                     return true;
                 }
-                return containersOtherDescriptorsContainsValidResourcesForFrameIndex(frameIdx);
+                return containersOtherDescriptorsContainsValidResourcesForFrameIndex(
+                        frameIdx);
             }
         }
         return false;
@@ -979,7 +967,8 @@ public class FrameCoordinator implements IFrameCoordinator {
             IDescriptor otherDescriptor = otherRenderableDisplay
                     .getDescriptor();
             if (thisDescriptorContainsValidResourcesForFrameIndex(
-                    otherDescriptor, frameIdx, otherDescriptor.getFramesInfo())) {
+                    otherDescriptor, frameIdx,
+                    otherDescriptor.getFramesInfo())) {
                 return true;
             }
 
@@ -1001,7 +990,7 @@ public class FrameCoordinator implements IFrameCoordinator {
                     }
                 }
             }
-        } else if (rp.getProperties().isVisible() == false) {
+        } else if (!rp.getProperties().isVisible()) {
             // Resource is not visible, set time to null
             time = null;
         }
@@ -1098,8 +1087,8 @@ public class FrameCoordinator implements IFrameCoordinator {
             break;
         }
         case Vertical: {
-            boolean wasLastForTime = (oldIndex == getLastVerticalIndex(
-                    oldTimes, oldIndex, DEFAULT_VALIDATOR));
+            boolean wasLastForTime = (oldIndex == getLastVerticalIndex(oldTimes,
+                    oldIndex, DEFAULT_VALIDATOR));
             if (wasLastForTime) {
                 frameToUse = getLastVerticalIndex(frames, startFrame,
                         DEFAULT_VALIDATOR);
@@ -1109,4 +1098,24 @@ public class FrameCoordinator implements IFrameCoordinator {
         return frameToUse;
     }
 
+    @Override
+    public int getFrameIndex() {
+        return descriptor.getFramesInfo().frameIndex;
+    }
+
+    @Override
+    public void matchFrameChange(IFrameCoordinator other) {
+        if (this == other) {
+            return;
+        }
+        this.currentAnimationMode = other.getAnimationMode();
+        if (other instanceof FrameCoordinator otherCoord) {
+            this.loopDirection = otherCoord.loopDirection;
+        }
+        /*
+         * Only match index, the other's actual frames info object would include
+         * other things that we don't want to copy, like frame times.
+         */
+        this.descriptor.setFramesInfo(new FramesInfo(other.getFrameIndex()));
+    }
 }

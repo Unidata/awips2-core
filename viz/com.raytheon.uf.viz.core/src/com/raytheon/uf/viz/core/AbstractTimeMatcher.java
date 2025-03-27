@@ -1,28 +1,25 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
 package com.raytheon.uf.viz.core;
 
 import java.util.List;
-
-import jakarta.xml.bind.annotation.XmlAccessType;
-import jakarta.xml.bind.annotation.XmlAccessorType;
 
 import com.raytheon.uf.common.time.DataTime;
 import com.raytheon.uf.viz.core.drawables.AbstractRenderableDisplay;
@@ -32,21 +29,24 @@ import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.rsc.AbstractVizResource;
 import com.raytheon.uf.viz.core.rsc.LoadProperties;
 
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+
 /**
  * Abstract time matching object, by default does nothing
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
  * Date          Ticket#  Engineer    Description
  * ------------  -------- ----------- --------------------------
  * Feb 10, 2009           chammack    Initial creation
  * Oct 22, 2013  2491     bsteffen    Remove ISerializableObject
- * 
+ * Mar 06, 2025  2038488  mapeters    Add getTimeMatchBasis
+ *
  * </pre>
- * 
+ *
  * @author chammack
- * @version 1.0
  */
 @XmlAccessorType(XmlAccessType.NONE)
 public abstract class AbstractTimeMatcher {
@@ -56,16 +56,16 @@ public abstract class AbstractTimeMatcher {
      * next time redoTimeMatching is called for its descriptor. Anyone that
      * calls must call redoTimeMatcher for a descriptor before the changes take
      * affect.
-     * 
+     *
      * @param resource
      */
     public abstract void redoTimeMatching(AbstractVizResource<?, ?> resource);
 
     /**
      * Redo the time matching
-     * 
+     *
      * (Useful after changes to time matching parameters, etc)
-     * 
+     *
      * @param the
      *            descriptor that contains the data
      */
@@ -74,7 +74,7 @@ public abstract class AbstractTimeMatcher {
 
     /**
      * Handle removing a resource from a descriptor
-     * 
+     *
      * @param resource
      * @param descriptor
      */
@@ -83,7 +83,7 @@ public abstract class AbstractTimeMatcher {
 
     /**
      * Perform an initial load of PluginDataObjects utilizing the time matcher
-     * 
+     *
      * @param loadProps
      * @param resourceData
      * @param descriptor
@@ -99,7 +99,7 @@ public abstract class AbstractTimeMatcher {
      * them in to get the correct time match settings, should only be called
      * when there are no instantiated resources on any of the displays(like when
      * deserializing).
-     * 
+     *
      * @param displays
      * @return
      */
@@ -114,18 +114,19 @@ public abstract class AbstractTimeMatcher {
      * them in to get the correct time match settings, should only be called
      * when there are no instantiated resources in the list(like when
      * deserializing).
-     * 
+     *
      * @param displays
      * @return
      */
-    public List<ResourcePair> getResourceLoadOrder(List<ResourcePair> resources) {
+    public List<ResourcePair> getResourceLoadOrder(
+            List<ResourcePair> resources) {
         // Just load them in the default order
         return resources;
     }
 
     /**
      * Copy the time matcher data from timeMatcher
-     * 
+     *
      * @param timeMatcher
      */
     public void copyFrom(AbstractTimeMatcher timeMatcher) {
@@ -140,7 +141,20 @@ public abstract class AbstractTimeMatcher {
      * resources.
      */
     public void resetMultiload() {
-        ;// Default does not store any multiload info.
+        // Default does not store any multiload info.
     }
 
+    /**
+     * Get the resource that determines the frame times to be displayed, i.e.
+     * other resources will time match against the time match basis.
+     *
+     * This may be null if this time matcher doesn't use a "time match basis"
+     * concept, or has not determined the basis resource yet.
+     *
+     * @return time match basis resource (may be null)
+     */
+    public AbstractVizResource<?, ?> getTimeMatchBasis() {
+        // Default does not use "time match basis" concept
+        return null;
+    }
 }
