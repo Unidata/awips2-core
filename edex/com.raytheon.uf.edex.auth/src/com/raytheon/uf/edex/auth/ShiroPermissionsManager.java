@@ -52,6 +52,7 @@ import com.raytheon.uf.common.auth.util.PermissionUtils;
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- -----------------
  * Apr 05, 2017  6217     randerso  Initial creation
+ * Sep 13, 2021     tiffanym@ucar   Remove spaces from username (for Windows)
  *
  * </pre>
  *
@@ -111,6 +112,7 @@ implements IPermissionsManager, IRolesAndPermissionsStore {
 
         if (!subject.isAuthenticated()) {
             String userName = user.uniqueId().toString();
+            userName = userName.replaceAll(" ", ".");
             /*
              * TODO: If we ever implement authentication we will need to do
              * something with User.authenticationData.
