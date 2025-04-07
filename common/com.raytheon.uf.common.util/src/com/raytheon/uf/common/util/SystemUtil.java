@@ -54,6 +54,7 @@ import com.raytheon.uf.common.util.collections.BoundedMap;
  * Sep 29, 2021  8608     mapeters  Added no-arg {@link #getClientID()}
  * Feb 13, 2023  9020     tgurney   getLocalAddress skip dummy interfaces
  * Aug 26, 2024       tmeyer@ucar   Revert #8239 to still use FQDN
+ * Apr 07, 2025     tiffanym@ucar   Attempt to fix issue of truncating IPV6 addresses
  *
  * </pre>
  *
@@ -155,7 +156,7 @@ public class SystemUtil {
         String hostName = hostNameCache.get(address);
         if (hostName == null) {
             hostName = address.getHostName();
-
+            hostName = hostName.replaceAll(":", ".");
             hostNameCache.put(address, hostName);
         }
         return hostName;
@@ -181,7 +182,7 @@ public class SystemUtil {
                 }
             }
         }
-
+        hostName = hostName.replaceAll(":", ".");
         return hostName;
     }
 

@@ -78,6 +78,7 @@ import com.raytheon.uf.edex.core.EdexException;
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- -----------------
  * Apr 04, 2017  6217     randerso  Initial creation
+ * Sep 13, 2021     tiffanym@ucar   Remove spaces from username (for Windows)
  *
  * </pre>
  *
@@ -204,7 +205,9 @@ public class IniRealm extends org.apache.shiro.realm.text.IniRealm
             out.println(header);
 
             for (Section section : ini.getSections()) {
-                out.println(String.format("[%s]", section.getName()));
+                String userName = section.getName();
+                userName = userName.replaceAll(" ", ".");
+                out.println(String.format("[%s]", userName));
                 for (Entry<String, String> entry : section.entrySet()) {
                     out.println(String.format("%s = %s", entry.getKey(),
                             entry.getValue()));
