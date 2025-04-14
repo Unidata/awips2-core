@@ -32,15 +32,6 @@ import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Embeddable;
-import jakarta.persistence.Embedded;
-import jakarta.persistence.Transient;
-import jakarta.xml.bind.annotation.XmlAccessType;
-import jakarta.xml.bind.annotation.XmlAccessorType;
-import jakarta.xml.bind.annotation.XmlAttribute;
-import jakarta.xml.bind.annotation.XmlElement;
-
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.hibernate.annotations.Index;
 import org.hibernate.annotations.Type;
@@ -50,6 +41,15 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 import com.raytheon.uf.common.time.DataTimeComparator.SortKey;
 import com.raytheon.uf.common.time.util.CalendarConverter;
 import com.raytheon.uf.common.time.util.TimeUtil;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Embeddable;
+import jakarta.persistence.Embedded;
+import jakarta.persistence.Transient;
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlAttribute;
+import jakarta.xml.bind.annotation.XmlElement;
 
 /**
  * Represents the time associated with a data item
@@ -85,6 +85,7 @@ import com.raytheon.uf.common.time.util.TimeUtil;
  *                                   it for DB queries
  * Apr 02, 2024  2037091  mapeters   Include level type in equals/hashCode
  * Sep 17, 2024  2037943  mapeters   Make equals(Object) final
+ * Mar 07, 2025  2038488  mapeters   Call getMatchRef in getMatchValid
  *
  * </pre>
  *
@@ -135,16 +136,14 @@ import com.raytheon.uf.common.time.util.TimeUtil;
 @XmlAccessorType(XmlAccessType.NONE)
 @DynamicSerialize
 public class DataTime implements Comparable<DataTime>, Serializable, Cloneable {
-    /**
-     *
-     */
+
     private static final long serialVersionUID = 1L;
 
     private static final Comparator<DataTime> DEFAULT_COMPARATOR = new DataTimeComparator(
             SortKey.VALID_TIME, SortKey.FORECAST_TIME, false);
 
     /** Data format flag */
-    private static final ThreadLocal<SimpleDateFormat> DATE_FORMAT = new ThreadLocal<SimpleDateFormat>() {
+    private static final ThreadLocal<SimpleDateFormat> DATE_FORMAT = new ThreadLocal<>() {
 
         @Override
         protected SimpleDateFormat initialValue() {
@@ -456,15 +455,17 @@ public class DataTime implements Comparable<DataTime>, Serializable, Cloneable {
     }
 
     /**
-     *
-     * @return get the matching valid time
+     * @return the matching valid time in milliseconds
      */
     public long getMatchValid() {
         /*
-         * TODO Dividing and multiplying seconds by 60 doesn't make much
-         * sense...
+         * TODO Dividing and multiplying milliseconds by 60 doesn't make much
+         * sense. Should the dividing/multiplying by 60 be done before
+         * multiplying by 1000, so that we are rounding to the nearest 60
+         * seconds, rather than the nearest 60 milliseconds? That would match
+         * what's done in getMatchFcst() above as well.
          */
-        return refTime.getTime() + (60 * ((((long) fcstTime) * 1000) / 60));
+        return getMatchRef() + (60 * ((((long) fcstTime) * 1000) / 60));
     }
 
     /**
