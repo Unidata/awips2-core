@@ -68,6 +68,7 @@ import com.raytheon.uf.edex.core.exception.ShutdownException;
  *                                     IContextAdmin field
  * Sep 17, 2024  2037700  tgurney      Replace shutdown boolean flag with a latch
  *                                     to allow blocking wait for shutdown
+ * Apr 16, 2025  2038247  tgurney      make setMessageProducer static to match the field
  *
  * </pre>
  *
@@ -269,7 +270,7 @@ public class EDEXUtil implements ApplicationContextAware {
         return mainMessageProducer;
     }
 
-    public void setMessageProducer(IMessageProducer messageProducer) {
+    public static void setMessageProducer(IMessageProducer messageProducer) {
         if (mainMessageProducer == null) {
             mainMessageProducer = messageProducer;
         }
