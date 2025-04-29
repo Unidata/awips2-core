@@ -514,4 +514,6 @@
          install-size="0"
          version="0.0.0"/>
 
+ <!--The org.openhab.core library would go here. It's needed for the Unidata Streamflow but we aren't distributing that right now-->
+
 </feature>
