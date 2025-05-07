@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import javax.xml.bind.annotation.XmlAttribute;
@@ -64,7 +65,7 @@ import com.raytheon.uf.viz.datacube.DataCubeContainer;
 /**
  * Provides a base implementation for data types that are requestable from the
  * EDEX backend and utilize PluginDataObjects.
- * 
+ *
  * This resource data provides the following capabilities:
  * <UL>
  * <LI>Storage of the request metadata (map)</LI>
@@ -74,11 +75,11 @@ import com.raytheon.uf.viz.datacube.DataCubeContainer;
  * <LI>Retrieval of PluginDataObjects from specific sets of DataTimes
  * <LI>Catalog retrievals for available DataTimes
  * </UL>
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Feb 10, 2009  1959     chammack  Initial creation
@@ -95,29 +96,31 @@ import com.raytheon.uf.viz.datacube.DataCubeContainer;
  * Nov 04, 2015  5090     bsteffen  Make the time cache private and allow
  *                                  override of the time query that is cached.
  * Dec 14, 2022  23218 mgamazaychikov Make defaultParser protected
- * 
+ * Jul 15, 2024  2037624  mapeters  Make invalidateAvailableTimesCache() public,
+ *                                  remove isObjectsEqual()
+ * Sep 06, 2024  2036517  mapeters  Add convenience getters for constraints
+ *
  * </pre>
- * 
+ *
  * @author chammack
- * @version 1.0
  */
+public abstract class AbstractRequestableResourceData
+        extends AbstractResourceData {
 
-public abstract class AbstractRequestableResourceData extends
-        AbstractResourceData {
-    private static final transient IUFStatusHandler statusHandler = UFStatus
+    private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(AbstractRequestableResourceData.class);
 
-    private static long CACHE_EXPIRATION = 60000;
+    private static final long CACHE_EXPIRATION = 60_000;
 
     /**
      * if too many datatimes are used when requesting data Hibernate will throw
      * a stack overflow exception because of deep recursion. This value is used
      * to break requests into more manageable chunks for Hibernate.
      */
-    private static int ENTRYTIMES_SLICE_SIZE = 500;
+    private static final int ENTRYTIMES_SLICE_SIZE = 500;
 
-    private static class AlertMessageToPDOParser extends
-            AbstractAlertMessageParser {
+    private static class AlertMessageToPDOParser
+            extends AbstractAlertMessageParser {
 
         @Override
         public Object parseAlertMessage(AlertMessage message,
@@ -162,7 +165,7 @@ public abstract class AbstractRequestableResourceData extends
     /**
      * If requery is necessary on time matching, this should be set to true.
      * Note that this is an expensive operation.
-     * 
+     *
      * Also note that time-based pruning will still be performed even if this is
      * set to false.
      */
@@ -185,7 +188,7 @@ public abstract class AbstractRequestableResourceData extends
 
     /**
      * The bin offset of the data
-     * 
+     *
      * The bin offset is the number of seconds in each direction from the data
      * time in which data is aggregated into bins.
      */
@@ -219,8 +222,8 @@ public abstract class AbstractRequestableResourceData extends
         // 4. Retrieve the PluginDataObjects for all DataTimes
         // 5. Construct resource with loaded pdos
         DataTime[] availableTimes = this.getAvailableTimes();
-        DataTime[] dataTimes = descriptor.getTimeMatcher().initialLoad(
-                loadProperties, availableTimes, descriptor);
+        DataTime[] dataTimes = descriptor.getTimeMatcher()
+                .initialLoad(loadProperties, availableTimes, descriptor);
         AbstractVizResource<? extends AbstractResourceData, ? extends IDescriptor> resource = null;
 
         if (dataTimes != null) {
@@ -262,16 +265,9 @@ public abstract class AbstractRequestableResourceData extends
         try {
             Map<String, Object> dataURIMap = DataURIUtil.createDataURIMap(pdo);
             for (String key : map.keySet()) {
-                if (dataURIMap.containsKey(key) == false) {
-                    statusHandler
-                            .handle(Priority.EVENTA,
-                                    "metadata map key: "
-                                            + key
-                                            + " is not in datauri, updates may not properly work for resource");
-                    System.out
-                            .println("metadata map key: "
-                                    + key
-                                    + " is not in datauri, updates may not properly work for resource");
+                if (!dataURIMap.containsKey(key)) {
+                    statusHandler.info("metadata map key: " + key
+                            + " is not in datauri, updates may not properly work for resource");
                 }
             }
         } catch (PluginException e) {
@@ -345,15 +341,15 @@ public abstract class AbstractRequestableResourceData extends
         }
         if (!objectsToSend.isEmpty()) {
             Class<?> componentType = objectsToSend.get(0).getClass();
-            update(objectsToSend.toArray((Object[]) Array.newInstance(
-                    componentType, objectsToSend.size())));
+            update(objectsToSend.toArray((Object[]) Array
+                    .newInstance(componentType, objectsToSend.size())));
         }
     }
 
     /**
      * An abstract method that takes the PluginDataObject[] and a set of
      * LoadProperties and constructs the resource
-     * 
+     *
      * @param loadProperties
      * @param objects
      * @return
@@ -441,10 +437,10 @@ public abstract class AbstractRequestableResourceData extends
 
     /**
      * Retrieve a set of PluginDataObjects for a desired set of times
-     * 
+     *
      * The array returned is not guaranteed to be in the same order as the
      * DataTimes.
-     * 
+     *
      * @param desired
      * @param current
      * @return
@@ -457,13 +453,14 @@ public abstract class AbstractRequestableResourceData extends
             return new PluginDataObject[0];
         }
         if (Arrays.asList(current).contains(null)) {
-            statusHandler.handle(
-                    Priority.VERBOSE,
-                    "Resource contains unexpected null time: "
-                            + this.getClass(), new NullPointerException());
+            statusHandler
+                    .handle(Priority.VERBOSE,
+                            "Resource contains unexpected null time: "
+                                    + this.getClass(),
+                            new NullPointerException());
         }
 
-        Set<DataTime> loadSet = new HashSet<DataTime>(Arrays.asList(desired));
+        Set<DataTime> loadSet = new HashSet<>(Arrays.asList(desired));
         loadSet.removeAll(Arrays.asList(current));
         if (loadSet.contains(null)) {
             /*
@@ -486,7 +483,7 @@ public abstract class AbstractRequestableResourceData extends
      * called from getLatestPluginDataObjects(DataTime[],DataTime[]) after time
      * filter from desired and current has been done. The times passed in is a
      * collection of new times needed
-     * 
+     *
      * @param loadSet
      * @return
      * @throws VizException
@@ -510,7 +507,8 @@ public abstract class AbstractRequestableResourceData extends
             List<DataTime> trueDataTimes = new ArrayList<>();
 
             for (DataTime realDataTime : allDataTimes) {
-                if (loadSet.contains(binOffset.getNormalizedTime(realDataTime))) {
+                if (loadSet
+                        .contains(binOffset.getNormalizedTime(realDataTime))) {
                     trueDataTimes.add(realDataTime);
                 }
             }
@@ -525,7 +523,8 @@ public abstract class AbstractRequestableResourceData extends
         ArrayList<PluginDataObject> responses = new ArrayList<>(
                 selectedEntryTimes.size());
 
-        for (int i = 0; i < selectedEntryTimes.size(); i += ENTRYTIMES_SLICE_SIZE) {
+        for (int i = 0; i < selectedEntryTimes
+                .size(); i += ENTRYTIMES_SLICE_SIZE) {
             int start = i;
             int end = i + ENTRYTIMES_SLICE_SIZE;
             if (end > selectedEntryTimes.size()) {
@@ -550,18 +549,12 @@ public abstract class AbstractRequestableResourceData extends
     /**
      * Comparator for response array.
      */
-    protected static Comparator<PluginDataObject> layerComparator = new Comparator<PluginDataObject>() {
-
-        @Override
-        public int compare(PluginDataObject arg0, PluginDataObject arg1) {
-            return arg0.getDataTime().compareTo(arg1.getDataTime());
-        }
-
-    };
+    protected static Comparator<PluginDataObject> layerComparator = Comparator
+            .comparing(PluginDataObject::getDataTime);
 
     /**
      * Given the times, filter them to only return times at or before the filter
-     * 
+     *
      * @param times
      * @param filter
      * @return
@@ -579,7 +572,7 @@ public abstract class AbstractRequestableResourceData extends
     /**
      * Retrieve a list of available times given a map of constraints.
      * Optionally, the data times may be binned by a provided binOffset.
-     * 
+     *
      * @param constraintMap
      *            the request constraints
      * @param binOffset
@@ -602,7 +595,7 @@ public abstract class AbstractRequestableResourceData extends
 
     /**
      * Return a set of available times for the given resource data
-     * 
+     *
      * @return
      * @throws VizException
      */
@@ -619,7 +612,7 @@ public abstract class AbstractRequestableResourceData extends
     /**
      * Queries for available times if the time cache has expired, or else
      * returns the time cache
-     * 
+     *
      * @param map
      *            the metadata map to query against
      * @return the available times
@@ -628,7 +621,8 @@ public abstract class AbstractRequestableResourceData extends
     protected DataTime[] queryForTimes(Map<String, RequestConstraint> map)
             throws VizException {
         synchronized (cachedAvailableTimes) {
-            if (((System.currentTimeMillis() - cacheLastQueried) > CACHE_EXPIRATION)) {
+            if (((System.currentTimeMillis()
+                    - cacheLastQueried) > CACHE_EXPIRATION)) {
                 DataTime[] retrieved = getAvailableTimes(map, getBinOffset());
                 cacheLastQueried = System.currentTimeMillis();
                 cachedAvailableTimes.clear();
@@ -641,7 +635,7 @@ public abstract class AbstractRequestableResourceData extends
         }
     }
 
-    protected void invalidateAvailableTimesCache() {
+    public void invalidateAvailableTimesCache() {
         synchronized (cachedAvailableTimes) {
             cacheLastQueried = 0l;
             cachedAvailableTimes.clear();
@@ -663,17 +657,35 @@ public abstract class AbstractRequestableResourceData extends
         this.retrieveData = retrieveData;
     }
 
+    /**
+     * @param constraintKey
+     * @return request constraint for the given key, or null if no constraint
+     *         exists for that key
+     */
+    public RequestConstraint getConstraint(String constraintKey) {
+        Map<String, RequestConstraint> metadataMap = getMetadataMap();
+        if (metadataMap != null) {
+            return metadataMap.get(constraintKey);
+        }
+        return null;
+    }
+
+    /**
+     * @param constraintKey
+     * @return request constraint value for the given key, or null if no
+     *         constraint exists for that key
+     */
+    public String getConstraintValue(String constraintKey) {
+        RequestConstraint constraint = getConstraint(constraintKey);
+        if (constraint != null) {
+            return constraint.getConstraintValue();
+        }
+        return null;
+    }
+
     @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result
-                + ((binOffset == null) ? 0 : binOffset.hashCode());
-        result = prime * result
-                + ((metadataMap == null) ? 0 : metadataMap.hashCode());
-        result = prime * result
-                + ((resourceType == null) ? 0 : resourceType.hashCode());
-        return result;
+        return Objects.hash(binOffset, metadataMap, resourceType);
     }
 
     @Override
@@ -701,32 +713,18 @@ public abstract class AbstractRequestableResourceData extends
 
         AbstractRequestableResourceData other = (AbstractRequestableResourceData) obj;
 
-        if (!isObjectsEqual(binOffset, other.binOffset)) {
+        if (!Objects.equals(binOffset, other.binOffset)) {
             return false;
         }
 
-        if (!isObjectsEqual(metadataMap, other.metadataMap)) {
+        if (!Objects.equals(metadataMap, other.metadataMap)) {
             return false;
         }
 
-        if (!isObjectsEqual(resourceType, other.resourceType)) {
+        if (!Objects.equals(resourceType, other.resourceType)) {
             return false;
         }
 
         return true;
     }
-
-    /**
-     * Compare two object to determine if they are equal.
-     * <p>
-     * The following logic is used to determine equality: (one == null ? two ==
-     * null : one.equals(two))
-     * 
-     * @param one
-     * @param two
-     */
-    protected boolean isObjectsEqual(Object one, Object two) {
-        return (one == null ? two == null : one.equals(two));
-    }
-
 }

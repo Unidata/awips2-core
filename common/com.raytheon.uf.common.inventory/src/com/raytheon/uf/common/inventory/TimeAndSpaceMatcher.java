@@ -1,27 +1,29 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
 package com.raytheon.uf.common.inventory;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Set;
 
@@ -36,33 +38,36 @@ import com.raytheon.uf.common.time.DataTime;
  * when times are equal but one is time agnostic or spaces are equal and one is
  * space agnostic. Finally if for one of the Collections contains a time and
  * space agnostic TimeAndSpace than it will match everything.
- * 
+ *
  * Time matching is a little more complex than space because you can configure
  * ignoreRange and validMatch so that times can be considered matching even if
  * they aren't identical, as long as they are referencing a similar time, for
  * more information see the setters for those flags.
- * 
+ *
  * When determining matches this will choose the most specific match. For
  * example if a TimeAndSpace object can match an object that matches space but
  * only matches validTime or it can match an object that matches space but is
  * time agnostic, then it will choose the valid time match since that is more
  * specific than the agnostic. This order is defined by the natural order of the
  * MatchType enum.
- * 
- * 
+ *
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- --------------------------
  * May 08, 2012           bsteffen    Initial creation
+ * Sep 27, 2012           bsteffen    Initial creation of MatchResult class.
  * Apr 11, 2014  2947     bsteffen    Switch spatial matching to use
  *                                    IGridGeometryProvider
  * May 30, 2017  DR 18358 D. Friedman Use valid period in match results
- * 
+ * Mar 07, 2024  2036814  sharbison   Sort the times in LinkedLists for
+ *                                    reliable derived parameter results.
+ *
  * </pre>
- * 
+ *
  * @author bsteffen
  * @version 1.0
  */
@@ -76,8 +81,8 @@ public class TimeAndSpaceMatcher {
     /**
      * When ignore range is true then times with different ranges are considered
      * matching if they are the same in all other ways, when false times are
-     * considered nonmatching if the range is not identical.
-     * 
+     * considered non-matching if the range is not identical.
+     *
      * @param ignoreRange
      */
     public void setIgnoreRange(boolean ignoreRange) {
@@ -87,10 +92,10 @@ public class TimeAndSpaceMatcher {
     /**
      * When match valid is true then dataTimes are compared based off valid
      * time, when it is false the refTime and forecast time are considered
-     * sperately and both must match to create a match. Even when matchValid is
-     * true, if there is a time where forecast and refTime amtch it will be
-     * prefered to a time where only validTime matches
-     * 
+     * separately and both must match to create a match. Even when matchValid is
+     * true, if there is a time where forecast and refTime match it will be
+     * preferred to a time where only validTime matches
+     *
      * @param matchValid
      */
     public void setMatchValid(boolean matchValid) {
@@ -102,19 +107,44 @@ public class TimeAndSpaceMatcher {
      * key is the intersected TimeAndSpace and the values are a MatchResult that
      * contains the SpaceAndTime needed from each collection to represent that
      * time.
-     * 
+     *
      * @param times1
      * @param times2
      * @return
      */
-    public Map<TimeAndSpace, MatchResult> match(
-            Collection<TimeAndSpace> times1, Collection<TimeAndSpace> times2) {
+    public Map<TimeAndSpace, MatchResult> match(Collection<TimeAndSpace> times1,
+            Collection<TimeAndSpace> times2) {
         Map<TimeAndSpace, MatchResult> result = new HashMap<>();
-        for (TimeAndSpace t1 : times1) {
-            for (TimeAndSpace t2 : times2) {
+
+        LinkedList<TimeAndSpace> timesSorted1 = new LinkedList<>();
+        LinkedList<TimeAndSpace> timesSorted2 = new LinkedList<>();
+
+        /*
+         * Sort the times in LinkedLists for reliable derived parameter results.
+         * We intentionally are inserting 'newer' refTime first in the
+         * LinkedList. The TimeAndSpaceMatcher 'match' will pick the 'newer'
+         * refTime when fcstTime is equal.
+         */
+        // Example of sorted TimeAndSpace:
+        // fcstTime = 583200 refTime = 2024-02-29 12:00:00.0
+        // fcstTime = 583200 refTime = 2024-02-29 06:00:00.0
+        // fcstTime = 604800 refTime = 2024-02-29 12:00:00.0
+        // fcstTime = 604800 refTime = 2024-02-29 06:00:00.0
+        timesSorted1.addAll(times1);
+        Collections.sort(timesSorted1);
+
+        timesSorted2.addAll(times2);
+        Collections.sort(timesSorted2);
+
+        for (TimeAndSpace t1 : timesSorted1) {
+            for (TimeAndSpace t2 : timesSorted2) {
                 MatchResult res = createMatchResult(t1, t2);
                 if (res != null) {
                     MatchResult prev = result.get(res.getMerge());
+                    /*
+                     * If there is a previous MatchResult, compare timeMatchType
+                     * and spaceMatchType for a final result.
+                     */
                     if (prev == null || prev.compareTo(res) > 0) {
                         result.put(res.getMerge(), res);
                     }
@@ -128,7 +158,7 @@ public class TimeAndSpaceMatcher {
      * Given two TimeAndSpace objects attempts to determine what they have in
      * common, if anything and return a MatchResult or null if there is no
      * match.
-     * 
+     *
      * @param t1
      * @param t2
      * @return
@@ -159,8 +189,8 @@ public class TimeAndSpaceMatcher {
              */
             time = createMergedTime(t1.getTime(), t2.getTime());
             timeMatchType = TimeMatchType.IGNORE_RANGE;
-        } else if (matchValid
-                && t1.getTime().getMatchValid() == t2.getTime().getMatchValid()) {
+        } else if (matchValid && t1.getTime().getMatchValid() == t2.getTime()
+                .getMatchValid()) {
             /*
              * finally last valid allows us to mix different
              * refTime/forecastTimes as long as valid matches.
@@ -178,7 +208,7 @@ public class TimeAndSpaceMatcher {
 
         SpaceMatchType spaceMatchType = null;
         IGridGeometryProvider space = null;
-        
+
         /* Determine how well the spaces match */
         if (t1.isSpaceAgnostic()) {
             /* When one is agnostic it will match anything. */
@@ -193,18 +223,18 @@ public class TimeAndSpaceMatcher {
             space = t1.getSpace();
             spaceMatchType = SpaceMatchType.MATCH;
         } else {
-            if(t1.getSpace() instanceof IGridGeometryProviderComparable){
+            if (t1.getSpace() instanceof IGridGeometryProviderComparable) {
                 space = ((IGridGeometryProviderComparable) t1.getSpace())
                         .compare(t2.getSpace());
             }
-            if (space == null
-                    && (t2.getSpace() instanceof IGridGeometryProviderComparable)) {
+            if (space == null && (t2
+                    .getSpace() instanceof IGridGeometryProviderComparable)) {
                 space = ((IGridGeometryProviderComparable) t2.getSpace())
                         .compare(t1.getSpace());
             }
-            if(space != null){
+            if (space != null) {
                 spaceMatchType = SpaceMatchType.COMPARABLE;
-            }else{
+            } else {
                 return null;
             }
         }
@@ -213,22 +243,8 @@ public class TimeAndSpaceMatcher {
     }
 
     /**
-     * 
      * Class to contain the result of a match operation for 2 matching
      * TimeAndSpace objects
-     * 
-     * <pre>
-     * 
-     * SOFTWARE HISTORY
-     * 
-     * Date         Ticket#    Engineer    Description
-     * ------------ ---------- ----------- --------------------------
-     * Sep 27, 2012            bsteffen     Initial creation
-     * 
-     * </pre>
-     * 
-     * @author bsteffen
-     * @version 1.0
      */
     public static class MatchResult implements Comparable<MatchResult> {
 
@@ -289,7 +305,7 @@ public class TimeAndSpaceMatcher {
 
     }
 
-    public static enum TimeMatchType {
+    public enum TimeMatchType {
         /* Perfect match */
         MATCH,
 
@@ -303,7 +319,7 @@ public class TimeAndSpaceMatcher {
         AGNOSTIC
     }
 
-    public static enum SpaceMatchType {
+    public enum SpaceMatchType {
         /* Perfect match */
         MATCH,
 
@@ -320,14 +336,13 @@ public class TimeAndSpaceMatcher {
     /**
      * Given the result of a match this will pull out the unique SpaceAndTime
      * objects that matched from the second Collection passed to match.
-     * 
+     *
      * @param matchResults
      * @return
      */
     public static Set<TimeAndSpace> getAll2(
             Map<TimeAndSpace, MatchResult> matchResults) {
-        Set<TimeAndSpace> result = new HashSet<TimeAndSpace>(
-                matchResults.size());
+        Set<TimeAndSpace> result = new HashSet<>(matchResults.size());
         for (MatchResult mr : matchResults.values()) {
             result.add(mr.get2());
         }
@@ -337,14 +352,13 @@ public class TimeAndSpaceMatcher {
     /**
      * Given the result of a match this will pull out the unique SpaceAndTime
      * objects that matched from the first Collection passed to match.
-     * 
+     *
      * @param matchResults
      * @return
      */
     public static Set<TimeAndSpace> getAll1(
             Map<TimeAndSpace, MatchResult> matchResults) {
-        Set<TimeAndSpace> result = new HashSet<TimeAndSpace>(
-                matchResults.size());
+        Set<TimeAndSpace> result = new HashSet<>(matchResults.size());
         for (MatchResult mr : matchResults.values()) {
             result.add(mr.get1());
         }
@@ -361,11 +375,13 @@ public class TimeAndSpaceMatcher {
      * @return
      */
     private DataTime createMergedTime(DataTime validTime, DataTime other) {
-        DataTime result = new DataTime(validTime.getRefTime(), validTime.getFcstTime());
+        DataTime result = new DataTime(validTime.getRefTime(),
+                validTime.getFcstTime());
         if (validTime.getUtilityFlags().contains(DataTime.FLAG.PERIOD_USED)) {
             result.setValidPeriod(validTime.getValidPeriod());
             result.getUtilityFlags().add(DataTime.FLAG.PERIOD_USED);
-        } else if (other.getUtilityFlags().contains(DataTime.FLAG.PERIOD_USED)) {
+        } else if (other.getUtilityFlags()
+                .contains(DataTime.FLAG.PERIOD_USED)) {
             result.setValidPeriod(other.getValidPeriod());
             result.getUtilityFlags().add(DataTime.FLAG.PERIOD_USED);
         }

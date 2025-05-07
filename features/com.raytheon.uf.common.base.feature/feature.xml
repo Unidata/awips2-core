@@ -434,7 +434,7 @@
          id="org.apache.xerces"
          download-size="0"
          install-size="0"
-         version="2.12.1"/>
+         version="2.12.2"/>
 
    <plugin
          id="com.raytheon.uf.common.convert"
@@ -513,5 +513,7 @@
          download-size="0"
          install-size="0"
          version="0.0.0"/>
+
+ <!--The org.openhab.core library would go here. It's needed for the Unidata Streamflow but we aren't distributing that right now-->
 
 </feature>
