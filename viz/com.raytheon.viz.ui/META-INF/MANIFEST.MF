@@ -9,6 +9,7 @@ Bundle-ActivationPolicy: lazy
 Bundle-Vendor: Raytheon
 Bundle-RequiredExecutionEnvironment: JavaSE-17
 Require-Bundle: org.eclipse.ui;visibility:=reexport,
+ org.apache.commons.configuration2,
  com.raytheon.uf.viz.core,
  org.eclipse.core.runtime,
  org.eclipse.core.expressions,
@@ -27,7 +28,8 @@ Require-Bundle: org.eclipse.ui;visibility:=reexport,
  org.eclipse.e4.core.services,
  org.apache.commons.collections4,
  jakarta.xml.bind,
- jakarta.inject
+ jakarta.inject,
+ org.slf4j
 Import-Package: com.raytheon.uf.common.style,
  com.raytheon.viz.core,
  com.raytheon.viz.core.mode
