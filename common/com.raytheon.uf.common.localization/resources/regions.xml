@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <regionSites>
-	<!-- Pacific Region PBP -->
+    <!-- Pacific Region PBP -->
     <region regionId="PR">
         <wfo>PBP</wfo>
         <wfo>SAM</wfo>
@@ -162,14 +162,21 @@
     </region>
     <!-- National Centers -->
     <region regionId="NC">
-    	<wfo>HAK</wfo>
-    	<wfo>HUS</wfo>
-    	<wfo>NH1</wfo>
-    	<wfo>NH2</wfo>
-    	<wfo>NHA</wfo>
-    	<wfo>NHP</wfo>
-    	<wfo>NHZ</wfo>
-    	<wfo>ONA</wfo>
-    	<wfo>ONP</wfo>
+        <wfo>AWC</wfo>
+        <wfo>CPC</wfo>
+        <wfo>HAK</wfo>
+        <wfo>HUS</wfo>
+        <wfo>NH1</wfo>
+        <wfo>NH2</wfo>
+        <wfo>NHA</wfo>
+        <wfo>NHP</wfo>
+        <wfo>NHZ</wfo>
+        <wfo>NTWC</wfo>
+        <wfo>NWC</wfo>
+        <wfo>ONA</wfo>
+        <wfo>ONP</wfo>
+        <wfo>PTWC</wfo>
+        <wfo>SPC</wfo>
+        <wfo>SWPC</wfo>
     </region>
 </regionSites>
