@@ -2,7 +2,7 @@
 <feature
       id="com.raytheon.uf.edex.foss.org.apache.httpcomponents.core5.feature"
       label="org.apache.httpcomponents.core5 Feature"
-      version="5.2.4"
+      version="5.3.4"
       provider-name="RAYTHEON">
 
    <description url="http://www.example.com/description">
@@ -21,6 +21,6 @@
          id="org.apache.httpcomponents.core5"
          download-size="0"
          install-size="0"
-         version="5.2.4"/>
+         version="5.3.4"/>
 
 </feature>
