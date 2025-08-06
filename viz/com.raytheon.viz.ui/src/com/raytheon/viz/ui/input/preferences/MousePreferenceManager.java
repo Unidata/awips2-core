@@ -20,12 +20,17 @@
 package com.raytheon.viz.ui.input.preferences;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.XMLConfiguration;
+import org.apache.commons.configuration2.XMLConfiguration;
+import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
+import org.apache.commons.configuration2.builder.fluent.Configurations;
+import org.apache.commons.configuration2.builder.fluent.Parameters;
+import org.apache.commons.configuration2.builder.fluent.XMLBuilderParameters;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.ui.IPerspectiveDescriptor;
@@ -54,6 +59,7 @@ import com.raytheon.viz.ui.UiPlugin;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Oct 27, 2009            bsteffen     Initial creation
+ * Jul 08, 2025 2036453    aford        Commons Configuration 2 Upgrade
  * 
  * </pre>
  * 
@@ -300,7 +306,9 @@ public class MousePreferenceManager {
     public void exportProfile(String file, String profileName)
             throws ConfigurationException {
         String profileId = profileNameToId.get(profileName);
-        XMLConfiguration export = new XMLConfiguration();
+        FileBasedConfigurationBuilder<XMLConfiguration> configBuilder = getConfigBuilder(
+                file);
+        XMLConfiguration export = configBuilder.getConfiguration();
         IConfigurationElement[] config = Platform.getExtensionRegistry()
                 .getConfigurationElementsFor(EXTENSION_POINT);
         for (IConfigurationElement e : config) {
@@ -309,11 +317,11 @@ public class MousePreferenceManager {
             export.setProperty(id, prefStore.getStringArray(prefId));
         }
         export.setProperty("name", profileName);
-        export.save(file);
+        configBuilder.save();
     }
 
     public String importProfile(String file) throws ConfigurationException {
-        XMLConfiguration impor = new XMLConfiguration(file);
+        XMLConfiguration impor = new Configurations().xml(file);
         String profileName = impor.getString("name");
         String profileId = null;
         // Dont create a new profile if we have a matching name
@@ -332,6 +340,20 @@ public class MousePreferenceManager {
             prefStore.setValue(prefId, pref);
         }
         return profileName;
+    }
+
+    private FileBasedConfigurationBuilder<XMLConfiguration> getConfigBuilder(
+            String filePath)
+            throws ConfigurationException {
+        // allowFailOnInit allows a new configuration to be created if the
+        // file doesn't exist yet.
+        boolean allowFailOnInit = true;
+        XMLBuilderParameters xmlParams = new Parameters().xml()
+                .setPath(filePath);
+        FileBasedConfigurationBuilder<XMLConfiguration> configBuilder = new FileBasedConfigurationBuilder<>(
+                XMLConfiguration.class, Collections.emptyMap(), allowFailOnInit)
+                        .configure(xmlParams);
+        return configBuilder;
     }
 
     private MouseEvent[] getDefaultEventsFromExtension(String id) {

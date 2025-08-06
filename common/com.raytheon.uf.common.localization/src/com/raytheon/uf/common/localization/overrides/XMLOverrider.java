@@ -24,11 +24,15 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.configuration.CombinedConfiguration;
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.XMLConfiguration;
-import org.apache.commons.configuration.tree.NodeCombiner;
-import org.apache.commons.configuration.tree.OverrideCombiner;
+import org.apache.commons.configuration2.CombinedConfiguration;
+import org.apache.commons.configuration2.XMLConfiguration;
+import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
+import org.apache.commons.configuration2.builder.fluent.Parameters;
+import org.apache.commons.configuration2.builder.fluent.XMLBuilderParameters;
+import org.apache.commons.configuration2.convert.LegacyListDelimiterHandler;
+import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.apache.commons.configuration2.tree.NodeCombiner;
+import org.apache.commons.configuration2.tree.OverrideCombiner;
 
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
@@ -49,6 +53,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Mar 14, 2013            mnash     Initial creation
+ * Jul 08, 2025 2036453    aford     Commons Configuration 2 Upgrade
  * 
  * </pre>
  * 
@@ -104,7 +109,7 @@ public class XMLOverrider {
         XMLConfiguration[] configurations = new XMLConfiguration[files.length];
         for (int i = 0; i < files.length; i++) {
             try {
-                configurations[i] = new XMLConfiguration(files[i]);
+                configurations[i] = buildXMLConfig(files[i]);
             } catch (ConfigurationException e) {
                 handler.handle(Priority.ERROR,
                         "Unable to make a new XML configuration", e);
@@ -113,7 +118,6 @@ public class XMLOverrider {
 
         CombinedConfiguration combinedConfiguration = new CombinedConfiguration(
                 combiner);
-        combinedConfiguration.setForceReloadCheck(true);
         // loop through each xml configuration
         for (XMLConfiguration config : configurations) {
             combinedConfiguration.addConfiguration(config);
@@ -137,5 +141,15 @@ public class XMLOverrider {
             }
         }
         return files;
+    }
+
+    private static XMLConfiguration buildXMLConfig(
+            File file) throws ConfigurationException {
+        XMLBuilderParameters xmlParams = new Parameters().xml().setFile(file)
+                .setListDelimiterHandler(new LegacyListDelimiterHandler(','));
+        FileBasedConfigurationBuilder<XMLConfiguration> configBuilder = new FileBasedConfigurationBuilder<>(
+                XMLConfiguration.class)
+                        .configure(xmlParams);
+        return configBuilder.getConfiguration();
     }
 }

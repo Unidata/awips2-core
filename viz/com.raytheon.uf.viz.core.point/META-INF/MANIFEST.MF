@@ -8,6 +8,7 @@ Bundle-Vendor: RAYTHEON
 Bundle-RequiredExecutionEnvironment: JavaSE-17
 Require-Bundle: com.raytheon.uf.viz.core,
  org.apache.batik,
+ org.apache.commons.configuration2,
  org.geotools,
  jakarta.xml.bind,
  org.eclipse.ui
