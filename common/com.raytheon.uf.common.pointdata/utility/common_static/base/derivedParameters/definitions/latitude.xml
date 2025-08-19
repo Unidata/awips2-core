@@ -22,7 +22,7 @@
         This is an incremental override file, indicating that the files
         at different localization levels will be combined. 
     -->
-<DerivedParameter abbreviation="latitude" name="Latitude" unit="°">
+<DerivedParameter abbreviation="latitude" name="Latitude" unit="deg">
     <Method name="Alias" levels="Surface,MB,TILT,FHAG">
         <Field abbreviation="latitude" level="Station" />
     </Method>
