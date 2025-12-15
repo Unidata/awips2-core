@@ -34,12 +34,17 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import com.raytheon.edex.utility.EDEXLocalizationAdapter;
+import com.raytheon.uf.common.datastorage.StorageException;
+import com.raytheon.uf.common.datastore.ignite.IgniteClientManager;
+import com.raytheon.uf.common.datastore.ignite.IgniteClusterManager;
 import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.common.util.PropertiesUtil;
 import com.raytheon.uf.edex.core.EDEXUtil;
 import com.raytheon.uf.edex.core.modes.EDEXModesUtil;
 import com.raytheon.uf.edex.esb.camel.context.ContextManager;
+
+import org.apache.ignite.Ignite;
 
 /**
  * Provides the central mechanism for starting the ESB
@@ -67,6 +72,7 @@ import com.raytheon.uf.edex.esb.camel.context.ContextManager;
  * Jul 10, 2024  2037227   tgurney      Fix EDEX crash when no plugins are present
  *                                      Prevent overriding bean definitions.
  * Aug 07, 2024  2037700   tgurney      Give the shutdown thread a name
+ * Oct 28, 2025  2037769   smoorthy     Shutdown Ignite directly within shutdown hook.
  * </pre>
  *
  * @author chammack
@@ -78,6 +84,8 @@ public class Executor {
 
     private static final Logger logger = LoggerFactory
             .getLogger(Executor.class);
+
+    private static ClassPathXmlApplicationContext context;
 
     public static void start() throws Exception {
         final long t0 = System.currentTimeMillis();
@@ -103,6 +111,20 @@ public class Executor {
                 } else {
                     logger.info(
                             "Contexts never started, skipping context shutdown");
+                }
+
+                String datastoreProvider = System.getenv("DATASTORE_PROVIDER");
+                if ("ignite".equals(datastoreProvider)) {
+                    IgniteClusterManager igniteClusterManager = (IgniteClusterManager) context
+                            .getBean("igniteClusterManager");
+                    for (IgniteClientManager icm : igniteClusterManager
+                            .getIgniteClientManagers()) {
+                        try {
+                            icm.doVoidIgniteOp((Ignite i) -> i.close(), false);
+                        } catch (StorageException e) {
+                            logger.error("Error closing ignite", e);
+                        }
+                    }
                 }
 
                 long t2 = System.currentTimeMillis();
@@ -185,7 +207,7 @@ public class Executor {
          */
         PathManagerFactory.setAdapter(new EDEXLocalizationAdapter());
 
-        ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext();
+        context = new ClassPathXmlApplicationContext();
 
         /*
          * Overriding bean definitions is a potential cause of bugs. We would

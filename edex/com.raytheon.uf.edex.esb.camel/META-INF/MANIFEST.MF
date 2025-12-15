@@ -22,7 +22,8 @@ Require-Bundle: org.apache.camel;visibility:=reexport,
 Export-Package: com.raytheon.uf.edex.esb.camel,
  com.raytheon.uf.edex.esb.camel.context,
  com.raytheon.uf.edex.esb.camel.jms
-Import-Package: com.raytheon.uf.common.event,
+Import-Package: com.raytheon.uf.common.datastore.ignite,
+ com.raytheon.uf.common.event,
  com.raytheon.uf.common.message,
  com.raytheon.uf.edex.database.cluster,
  com.raytheon.uf.edex.event,
@@ -30,6 +31,7 @@ Import-Package: com.raytheon.uf.common.event,
  jakarta.persistence,
  jakarta.servlet,
  jakarta.servlet.http,
+ org.apache.ignite,
  org.apache.qpid.jms,
  org.apache.qpid.jms.jndi
 
