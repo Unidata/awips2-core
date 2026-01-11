@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -33,17 +33,18 @@ import com.raytheon.viz.core.mode.CAVEMode;
 /**
  * Utility module that provides common methods for handling operations that
  * should not be permitted when SimulatedTime or DRT mode is enabled.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Sep 21, 2015  #4858     dgilling     Initial creation
- * 
+ * Jan 11, 2026  2060617   yujun.guo    Add allowDrtTransmission
+ *
  * </pre>
- * 
+ *
  * @author dgilling
  * @version 1.0
  */
@@ -71,6 +72,8 @@ public final class SimulatedTimeOperations {
 
     private static final String FEATURE_MESSAGE = "The CAVE clock is not set to real time.\n\n%s is disabled.\n\nPlease ensure \"Use current real time\" is enabled in the CAVE clock to proceed.";
 
+    private static boolean allowDrtTransmission = false;
+
     private SimulatedTimeOperations() {
         throw new AssertionError();
     }
@@ -79,7 +82,7 @@ public final class SimulatedTimeOperations {
      * Checks the value of the System property
      * "allow.transmit.in.simulated.time" which allows certain features to be
      * enabled when CAVE is in SimulatedTime mode.
-     * 
+     *
      * @return
      */
     public static boolean isTransmitAllowedinSimulatedTime() {
@@ -91,13 +94,14 @@ public final class SimulatedTimeOperations {
      * functions (like GFE ISC) is allowed with the current CAVE state. Reasons
      * transmission might be blocked is because CAVE is in OPERATIONAL or TEST
      * mode with SimulatedTime enabled.
-     * 
+     *
      * @return Whether or not the current CAVE state allows product
      *         transmission.
      */
     public static boolean isTransmitAllowed() {
         return (CAVEMode.getMode() == CAVEMode.PRACTICE)
                 || (SimulatedTime.getSystemTime().isRealTime())
+                || isAllowDrtTransmission()
                 || (isTransmitAllowedinSimulatedTime());
     }
 
@@ -106,7 +110,7 @@ public final class SimulatedTimeOperations {
      * a perspective enters SimulatedTime mode and the user needs to be informed
      * about a number of features that cannot be used while the perspective is
      * in SimulatedTime mode.
-     * 
+     *
      * @param shell
      *            the parent shell of the dialog, or {@code null} if none.
      * @param perspectiveName
@@ -119,8 +123,8 @@ public final class SimulatedTimeOperations {
             String perspectiveName, List<String> disabledFeatures) {
         String message = getPerspectiveLevelWarning(perspectiveName,
                 disabledFeatures);
-        String title = String
-                .format(PERSPECTIVE_WARNING_TITLE, perspectiveName);
+        String title = String.format(PERSPECTIVE_WARNING_TITLE,
+                perspectiveName);
         statusHandler.debug("User enetered SimulatedTime mode.");
         MessageDialog.openWarning(shell, title, message);
     }
@@ -129,7 +133,7 @@ public final class SimulatedTimeOperations {
      * Displays a JFace {@code MessageDialog} instance that should be used when
      * the user attempts to use a CAVE feature/function that is disabled in
      * SimulatedTime mode.
-     * 
+     *
      * @param shell
      *            the parent shell of the dialog, or {@code null} if none.
      * @param disabledFeature
@@ -146,7 +150,7 @@ public final class SimulatedTimeOperations {
     /**
      * Constructs a new {@code SimulatedTimeProhibitedOpException} instance for
      * the given prohibited operation.
-     * 
+     *
      * @param prohibitedOperation
      *            The operation the system attempted that is prohibited when in
      *            SimulatedTime mode.
@@ -168,4 +172,24 @@ public final class SimulatedTimeOperations {
     private static String getFeatureLevelWarning(String disabledFeature) {
         return String.format(FEATURE_MESSAGE, disabledFeature);
     }
+
+    /**
+     * Set whether DRT transmission is allowed.
+     *
+     * @param value
+     *            true to allow, false to disallow
+     */
+    public static void setAllowDrtTransmission(boolean value) {
+        allowDrtTransmission = value;
+    }
+
+    /**
+     * Get whether DRT transmission is allowed.
+     *
+     * @return true if allowed, false otherwise
+     */
+    public static boolean isAllowDrtTransmission() {
+        return allowDrtTransmission;
+    }
+
 }
