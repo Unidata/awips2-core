@@ -88,6 +88,9 @@ import com.raytheon.uf.edex.database.dao.IDaoConfigFactory;
  * Apr 21, 2021  7849     mapeters     Inject/use Spring app context
  * Mar 25, 2025  2038636  njensen      Log warning when no db classes found for
  *                                     plugin at creation time
+ * Dec 04, 2025  2039948  dkingfield   Update the dropSchema() method to not
+ *                                     append a 'cascade;' when one already
+ *                                     exists
  *
  * </pre>
  *
@@ -483,7 +486,9 @@ public class SchemaManager
                 if (!sql.startsWith("drop table if exists")) {
                     sql = sql.replace("drop table ", "drop table if exists ");
                 }
-                sql = sql.replace(";", " cascade;");
+                if (!sql.endsWith("cascade;")) {
+                    sql = sql.replace(";", " cascade;");
+                }
             } else if (sql.startsWith("alter table")) {
                 // dropping the table drops the index
                 valid = false;
