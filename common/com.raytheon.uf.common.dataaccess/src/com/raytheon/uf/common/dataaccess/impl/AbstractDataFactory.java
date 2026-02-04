@@ -81,7 +81,7 @@ public abstract class AbstractDataFactory implements IDataFactory {
 
     /** The maximum response size, in bytes. */
     public static final long MAX_RESPONSE_SIZE = Long.getLong(RESPONSE_PROP,
-            100L) * SizeUtil.BYTES_PER_MB;
+            400L) * SizeUtil.BYTES_PER_MB;
 
     protected static final String[] EMPTY = new String[0];
 
