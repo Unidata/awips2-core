@@ -78,6 +78,9 @@ import com.raytheon.uf.edex.core.EdexException;
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- -----------------
  * Apr 04, 2017  6217     randerso  Initial creation
+ * Mar 02, 2026  2041056  alockleigh Change references of USERS_LOCK and ROLES_LOCK 
+ *                                   to usersLock and rolesLock due to code changes 
+ *                                   in Shiro pull request #1069
  *
  * </pre>
  *
@@ -125,12 +128,12 @@ public class IniRealm extends org.apache.shiro.realm.text.IniRealm
     /** permission-to-description */
     protected final Map<String, String> permissions;
 
-    // NOTE: When locking multiple locks, these locks and the USERS_LOCK and
-    // ROLES_LOCK inherited from the super class must be locked in the following
+    // NOTE: When locking multiple locks, these locks and the usersLock and
+    // rolesLock inherited from the super class must be locked in the following
     // order (and unlocked in the reverse order) to prevent deadlock:
     //
-    // USERS_LOCK
-    // ROLES_LOCK
+    // usersLock
+    // rolesLock
     // ROLE_DESCRIPTIONS_LOCK
     // PERMISSIONS_LOCK
 
@@ -305,8 +308,8 @@ public class IniRealm extends org.apache.shiro.realm.text.IniRealm
     public void reinitialize(Object msg) {
         log.info("Reinitializing roles/permissions due to site ini change.");
 
-        USERS_LOCK.writeLock().lock();
-        ROLES_LOCK.writeLock().lock();
+        usersLock.writeLock().lock();
+        rolesLock.writeLock().lock();
         ROLE_DESCRIPTIONS_LOCK.writeLock().lock();
         PERMISSIONS_LOCK.writeLock().lock();
         try {
@@ -323,8 +326,8 @@ public class IniRealm extends org.apache.shiro.realm.text.IniRealm
         } finally {
             PERMISSIONS_LOCK.writeLock().unlock();
             ROLE_DESCRIPTIONS_LOCK.writeLock().unlock();
-            ROLES_LOCK.writeLock().unlock();
-            USERS_LOCK.writeLock().unlock();
+            rolesLock.writeLock().unlock();
+            usersLock.writeLock().unlock();
         }
         reinitializing = false;
     }
@@ -336,7 +339,7 @@ public class IniRealm extends org.apache.shiro.realm.text.IniRealm
                 addPermission(entry.getKey(), entry.getValue());
             }
 
-            ROLES_LOCK.readLock().lock();
+            rolesLock.readLock().lock();
             PERMISSIONS_LOCK.writeLock().lock();
             try {
                 for (SimpleRole role : roles.values()) {
@@ -352,7 +355,7 @@ public class IniRealm extends org.apache.shiro.realm.text.IniRealm
                 }
             } finally {
                 PERMISSIONS_LOCK.writeLock().unlock();
-                ROLES_LOCK.readLock().unlock();
+                rolesLock.readLock().unlock();
             }
         }
 
@@ -493,7 +496,7 @@ public class IniRealm extends org.apache.shiro.realm.text.IniRealm
             PERMISSIONS_LOCK.readLock().unlock();
         }
 
-        ROLES_LOCK.readLock().lock();
+        rolesLock.readLock().lock();
         ROLE_DESCRIPTIONS_LOCK.readLock().lock();
         try {
             Map<String, Role> roleDefs = new HashMap<>(roles.size(), 1.0f);
@@ -519,10 +522,10 @@ public class IniRealm extends org.apache.shiro.realm.text.IniRealm
             retVal.setPermissions(permDefs);
         } finally {
             ROLE_DESCRIPTIONS_LOCK.readLock().unlock();
-            ROLES_LOCK.readLock().unlock();
+            rolesLock.readLock().unlock();
         }
 
-        USERS_LOCK.readLock().lock();
+        usersLock.readLock().lock();
         try {
             Map<String, Set<String>> userDefs = new HashMap<>(users.size(),
                     1.0f);
@@ -532,7 +535,7 @@ public class IniRealm extends org.apache.shiro.realm.text.IniRealm
             }
             retVal.setUsers(userDefs);
         } finally {
-            USERS_LOCK.readLock().unlock();
+            usersLock.readLock().unlock();
         }
 
         return retVal;

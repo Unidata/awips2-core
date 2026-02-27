@@ -2,7 +2,7 @@
 <feature
       id="com.raytheon.uf.edex.foss.org.apache.shiro.feature"
       label="org.apache.shiro Feature"
-      version="1.13.0"
+      version="2.1.0"
       provider-name="RAYTHEON">
 
    <description url="http://www.example.com/description">
