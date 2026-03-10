@@ -24,10 +24,8 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import jakarta.jms.JMSException;
-
 import org.apache.activemq.ActiveMQConnectionFactory;
-import org.apache.http.client.methods.HttpGet;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
 
 import com.raytheon.uf.common.comm.HttpClient;
 import com.raytheon.uf.common.jms.JMSConnectionInfo;
@@ -36,6 +34,8 @@ import com.raytheon.uf.common.localization.msgs.GetServersResponse;
 import com.raytheon.uf.common.util.app.AppInfo;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.requests.ThriftClient;
+
+import jakarta.jms.JMSException;
 
 /**
  * Class for checking connectivity of http servers, currently only used for
@@ -64,6 +64,7 @@ import com.raytheon.uf.viz.core.requests.ThriftClient;
  * Dec 10, 2019 7993       tgurney     Forbid connection to incompatible servers
  *                                     (determined by checking for null JMS
  *                                     connection info in the GetServersResponse)
+ * Apr 15, 2026 2038243    mapeters    Apache httpclient 5 upgrade
  *
  * </pre>
  *
@@ -111,8 +112,7 @@ public class ConnectivityManager {
         Exception exc = null;
         try {
             HttpClient client = HttpClient.getInstance();
-            HttpGet request = new HttpGet();
-            request.setURI(new URI(server));
+            HttpGet request = new HttpGet(new URI(server));
             client.executeRequest(request);
             good = true;
         } catch (Exception e) {

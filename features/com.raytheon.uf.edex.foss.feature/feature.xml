@@ -62,8 +62,6 @@
       <import feature="com.raytheon.uf.edex.foss.net.dods.feature" version="0.0.0"/>
       <import feature="com.raytheon.uf.edex.foss.org.apache.commons.compress.feature" version="0.0.0"/>
       <import feature="com.raytheon.uf.edex.foss.org.ehcache.feature" version="0.0.0"/>
-      <import feature="com.raytheon.uf.edex.foss.org.apache.httpcomponents.core5.feature" version="0.0.0"/>
-      <import feature="com.raytheon.uf.edex.foss.org.apache.httpcomponents.client5.feature" version="0.0.0"/>
    </requires>
 
    <!-- need to have at least one plugin in the feature. This one was

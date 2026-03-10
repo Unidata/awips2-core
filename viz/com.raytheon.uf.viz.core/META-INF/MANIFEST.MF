@@ -8,7 +8,7 @@ Bundle-Activator: com.raytheon.uf.viz.core.Activator
 Bundle-Vendor: Raytheon
 Require-Bundle: org.eclipse.ui,
  org.eclipse.core.runtime,
- org.apache.http;visibility:=reexport,
+ org.apache.httpcomponents.client5;visibility:=reexport,
  com.raytheon.uf.common.localization;visibility:=reexport,
  com.raytheon.uf.common.serialization;visibility:=reexport,
  com.raytheon.uf.common.serialization.comm;visibility:=reexport,
