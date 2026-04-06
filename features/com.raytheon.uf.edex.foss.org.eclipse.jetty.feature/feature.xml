@@ -2,7 +2,7 @@
 <feature
       id="com.raytheon.uf.edex.foss.org.eclipse.jetty.feature"
       label="org.eclipse.jetty Feature"
-      version="12.0.25"
+      version="12.0.34"
       provider-name="RAYTHEON">
 
    <description url="http://www.example.com/description">
