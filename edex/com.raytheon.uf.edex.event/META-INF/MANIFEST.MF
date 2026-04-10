@@ -5,7 +5,7 @@ Bundle-SymbolicName: com.raytheon.uf.edex.event
 Bundle-Version: 1.19.0.qualifier
 Bundle-Vendor: RAYTHEON
 Bundle-RequiredExecutionEnvironment: JavaSE-17
-Require-Bundle: com.google.guava;bundle-version="32.0.0",
+Require-Bundle: com.google.guava;bundle-version="33.5.0",
  com.raytheon.uf.common.status,
  com.raytheon.uf.common.event,
  com.raytheon.uf.common.serialization,
