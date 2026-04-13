@@ -2,7 +2,7 @@
 <feature
       id="com.raytheon.uf.edex.foss.org.apache.commons.validator.feature"
       label="org.apache.commons.validator Feature"
-      version="1.2.0"
+      version="1.10.1"
       provider-name="RAYTHEON">
 
    <description url="http://www.example.com/description">
