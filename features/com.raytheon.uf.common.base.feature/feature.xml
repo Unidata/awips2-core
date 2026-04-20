@@ -493,7 +493,7 @@
          id="com.google.guava"
          download-size="0"
          install-size="0"
-         version="32.0.0"/>
+         version="33.5.0"/>
 
    <plugin
          id="com.google.gson"
