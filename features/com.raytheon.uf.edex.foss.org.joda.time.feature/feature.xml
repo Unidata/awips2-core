@@ -2,7 +2,7 @@
 <feature
       id="com.raytheon.uf.edex.foss.org.joda.time.feature"
       label="org.joda.time Feature"
-      version="2.9.9"
+      version="2.14.1"
       provider-name="RAYTHEON">
 
    <description url="http://www.example.com/description">
