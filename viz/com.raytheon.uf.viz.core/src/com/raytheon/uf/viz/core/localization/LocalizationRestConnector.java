@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -26,9 +26,9 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPut;
-import org.apache.http.entity.FileEntity;
+import org.apache.hc.client5.http.classic.methods.HttpGet;
+import org.apache.hc.client5.http.classic.methods.HttpPut;
+import org.apache.hc.core5.http.io.entity.FileEntity;
 
 import com.raytheon.uf.common.comm.CommunicationException;
 import com.raytheon.uf.common.comm.HttpClient;
@@ -50,11 +50,11 @@ import com.raytheon.uf.viz.core.VizApp;
  * Handles sending REST http requests to the localization REST service. In
  * general this is more efficient than going through dynamicSerialize and the
  * requestSrv (aka thriftSrv).
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Feb 16, 2015  3978     njensen   Initial creation
@@ -63,9 +63,10 @@ import com.raytheon.uf.viz.core.VizApp;
  *                                  LocalizationFile methods
  * Jun 13, 2016  4907     mapeters  Added GET support for downloading a file to
  *                                  a given file location
- * 
+ * Apr 15, 2026  2038243  mapeters  Apache httpclient 5 upgrade
+ *
  * </pre>
- * 
+ *
  * @author njensen
  */
 
@@ -97,7 +98,7 @@ public class LocalizationRestConnector {
 
     /**
      * Builds a localization REST service address based on the parameters
-     * 
+     *
      * @param context
      *            the localization context
      * @param filename
@@ -108,7 +109,8 @@ public class LocalizationRestConnector {
      * @throws CommunicationException
      */
     private String buildRestAddress(LocalizationContext context,
-            String filename, boolean isDirectory) throws CommunicationException {
+            String filename, boolean isDirectory)
+            throws CommunicationException {
         StringBuilder path = new StringBuilder();
 
         path.append(DIRECTORY_SUFFIX);
@@ -127,9 +129,8 @@ public class LocalizationRestConnector {
 
         // only base files can have a null context name
         String contextName = context.getContextName();
-        if (contextName == null
-                && !context.getLocalizationLevel().equals(
-                        LocalizationLevel.BASE)) {
+        if (contextName == null && !context.getLocalizationLevel()
+                .equals(LocalizationLevel.BASE)) {
             throw new IllegalArgumentException(
                     "LocalizationContext is missing context name!  Only BASE level contexts are allowed to not have a context name");
         }
@@ -153,7 +154,7 @@ public class LocalizationRestConnector {
              * We have to use the URI constructor that takes multiple arguments
              * for it to properly replace path values such as replacing space
              * with %20.
-             * 
+             *
              * TODO: If we have a newer version of Guava we should be able to
              * use UrlEscapers.urlPathSegementEscaper() and apply that to the
              * path portion, then concatenate the server string with the escaped
@@ -175,7 +176,7 @@ public class LocalizationRestConnector {
      * This should only be used for directories and is more efficient than
      * getting each file individually. The directory will be downloaded
      * recursively, including all files and sub-directories.
-     * 
+     *
      * @param context
      * @param dirname
      * @return the response
@@ -191,15 +192,15 @@ public class LocalizationRestConnector {
         File outputDir = this.adapter.getPath(context, dirname);
         DownloadDirAsZipStreamHandler streamHandler = new DownloadDirAsZipStreamHandler(
                 outputDir, context.getLocalizationLevel().isSystemLevel());
-        HttpClientResponse resp = HttpClient.getInstance().executeRequest(
-                request, streamHandler);
+        HttpClientResponse resp = HttpClient.getInstance()
+                .executeRequest(request, streamHandler);
         return resp;
     }
 
     /**
      * Sends a GET request to the localization REST service for a file,
      * downloading it to the default location within localization.
-     * 
+     *
      * @param context
      * @param filename
      * @return the response
@@ -220,7 +221,7 @@ public class LocalizationRestConnector {
     /**
      * Sends a GET request to the localization REST service for a file,
      * downloading it to the given outputFile.
-     * 
+     *
      * @param context
      * @param filename
      * @param outputFile
@@ -236,26 +237,26 @@ public class LocalizationRestConnector {
         HttpGet request = new HttpGet(url);
         DownloadFileStreamHandler streamHandler = new DownloadFileStreamHandler(
                 outputFile);
-        HttpClientResponse resp = HttpClient.getInstance().executeRequest(
-                request, streamHandler);
+        HttpClientResponse resp = HttpClient.getInstance()
+                .executeRequest(request, streamHandler);
         return resp;
     }
 
     /**
      * Sends a PUT request to the localization REST service to upload a file.
-     * 
+     *
      * @param lfile
      * @param fileToUpload
      * @return
      * @throws CommunicationException
      */
     public FileUpdatedMessage restPutFile(ILocalizationFile lfile,
-            File fileToUpload) throws LocalizationException,
-            CommunicationException {
+            File fileToUpload)
+            throws LocalizationException, CommunicationException {
         String url = buildRestAddress(lfile.getContext(), lfile.getPath(),
                 false);
         HttpPut request = new HttpPut(url);
-        request.setEntity(new FileEntity(fileToUpload));
+        request.setEntity(new FileEntity(fileToUpload, null));
 
         // add the checksum of the version we modified
         request.addHeader(IF_MATCH, lfile.getCheckSum());
@@ -265,8 +266,8 @@ public class LocalizationRestConnector {
                 ChecksumIO.getFileChecksum(fileToUpload, false));
 
         // send the put request
-        HttpClientResponse resp = HttpClient.getInstance().executeRequest(
-                request);
+        HttpClientResponse resp = HttpClient.getInstance()
+                .executeRequest(request);
 
         if (resp.code != 200) {
             String msg = new String(resp.data);
@@ -276,8 +277,8 @@ public class LocalizationRestConnector {
             case 409:
                 throw new LocalizationFileVersionConflictException(msg);
             default:
-                throw new LocalizationException("Error code " + resp.code
-                        + ": " + msg);
+                throw new LocalizationException(
+                        "Error code " + resp.code + ": " + msg);
             }
         }
 
@@ -285,19 +286,21 @@ public class LocalizationRestConnector {
         FileUpdatedMessage fum = new FileUpdatedMessage();
         fum.setContext(lfile.getContext());
         fum.setFileName(lfile.getPath());
-        if (ILocalizationFile.NON_EXISTENT_CHECKSUM.equals(lfile.getCheckSum())) {
+        if (ILocalizationFile.NON_EXISTENT_CHECKSUM
+                .equals(lfile.getCheckSum())) {
             fum.setChangeType(FileChangeType.ADDED);
         } else {
             fum.setChangeType(FileChangeType.UPDATED);
         }
         Date time;
         try {
-            time = TIME_HEADER_FORMAT.get().parse(
-                    resp.headers.get(LAST_MODIFIED));
+            time = TIME_HEADER_FORMAT.get()
+                    .parse(resp.headers.get(LAST_MODIFIED));
         } catch (ParseException e) {
             throw new LocalizationException(
                     "Error parsing last modified header from response: "
-                            + resp.headers.get(LAST_MODIFIED), e);
+                            + resp.headers.get(LAST_MODIFIED),
+                    e);
         }
         fum.setTimeStamp(time.getTime());
         fum.setCheckSum(resp.headers.get(CONTENT_MD5));

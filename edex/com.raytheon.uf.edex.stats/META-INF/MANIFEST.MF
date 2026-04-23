@@ -8,7 +8,7 @@ Bundle-RequiredExecutionEnvironment: JavaSE-17
 Require-Bundle: com.raytheon.uf.common.serialization,
  com.raytheon.uf.edex.event,
  com.raytheon.uf.common.event,
- com.google.guava;bundle-version="32.0.0",
+ com.google.guava;bundle-version="33.5.0",
  com.raytheon.uf.edex.database,
  com.raytheon.edex.common,
  com.raytheon.uf.common.localization,

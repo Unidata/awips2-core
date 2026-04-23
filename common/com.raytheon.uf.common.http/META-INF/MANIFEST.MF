@@ -7,7 +7,7 @@ Bundle-Vendor: RAYTHEON
 Bundle-RequiredExecutionEnvironment: JavaSE-17
 Export-Package: com.raytheon.uf.common.http,
  com.raytheon.uf.common.http.auth
-Require-Bundle: org.apache.http,
- org.apache.commons.codec,
+Require-Bundle: org.apache.commons.codec,
  jakarta.servlet,
- org.eclipse.jetty
+ org.eclipse.jetty,
+ org.apache.httpcomponents.client5
