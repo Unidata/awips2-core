@@ -25,39 +25,41 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.zip.GZIPOutputStream;
 
 import javax.net.ssl.SSLPeerUnverifiedException;
 
-import org.apache.http.Header;
-import org.apache.http.HttpHost;
-import org.apache.http.HttpResponse;
-import org.apache.http.auth.AuthProtocolState;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.AuthState;
-import org.apache.http.auth.Credentials;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.AuthCache;
-import org.apache.http.client.CredentialsProvider;
-import org.apache.http.client.config.AuthSchemes;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.client.methods.HttpUriRequest;
-import org.apache.http.client.protocol.HttpClientContext;
-import org.apache.http.conn.ConnectionPoolTimeoutException;
-import org.apache.http.entity.AbstractHttpEntity;
-import org.apache.http.entity.ByteArrayEntity;
-import org.apache.http.entity.ContentType;
-import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.auth.BasicScheme;
-import org.apache.http.impl.client.BasicAuthCache;
-import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.util.EntityUtils;
+import org.apache.hc.client5.http.RouteInfo;
+import org.apache.hc.client5.http.auth.AuthCache;
+import org.apache.hc.client5.http.auth.AuthExchange;
+import org.apache.hc.client5.http.auth.AuthScope;
+import org.apache.hc.client5.http.auth.CredentialsProvider;
+import org.apache.hc.client5.http.auth.CredentialsStore;
+import org.apache.hc.client5.http.auth.StandardAuthScheme;
+import org.apache.hc.client5.http.auth.UsernamePasswordCredentials;
+import org.apache.hc.client5.http.classic.methods.HttpPost;
+import org.apache.hc.client5.http.classic.methods.HttpUriRequest;
+import org.apache.hc.client5.http.impl.auth.BasicAuthCache;
+import org.apache.hc.client5.http.impl.auth.BasicCredentialsProvider;
+import org.apache.hc.client5.http.impl.auth.BasicScheme;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.protocol.HttpClientContext;
+import org.apache.hc.core5.http.ClassicHttpResponse;
+import org.apache.hc.core5.http.ConnectionRequestTimeoutException;
+import org.apache.hc.core5.http.ContentType;
+import org.apache.hc.core5.http.Header;
+import org.apache.hc.core5.http.HttpHost;
+import org.apache.hc.core5.http.io.entity.AbstractHttpEntity;
+import org.apache.hc.core5.http.io.entity.ByteArrayEntity;
+import org.apache.hc.core5.http.io.entity.EntityUtils;
+import org.apache.hc.core5.http.io.entity.StringEntity;
 
 import com.raytheon.uf.common.comm.stream.DynamicSerializeEntity;
 import com.raytheon.uf.common.comm.stream.DynamicSerializeStreamHandler;
@@ -114,6 +116,7 @@ import com.raytheon.uf.common.util.rate.TokenBucket;
  * Aug 06, 2021  DR 22528    smoorthy    Added functionality to provide ServerName property in case of Http Proxy Server.
  *                                       Added method to retrieve credentials based on AuthScope.
  * Jan 17, 2023  DR 22528    smoorthy    Handle case for proxy server without authentication by returning null Credentials.
+ * Apr 15, 2026  2038243     mapeters    Apache httpclient 5 upgrade, remove unused SafeGzipDecompressingEntity
  *
  * </pre>
  *
@@ -193,9 +196,9 @@ public class HttpClient {
      * CredentialsProvider, as different hosts may require different
      * authorization schemes.
      */
-    private Map<String, CredentialsProvider> credentialsMap = new ConcurrentHashMap<>();
+    private Map<String, CredentialsStore> credentialsMap = new ConcurrentHashMap<>();
 
-    private final ThreadLocal<HttpClientContext> httpClientContext = new ThreadLocal<HttpClientContext>() {
+    private final ThreadLocal<HttpClientContext> httpClientContext = new ThreadLocal<>() {
         @Override
         protected HttpClientContext initialValue() {
             return HttpClientContext.create();
@@ -224,7 +227,7 @@ public class HttpClient {
     /**
      * @return cached SSL client
      */
-    private org.apache.http.client.HttpClient getHttpsInstance() {
+    private org.apache.hc.client5.http.classic.HttpClient getHttpsInstance() {
         if (sslClient == null) {
             synchronized (this) {
                 if (sslClient == null) {
@@ -250,7 +253,7 @@ public class HttpClient {
     /**
      * @return cached client used for non-https requests
      */
-    private org.apache.http.client.HttpClient getHttpInstance() {
+    private org.apache.hc.client5.http.classic.HttpClient getHttpInstance() {
         if (client == null) {
             synchronized (this) {
                 if (client == null) {
@@ -364,37 +367,41 @@ public class HttpClient {
      * @throws IOException
      * @throws CommunicationException
      */
-    private HttpResponse postRequest(HttpUriRequest put)
+    private ClassicHttpResponse postRequest(HttpUriRequest put)
             throws IOException, CommunicationException {
-        HttpResponse resp = null;
+        ClassicHttpResponse resp;
 
         /*
          * Get a thread-local context since an HttpClientContext is not
          * thread-safe.
          */
-        URI uri = put.getURI();
+        URI uri = getUri(put);
         String host = uri.getHost();
         int port = uri.getPort();
-        String protocol = put.getURI().getScheme();
+        String protocol = uri.getScheme();
         HttpClientContext context = getHttpClientContext(protocol, host, port);
 
-        org.apache.http.client.HttpClient clientToUse = null;
+        org.apache.hc.client5.http.classic.HttpClient clientToUse;
         if (protocol.equalsIgnoreCase(HTTPS)) {
             clientToUse = getHttpsInstance();
         } else {
             clientToUse = getHttpInstance();
         }
-        resp = clientToUse.execute(put, context);
+        resp = clientToUse.executeOpen(null, put, context);
 
-        // Check for not authorized, 401
-        while (resp.getStatusLine().getStatusCode() == 401) {
+        /*
+         * Check for not authorized, 401 (e.g.
+         * HttpServletResponse.SC_UNAUTHORIZED returned when creating
+         * localization user overrides)
+         */
+        while (resp.getCode() == 401) {
             String authValue = null;
             if (resp.containsHeader(WWW_AUTHENTICATE)) {
                 authValue = resp.getFirstHeader(WWW_AUTHENTICATE).getValue();
             }
 
             String[] credentials = null;
-            HttpAuthHandler authHandler = null;
+            HttpAuthHandler authHandler;
             authHandler = config.getHttpAuthHandler();
             if (authHandler != null) {
                 credentials = authHandler.getCredentials(uri, authValue);
@@ -409,17 +416,18 @@ public class HttpClient {
              * any future requests to abort prematurely. Therefore we set it to
              * unchallenged so it will try again with new credentials.
              */
-            AuthState targetAuthState = context.getTargetAuthState();
-            targetAuthState.setState(AuthProtocolState.UNCHALLENGED);
+            AuthExchange authExchange = context
+                    .getAuthExchange(context.getHttpRoute().getTargetHost());
+            authExchange.setState(AuthExchange.State.UNCHALLENGED);
             try {
-                resp = clientToUse.execute(put, context);
+                resp = clientToUse.executeOpen(null, put, context);
             } catch (Exception e) {
                 statusHandler.handle(Priority.ERROR,
                         "Error retrying http request", e);
                 return resp;
             }
 
-            if (resp.getStatusLine().getStatusCode() == 401) {
+            if (resp.getCode() == 401) {
                 // obtained credentials and they failed!
                 if (authHandler != null) {
                     authHandler.credentialsFailed();
@@ -451,14 +459,14 @@ public class HttpClient {
             IStreamHandler handlerCallback) throws CommunicationException {
         int tries = 0;
         boolean retry = true;
-        HttpResponse resp = null;
+        ClassicHttpResponse resp = null;
         AtomicInteger ongoing = null;
 
         try {
-            String host = put.getURI().getHost();
+            URI uri = getUri(put);
+            String host = uri.getHost();
             if (host == null) {
-                throw new InvalidURIException(
-                        "Invalid URI: " + put.getURI().toString());
+                throw new InvalidURIException("Invalid URI: " + uri);
             }
 
             // add the ServerName to request header if exists (for the Proxy
@@ -491,7 +499,7 @@ public class HttpClient {
                 Exception exc = null;
                 try {
                     resp = postRequest(put);
-                    if (resp.getStatusLine().getStatusCode() == 503) {
+                    if (resp.getCode() == 503) {
                         /*
                          * If EDEX starts a shutdown with in-flight requests,
                          * the port will not be closed immediately. Instead, it
@@ -510,7 +518,7 @@ public class HttpClient {
                         errorMsg = "Service unavailable";
                         exc = new CommunicationException(errorMsg);
                     }
-                } catch (ConnectionPoolTimeoutException e) {
+                } catch (ConnectionRequestTimeoutException e) {
                     errorMsg = "Timed out waiting for http connection from pool: "
                             + e.getMessage();
                     errorMsg += ".  Currently " + ongoing.get()
@@ -551,7 +559,7 @@ public class HttpClient {
                 }
             }
 
-            int statusCode = resp.getStatusLine().getStatusCode();
+            int statusCode = resp.getCode();
             boolean shouldThrow = false;
             if (!isSuccess(statusCode)) {
                 /*
@@ -577,7 +585,7 @@ public class HttpClient {
                         statusCode);
             }
 
-            Header[] headers = resp.getAllHeaders();
+            Header[] headers = resp.getHeaders();
             Map<String, String> headerMap = new HashMap<>(headers.length);
             for (Header h : headers) {
                 headerMap.put(h.getName(), h.getValue());
@@ -586,6 +594,14 @@ public class HttpClient {
         } finally {
             if (ongoing != null) {
                 ongoing.decrementAndGet();
+            }
+            if (resp != null) {
+                try {
+                    resp.close();
+                } catch (IOException e) {
+                    statusHandler.warn("Error closing HTTP response stream",
+                            e.getLocalizedMessage(), e);
+                }
             }
         }
     }
@@ -600,7 +616,7 @@ public class HttpClient {
      *            the handler that should process the response stream
      * @throws CommunicationException
      */
-    private void processResponse(HttpResponse resp,
+    private void processResponse(ClassicHttpResponse resp,
             IStreamHandler handlerCallback) throws CommunicationException {
         if (resp != null && resp.getEntity() != null) {
             try (InputStream is = resp.getEntity().getContent()) {
@@ -617,13 +633,6 @@ public class HttpClient {
                     // notify but continue
                     statusHandler.handle(Priority.EVENTB,
                             "Error reading InputStream, assuming closed", e);
-                }
-                try {
-                    SafeGzipDecompressingEntity.close();
-                } catch (IOException e) {
-                    statusHandler.handle(Priority.EVENTB,
-                            "Exception while closing SafeGzipDecompressingEntity",
-                            e);
                 }
             }
         }
@@ -675,7 +684,7 @@ public class HttpClient {
             }
         }
 
-        put.setEntity(new ByteArrayEntity(message));
+        put.setEntity(new ByteArrayEntity(message, null));
 
         return executePostMethod(put);
     }
@@ -781,7 +790,7 @@ public class HttpClient {
      */
     public void postStreamingByteArray(String address, byte[] message,
             IStreamHandler handlerCallback) throws CommunicationException {
-        postStreamingEntity(address, new ByteArrayEntity(message),
+        postStreamingEntity(address, new ByteArrayEntity(message, null),
                 handlerCallback);
     }
 
@@ -1013,7 +1022,6 @@ public class HttpClient {
                 }
             }
         }
-
     }
 
     /**
@@ -1030,31 +1038,15 @@ public class HttpClient {
      */
     public synchronized void setupCredentials(String host, int port,
             String username, String password) {
-        CredentialsProvider credentialsProvider = credentialsMap.get(host);
+        CredentialsStore credentialsProvider = credentialsMap.get(host);
         if (credentialsProvider == null) {
             credentialsProvider = new BasicCredentialsProvider();
             credentialsMap.put(host, credentialsProvider);
         }
         credentialsProvider.setCredentials(
-                new AuthScope(host, port, AuthScope.ANY_REALM,
-                        AuthSchemes.BASIC),
-                new UsernamePasswordCredentials(username, password));
-    }
-
-    /**
-     * Get credentials based on AuthScope
-     *
-     * @param AuthScope
-     *            Authentication scope information
-     * @return Credentials User credentials for a particular AuthScope or null
-     *         if they don't exist.
-     */
-    public Credentials getCredentials(AuthScope authScope) {
-        CredentialsProvider provider = credentialsMap.get(authScope.getHost());
-        if (provider == null) {
-            return null;
-        }
-        return provider.getCredentials(authScope);
+                new AuthScope(null, host, port, null, StandardAuthScheme.BASIC),
+                new UsernamePasswordCredentials(username,
+                        password.toCharArray()));
     }
 
     /**
@@ -1074,8 +1066,8 @@ public class HttpClient {
     /**
      * Gets a thread local HttpContext to use for an http or https request.
      *
-     * @param protocol
-     *            the protocol, either http or https
+     * @param scheme
+     *            the scheme, either http or https
      * @param host
      *            the hostname
      * @param port
@@ -1084,10 +1076,11 @@ public class HttpClient {
      *
      * @return a safe context containing http or https credential and auth info
      */
-    private HttpClientContext getHttpClientContext(String protocol, String host,
+    private HttpClientContext getHttpClientContext(String scheme, String host,
             int port) {
         HttpClientContext context = httpClientContext.get();
-        HttpHost targetHost = context.getTargetHost();
+        HttpHost targetHost = Optional.ofNullable(context.getHttpRoute())
+                .map(RouteInfo::getTargetHost).orElse(null);
         if (targetHost == null || !host.equals(targetHost.getHostName())
                 || port != targetHost.getPort()) {
             /*
@@ -1104,19 +1097,27 @@ public class HttpClient {
             context.setCredentialsProvider(credentialsProvider);
         }
 
-        /*
-         * HttpContext, BasicAuthCache, BasicScheme, and the Base64 instance
-         * inside BasicScheme are not thread safe! Therefore we need one for
-         * each thread. (BasicCredentialsProvider is thread safe).
-         */
-        AuthCache authCache = context.getAuthCache();
-        if (authCache == null) {
-            authCache = new BasicAuthCache();
-            context.setAuthCache(authCache);
-        }
-        HttpHost hostObj = new HttpHost(host, port, protocol);
-        if (authCache.get(hostObj) == null) {
-            authCache.put(hostObj, new BasicScheme());
+        if (credentialsProvider != null) {
+            /*
+             * Setup preemptive auth now that we have credentials. HttpContext,
+             * BasicScheme, and the Base64 instance inside BasicScheme are not
+             * thread safe! Therefore we need one for each thread.
+             * (BasicCredentialsProvider and BasicAuthCache are thread safe).
+             */
+            AuthCache authCache = context.getAuthCache();
+            if (authCache == null) {
+                authCache = new BasicAuthCache();
+                context.setAuthCache(authCache);
+            }
+            HttpHost hostObj = new HttpHost(scheme, host, port);
+            if (authCache.get(hostObj) == null) {
+                BasicScheme basicScheme = new BasicScheme();
+                // Credentials provider isn't automatically used (not sure why)
+                basicScheme.initPreemptive(credentialsProvider.getCredentials(
+                        new AuthScope(hostObj, null, StandardAuthScheme.BASIC),
+                        context));
+                authCache.put(hostObj, basicScheme);
+            }
         }
 
         return context;
@@ -1129,4 +1130,15 @@ public class HttpClient {
         return config;
     }
 
+    private static URI getUri(HttpUriRequest req) throws InvalidURIException {
+        /*
+         * This is just a helper method to wrap apache's URI exception in our
+         * custom URI exception for consistent error handling
+         */
+        try {
+            return req.getUri();
+        } catch (URISyntaxException e) {
+            throw new InvalidURIException("Invalid URI: " + req, e);
+        }
+    }
 }

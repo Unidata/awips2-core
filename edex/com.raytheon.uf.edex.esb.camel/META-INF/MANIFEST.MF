@@ -8,7 +8,6 @@ Bundle-RequiredExecutionEnvironment: JavaSE-17
 Require-Bundle: org.apache.camel;visibility:=reexport,
  jakarta.jms,
  com.raytheon.edex.common,
- org.apache.http,
  com.raytheon.uf.common.localization,
  com.raytheon.uf.common.status,
  com.raytheon.uf.common.util,

@@ -53,6 +53,7 @@
       <import feature="com.raytheon.uf.edex.foss.edu.mit.ll.netcdf.feature" version="0.0.0"/>
       <import feature="com.raytheon.uf.edex.foss.com.beust.jcommander.feature" version="0.0.0"/>
       <import feature="com.raytheon.uf.edex.foss.com.google.protobuf.feature" version="0.0.0"/>
+      <import feature="com.raytheon.uf.edex.foss.com.google.re2j.feature" version="0.0.0"/>
       <import feature="com.raytheon.uf.edex.foss.ucar.nc2.feature" version="0.0.0"/>
       <import feature="com.raytheon.uf.edex.foss.net.opengis.feature" version="0.0.0"/>
       <import feature="com.raytheon.uf.edex.foss.net.opengis_v2.feature" version="0.0.0"/>
@@ -61,8 +62,6 @@
       <import feature="com.raytheon.uf.edex.foss.net.dods.feature" version="0.0.0"/>
       <import feature="com.raytheon.uf.edex.foss.org.apache.commons.compress.feature" version="0.0.0"/>
       <import feature="com.raytheon.uf.edex.foss.org.ehcache.feature" version="0.0.0"/>
-      <import feature="com.raytheon.uf.edex.foss.org.apache.httpcomponents.core5.feature" version="0.0.0"/>
-      <import feature="com.raytheon.uf.edex.foss.org.apache.httpcomponents.client5.feature" version="0.0.0"/>
    </requires>
 
    <!-- need to have at least one plugin in the feature. This one was

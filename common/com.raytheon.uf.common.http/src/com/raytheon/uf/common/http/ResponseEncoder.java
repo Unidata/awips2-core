@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -23,25 +23,25 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.util.zip.GZIPOutputStream;
 
-import org.apache.http.HttpHeaders;
+import org.apache.hc.core5.http.HttpHeaders;
 
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * Utility to handle response encoding for servlet response objects (eg gzip)
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Jan 05, 2015 3789       bclement     Initial creation
- * 
+ * Jan 05, 2015 3789       bclement    Initial creation
+ * Apr 15, 2026 2038243    mapeters    Apache httpclient 5 upgrade
+ *
  * </pre>
- * 
+ *
  * @author bclement
- * @version 1.0
  */
 public class ResponseEncoder {
 
@@ -52,7 +52,7 @@ public class ResponseEncoder {
      * includes gzip, the response stream will be wrapped in a gzip output
      * stream and the content encoding header of the response will be set to
      * gzip
-     * 
+     *
      * @param acceptEncoding
      * @param response
      * @return

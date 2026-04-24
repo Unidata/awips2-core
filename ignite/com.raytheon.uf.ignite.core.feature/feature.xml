@@ -198,10 +198,6 @@
          version="0.0.0"/>
 
    <plugin
-         id="org.apache.http"
-         version="0.0.0"/>
-
-   <plugin
          id="org.apache.ignite"
          version="0.0.0"/>
 
@@ -283,6 +279,14 @@
 
    <plugin
          id="jakarta.transaction"
+         version="0.0.0"/>
+
+   <plugin
+         id="org.apache.httpcomponents.client5"
+         version="0.0.0"/>
+
+   <plugin
+         id="org.apache.httpcomponents.core5"
          version="0.0.0"/>
 
 </feature>

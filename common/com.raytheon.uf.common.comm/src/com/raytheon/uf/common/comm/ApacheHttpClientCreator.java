@@ -24,24 +24,19 @@ import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.UnrecoverableKeyException;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
 
-import javax.net.ssl.SSLContext;
-
-import org.apache.http.client.config.RequestConfig;
-import org.apache.http.config.Registry;
-import org.apache.http.config.RegistryBuilder;
-import org.apache.http.config.SocketConfig;
-import org.apache.http.conn.socket.ConnectionSocketFactory;
-import org.apache.http.conn.socket.PlainConnectionSocketFactory;
-import org.apache.http.conn.ssl.SSLConnectionSocketFactory;
-import org.apache.http.conn.ssl.SSLContextBuilder;
-import org.apache.http.conn.ssl.TrustStrategy;
-import org.apache.http.impl.client.CloseableHttpClient;
-import org.apache.http.impl.client.HttpClientBuilder;
-import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
-import org.apache.http.util.VersionInfo;
+import org.apache.hc.client5.http.config.ConnectionConfig;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClientBuilder;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManagerBuilder;
+import org.apache.hc.client5.http.ssl.DefaultClientTlsStrategy;
+import org.apache.hc.client5.http.ssl.NoopHostnameVerifier;
+import org.apache.hc.core5.http.io.SocketConfig;
+import org.apache.hc.core5.ssl.SSLContextBuilder;
+import org.apache.hc.core5.util.Timeout;
+import org.apache.hc.core5.util.VersionInfo;
 
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
@@ -72,6 +67,7 @@ import com.raytheon.uf.common.util.app.AppInfo;
  * Jan 31, 2017  6083     bsteffen  Remove local trust strategy
  * Apr 02, 2020  8086     randerso  Use HttpClientBuilder.useSystemProperties() to
  *                                  handle proxy settings
+ * Apr 15, 2026  2038243  mapeters  Apache httpclient 5 upgrade
  *
  * </pre>
  *
@@ -112,9 +108,9 @@ public class ApacheHttpClientCreator {
      * @throws UnrecoverableKeyException
      */
     public static CloseableHttpClient createSslClient(HttpClientConfig config,
-            NetworkStatistics stats) throws NoSuchAlgorithmException,
-    KeyStoreException, KeyManagementException,
-    UnrecoverableKeyException {
+            NetworkStatistics stats)
+            throws NoSuchAlgorithmException, KeyStoreException,
+            KeyManagementException, UnrecoverableKeyException {
 
         SSLContextBuilder sslCtxBuilder = new SSLContextBuilder();
         HttpAuthHandler handler = config.getHttpAuthHandler();
@@ -129,7 +125,7 @@ public class ApacheHttpClientCreator {
         if (handler.isValidateCertificates()) {
 
             final KeyStore truststore = handler.getTruststore();
-            sslCtxBuilder.loadTrustMaterial(truststore);
+            sslCtxBuilder.loadTrustMaterial(truststore, null);
 
             if (handler.getKeystore() != null) {
                 /*
@@ -142,8 +138,7 @@ public class ApacheHttpClientCreator {
                 final KeyStore keystore = handler.getKeystore();
                 sslCtxBuilder.loadKeyMaterial(keystore,
                         handler.getKeystorePassword());
-                statusHandler
-                .handle(Priority.DEBUG,
+                statusHandler.handle(Priority.DEBUG,
                         "Proceeding with validation of certificates.  Presenting key(s) for validation.");
 
             } else {
@@ -152,8 +147,7 @@ public class ApacheHttpClientCreator {
                  * useful where you are a "server" and you only validate
                  * clients.
                  */
-                statusHandler
-                .handle(Priority.DEBUG,
+                statusHandler.handle(Priority.DEBUG,
                         "Proceeding with validation of certificates.  Not presenting key(s) for validation.");
             }
 
@@ -162,52 +156,36 @@ public class ApacheHttpClientCreator {
              * No comparison is done, just returns a blind "true" with no loaded
              * truststore. Original implementation.
              */
-            sslCtxBuilder.loadTrustMaterial(null, new TrustStrategy() {
-                @Override
-                public boolean isTrusted(X509Certificate[] chain,
-                        String authType) throws CertificateException {
-
-                    return true;
-                }
-            });
+            sslCtxBuilder.loadTrustMaterial(null, (chain, authType) -> true);
 
             // Do no validation what so ever
-            statusHandler
-            .handle(Priority.DEBUG,
+            statusHandler.handle(Priority.DEBUG,
                     "Proceeding with no validation of certificates or key submission.");
         }
 
-        SSLContext sslCtx = sslCtxBuilder.build();
-        SSLConnectionSocketFactory ssf = new SSLConnectionSocketFactory(sslCtx,
-                SSLConnectionSocketFactory.ALLOW_ALL_HOSTNAME_VERIFIER);
-        RegistryBuilder<ConnectionSocketFactory> registryBuilder = RegistryBuilder
-                .create();
-        registryBuilder.register("https", ssf);
-        registryBuilder.register("http", new PlainConnectionSocketFactory());
-        Registry<ConnectionSocketFactory> registry = registryBuilder.build();
-
         HttpClientBuilder clientBuilder = HttpClientBuilder.create();
-
-        clientBuilder.setSSLSocketFactory(ssf);
-        RequestConfig.Builder reqConfigBuilder = RequestConfig.custom();
-        SocketConfig.Builder soConfigBuilder = SocketConfig.custom();
 
         // Use system properties to get the proxy info
         clientBuilder.useSystemProperties();
 
-        reqConfigBuilder.setSocketTimeout(config.getSocketTimeout());
-        soConfigBuilder.setSoTimeout(config.getSocketTimeout());
-        reqConfigBuilder.setConnectTimeout(config.getConnectionTimeout());
-        soConfigBuilder.setTcpNoDelay(config.isTcpNoDelay());
-        reqConfigBuilder.setExpectContinueEnabled(config
-                .isExpectContinueEnabled());
+        clientBuilder.setDefaultRequestConfig(RequestConfig.custom()
+                .setExpectContinueEnabled(config.isExpectContinueEnabled())
+                .build());
 
-        clientBuilder.setDefaultRequestConfig(reqConfigBuilder.build());
-        clientBuilder.setDefaultSocketConfig(soConfigBuilder.build());
+        DefaultClientTlsStrategy tlsStrategy = new DefaultClientTlsStrategy(
+                sslCtxBuilder.build(), NoopHostnameVerifier.INSTANCE);
+        SocketConfig.Builder soConfigBuilder = SocketConfig.custom()
+                .setSoTimeout(Timeout.ofMilliseconds(config.getSocketTimeout()))
+                .setTcpNoDelay(config.isTcpNoDelay());
+        ConnectionConfig.Builder conConfigBuilder = ConnectionConfig.custom()
+                .setConnectTimeout(
+                        Timeout.ofMilliseconds(config.getConnectionTimeout()));
+        PoolingHttpClientConnectionManager connectionManager = PoolingHttpClientConnectionManagerBuilder
+                .create().setTlsSocketStrategy(tlsStrategy)
+                .setMaxConnPerRoute(config.getMaxConnections())
+                .setDefaultSocketConfig(soConfigBuilder.build())
+                .setDefaultConnectionConfig(conConfigBuilder.build()).build();
 
-        PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager(
-                registry);
-        connectionManager.setDefaultMaxPerRoute(config.getMaxConnections());
         clientBuilder.setConnectionManager(connectionManager);
         setUserAgent(clientBuilder);
 
@@ -245,21 +223,21 @@ public class ApacheHttpClientCreator {
          * interceptors
          */
         clientBuilder.disableCookieManagement();
-        RequestConfig.Builder reqConfigBuilder = RequestConfig.custom();
-        SocketConfig.Builder soConfigBuilder = SocketConfig.custom();
 
-        reqConfigBuilder.setSocketTimeout(config.getSocketTimeout());
-        soConfigBuilder.setSoTimeout(config.getSocketTimeout());
-        reqConfigBuilder.setConnectTimeout(config.getConnectionTimeout());
-        soConfigBuilder.setTcpNoDelay(config.isTcpNoDelay());
-        reqConfigBuilder.setExpectContinueEnabled(config
-                .isExpectContinueEnabled());
+        clientBuilder.setDefaultRequestConfig(RequestConfig.custom()
+                .setExpectContinueEnabled(config.isExpectContinueEnabled())
+                .build());
 
-        clientBuilder.setDefaultRequestConfig(reqConfigBuilder.build());
-        clientBuilder.setDefaultSocketConfig(soConfigBuilder.build());
-
-        PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager();
-        connectionManager.setDefaultMaxPerRoute(config.getMaxConnections());
+        SocketConfig.Builder soConfigBuilder = SocketConfig.custom()
+                .setSoTimeout(Timeout.ofMilliseconds(config.getSocketTimeout()))
+                .setTcpNoDelay(config.isTcpNoDelay());
+        ConnectionConfig.Builder conConfigBuilder = ConnectionConfig.custom()
+                .setConnectTimeout(
+                        Timeout.ofMilliseconds(config.getConnectionTimeout()));
+        PoolingHttpClientConnectionManager connectionManager = PoolingHttpClientConnectionManagerBuilder
+                .create().setMaxConnPerRoute(config.getMaxConnections())
+                .setDefaultSocketConfig(soConfigBuilder.build())
+                .setDefaultConnectionConfig(conConfigBuilder.build()).build();
         clientBuilder.setConnectionManager(connectionManager);
         setUserAgent(clientBuilder);
 
@@ -309,7 +287,7 @@ public class ApacheHttpClientCreator {
          * don't expose it so need to build it here
          */
         userAgent.append(" Apache-HttpClient/");
-        VersionInfo vi = VersionInfo.loadVersionInfo("org.apache.http.client",
+        VersionInfo vi = VersionInfo.loadVersionInfo("org.apache.hc.client5",
                 HttpClientBuilder.class.getClassLoader());
         String release = (vi != null) ? vi.getRelease()
                 : VersionInfo.UNAVAILABLE;
