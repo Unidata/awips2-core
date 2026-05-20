@@ -2,7 +2,7 @@
 <feature
       id="com.raytheon.uf.edex.foss.org.apache.activemq.feature"
       label="org.apache.activemq Feature"
-      version="6.1.6"
+      version="6.2.5"
       provider-name="RAYTHEON">
 
    <description url="http://www.example.com/description">
