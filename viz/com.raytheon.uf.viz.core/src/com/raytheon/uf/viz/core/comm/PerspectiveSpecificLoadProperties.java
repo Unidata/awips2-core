@@ -19,8 +19,8 @@
  **/
 package com.raytheon.uf.viz.core.comm;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
 
 /**
  * Abstract Base Class for load properties that are specific to a perspective.

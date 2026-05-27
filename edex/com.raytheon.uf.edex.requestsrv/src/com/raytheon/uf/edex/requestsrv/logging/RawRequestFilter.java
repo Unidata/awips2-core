@@ -1,8 +1,14 @@
 package com.raytheon.uf.edex.requestsrv.logging;
 
-import java.util.List;
 import java.util.ArrayList;
-import javax.xml.bind.annotation.*;
+import java.util.List;
+
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlAttribute;
+import jakarta.xml.bind.annotation.XmlElement;
+import jakarta.xml.bind.annotation.XmlElementWrapper;
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 /**
  * Class used by JAXB to transform request logging configuration from XML to POJOs.

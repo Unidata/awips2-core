@@ -27,11 +27,11 @@ import javax.measure.UnitConverter;
 import org.geotools.coverage.grid.GeneralGridGeometry;
 import org.geotools.coverage.grid.GridEnvelope2D;
 import org.geotools.coverage.grid.GridGeometry2D;
-import org.geotools.geometry.DirectPosition2D;
+import org.geotools.geometry.Position2D;
 import org.locationtech.jts.geom.Coordinate;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.operation.MathTransform;
-import org.opengis.referencing.operation.TransformException;
+import org.geotools.api.referencing.FactoryException;
+import org.geotools.api.referencing.operation.MathTransform;
+import org.geotools.api.referencing.operation.TransformException;
 
 import com.raytheon.uf.common.geospatial.MapUtil;
 import com.raytheon.uf.common.geospatial.data.GeographicDataSource;
@@ -55,6 +55,7 @@ import com.raytheon.uf.common.units.UnitConv;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 16, 2019 67949      tjensen     Initial creation
+ * May 07, 2024 2037231    aford       Upgrade GeoTools to 31
  *
  * </pre>
  *
@@ -215,7 +216,7 @@ public class VectorGridData extends GeneralGridData {
             for (int j = 0; j < targetRange.height; j++) {
                 int index = i + j * targetRange.width;
                 if (udata[index] > -9999) {
-                    DirectPosition2D dp = new DirectPosition2D(i, j);
+                    Position2D dp = new Position2D(i, j);
                     grid2crs.transform(dp, dp);
                     crs2ll.transform(dp, dp);
                     Coordinate ll = new Coordinate(dp.x, dp.y);

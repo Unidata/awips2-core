@@ -19,8 +19,6 @@
 
    <plugin
          id="org.apache.xml.security"
-         download-size="0"
-         install-size="0"
-         version="2.2.6"/>
+         version="0.0.0"/>
 
 </feature>

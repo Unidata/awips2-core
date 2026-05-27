@@ -31,22 +31,23 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.commons.collections.map.LRUMap;
-import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang3.ArrayUtils;
+import org.geotools.api.coverage.grid.GridEnvelope;
+import org.geotools.api.geometry.Bounds;
+import org.geotools.api.referencing.crs.CoordinateReferenceSystem;
+import org.geotools.api.referencing.datum.PixelInCell;
+import org.geotools.api.referencing.operation.MathTransform;
+import org.geotools.api.referencing.operation.TransformException;
 import org.geotools.coverage.grid.GeneralGridEnvelope;
 import org.geotools.coverage.grid.GeneralGridGeometry;
 import org.geotools.coverage.grid.GridEnvelope2D;
 import org.geotools.coverage.grid.GridGeometry2D;
-import org.geotools.geometry.DirectPosition2D;
-import org.geotools.geometry.Envelope2D;
-import org.geotools.geometry.GeneralEnvelope;
+import org.geotools.geometry.GeneralBounds;
+import org.geotools.geometry.Position2D;
 import org.geotools.geometry.jts.JTS;
+import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.referencing.operation.DefaultMathTransformFactory;
 import org.locationtech.jts.geom.Coordinate;
-import org.opengis.coverage.grid.GridEnvelope;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
-import org.opengis.referencing.datum.PixelInCell;
-import org.opengis.referencing.operation.MathTransform;
-import org.opengis.referencing.operation.TransformException;
 
 import com.raytheon.uf.common.geospatial.CRSCache;
 import com.raytheon.uf.common.geospatial.MapUtil;
@@ -133,6 +134,7 @@ import com.raytheon.viz.core.interval.XFormFunctions;
  * Jul 01, 2021  93757    tjensen       Add check for null values list
  * Dec 06, 2021  8341     randerso      Added use of getResourceId for contour
  *                                      logging
+ * May 07, 2024  2037231  aford         Upgrade GeoTools to 31
  * Aug 15, 2024  2037631  mapeters      Extract ContourGroup to new file, add
  *                                      disposeContourGroups()
  *
@@ -282,7 +284,7 @@ public class ContourSupport {
         long tsg0 = System.currentTimeMillis();
         SubGridCacheKey key = new SubGridCacheKey(workingExtent,
                 mapGridGeometry, imageGridGeometry);
-        GeneralEnvelope env = (GeneralEnvelope) subgridCache.get(key);
+        GeneralBounds env = (GeneralBounds) subgridCache.get(key);
         if (env == null) {
             env = calculateSubGrid(workingExtent, mapGridGeometry,
                     imageGridGeometry);
@@ -778,10 +780,10 @@ public class ContourSupport {
 
     }
 
-    public static GeneralEnvelope calculateSubGrid(IExtent workingExtent,
+    public static GeneralBounds calculateSubGrid(IExtent workingExtent,
             GeneralGridGeometry mapGridGeometry,
             GeneralGridGeometry imageGridGeometry) {
-        GeneralEnvelope env = new GeneralEnvelope(2);
+        GeneralBounds env = new GeneralBounds(2);
         try {
             GridGeometry2D imageGeometry2D = GridGeometry2D
                     .wrap(imageGridGeometry);
@@ -799,15 +801,14 @@ public class ContourSupport {
             screenGridEnvelope = new GridEnvelope2D(screenGridEnvelope
                     .intersection(mapGeometry2D.getGridRange2D()));
             // convert from screen grid space to screen crs space.
-            Envelope2D screenCRSEnvelope = mapGeometry2D
+            ReferencedEnvelope screenCRSEnvelope = mapGeometry2D
                     .gridToWorld(screenGridEnvelope);
 
-            org.opengis.geometry.Envelope subgridCRSEnvelope = MapUtil
-                    .reprojectAndIntersect(screenCRSEnvelope,
-                            imageGridGeometry.getEnvelope());
+            Bounds subgridCRSEnvelope = MapUtil.reprojectAndIntersect(
+                    screenCRSEnvelope, imageGridGeometry.getEnvelope());
 
             GridEnvelope2D subgridEnv = imageGeometry2D
-                    .worldToGrid(new Envelope2D(subgridCRSEnvelope));
+                    .worldToGrid(new ReferencedEnvelope(subgridCRSEnvelope));
             // Add a 1 pixel border since worldToGrid is only guaranteed to
             // include a cell if the cell center is in the envelope but we want
             // to include the data in the subgrid if even a tiny bit of the edge
@@ -912,7 +913,7 @@ public class ContourSupport {
             GeneralGridGeometry imageGridGeometry, IGraphicsTarget target,
             ContourPreferences prefs) throws VizException {
 
-        GeneralEnvelope imageEnvelope = new GeneralEnvelope(
+        GeneralBounds imageEnvelope = new GeneralBounds(
                 new double[] { extent.getMinX(), extent.getMinY() },
                 new double[] { extent.getMaxX(), extent.getMaxY() });
         GeneralGridEnvelope imageRange = new GeneralGridEnvelope(
@@ -930,7 +931,7 @@ public class ContourSupport {
         contourGroup.lastDensity = currentDensity;
         contourGroup.zoomLevel = 1.0 / Math.pow(2.0, level);
 
-        GeneralEnvelope pixelEnvelope = new GeneralEnvelope(
+        GeneralBounds pixelEnvelope = new GeneralBounds(
                 new double[] { extent.getMinX(), extent.getMinY() },
                 new double[] { extent.getMaxX(), extent.getMaxY() });
 
@@ -1905,9 +1906,9 @@ public class ContourSupport {
             GeneralGridGeometry gridGeometry, double smoothingDistance)
             throws VizException {
         // Calculate the Diagonal Distance of the Grid In Meters.
-        DirectPosition2D upperCorner = new DirectPosition2D(
+        Position2D upperCorner = new Position2D(
                 gridGeometry.getEnvelope().getUpperCorner());
-        DirectPosition2D lowerCorner = new DirectPosition2D(
+        Position2D lowerCorner = new Position2D(
                 gridGeometry.getEnvelope().getLowerCorner());
         double distanceInM;
         try {

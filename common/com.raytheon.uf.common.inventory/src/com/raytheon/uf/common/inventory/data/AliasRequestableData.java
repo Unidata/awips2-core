@@ -158,7 +158,7 @@ public class AliasRequestableData extends AbstractRequestableData {
                 } else {
                     try {
                         newData[c] = (float) converter.convert(data[c]);
-                    } catch (NumberFormatException e) {
+                    } catch (IllegalArgumentException e) {
                         newData[c] = Float.NaN;
                     }
                 }
@@ -172,7 +172,7 @@ public class AliasRequestableData extends AbstractRequestableData {
                 } else {
                     try {
                         newData[c] = (float) converter.convert(data[c]);
-                    } catch (NumberFormatException e) {
+                    } catch (IllegalArgumentException e) {
                         newData[c] = Float.NaN;
                     }
                 }
@@ -186,7 +186,7 @@ public class AliasRequestableData extends AbstractRequestableData {
                 } else {
                     try {
                         newData[c] = (float) converter.convert(data[c]);
-                    } catch (NumberFormatException e) {
+                    } catch (IllegalArgumentException e) {
                         newData[c] = Float.NaN;
                     }
                 }
@@ -200,7 +200,7 @@ public class AliasRequestableData extends AbstractRequestableData {
                 } else {
                     try {
                         newData[c] = (float) converter.convert(data[c]);
-                    } catch (NumberFormatException e) {
+                    } catch (IllegalArgumentException e) {
                         newData[c] = Float.NaN;
                     }
                 }
@@ -214,7 +214,7 @@ public class AliasRequestableData extends AbstractRequestableData {
                 } else {
                     try {
                         doubleData[c] = converter.convert(data[c]);
-                    } catch (NumberFormatException e) {
+                    } catch (IllegalArgumentException e) {
                         doubleData[c] = Double.NaN;
                     }
                 }

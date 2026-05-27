@@ -23,7 +23,7 @@ import java.rmi.UnmarshalException;
 
 import javax.measure.Unit;
 import javax.measure.format.MeasurementParseException;
-import javax.xml.bind.annotation.adapters.XmlAdapter;
+import jakarta.xml.bind.annotation.adapters.XmlAdapter;
 
 import tech.units.indriya.AbstractUnit;
 import tech.units.indriya.format.SimpleUnitFormat;

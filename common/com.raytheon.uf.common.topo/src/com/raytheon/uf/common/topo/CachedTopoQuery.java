@@ -25,7 +25,7 @@ import java.util.Hashtable;
 import java.util.Map;
 
 import org.geotools.coverage.grid.GridGeometry2D;
-import org.opengis.referencing.operation.TransformException;
+import org.geotools.api.referencing.operation.TransformException;
 
 import com.raytheon.uf.common.datastorage.DataStoreFactory;
 import com.raytheon.uf.common.datastorage.IDataStore;

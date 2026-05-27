@@ -16,7 +16,7 @@ Export-Package: com.raytheon.edex.common.request,
  com.raytheon.edex.utility
 Require-Bundle: org.apache.commons.lang3,
  javax.measure,
- javax.persistence,
+ jakarta.persistence,
  com.raytheon.uf.common.localization,
  com.raytheon.uf.common.serialization;visibility:=reexport,
  com.raytheon.uf.common.status,
@@ -33,6 +33,6 @@ Require-Bundle: org.apache.commons.lang3,
  com.raytheon.uf.edex.database;visibility:=reexport,
  com.raytheon.uf.edex.core;visibility:=reexport,
  org.slf4j,
- javax.xml.bind
-Bundle-RequiredExecutionEnvironment: JavaSE-11
+ jakarta.xml.bind
+Bundle-RequiredExecutionEnvironment: JavaSE-17
 Import-Package: com.raytheon.uf.common.convert

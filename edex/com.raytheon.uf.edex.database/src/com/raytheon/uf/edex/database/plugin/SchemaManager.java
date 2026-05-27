@@ -87,6 +87,11 @@ import com.raytheon.uf.edex.database.dao.IDaoConfigFactory;
  * Feb 26, 2019  6140     tgurney      Hibernate 5 upgrade
  * Aug 20, 2020  82093    dfriedman    Support alternate schema names
  * Apr 21, 2021  7849     mapeters     Inject/use Spring app context
+ * Mar 25, 2025  2038636  njensen      Log warning when no db classes found for
+ *                                     plugin at creation time
+ * Dec 04, 2025  2039948  dkingfield   Update the dropSchema() method to not
+ *                                     append a 'cascade;' when one already
+ *                                     exists
  *
  * </pre>
  *
@@ -270,6 +275,10 @@ public class SchemaManager
             // need the full dependency tree to generate the sql
             Collection<Class<?>> dbClasses = getTablesAndDependencies(props,
                     sessFactory.getAnnotatedClasses());
+            if (dbClasses.isEmpty()) {
+                logger.warn("No db classes found for " + props.getPluginFQN()
+                        + " plugin, corresponding table(s) will not be created!");
+            }
             ServiceRegistry serviceRegistry = getSchemaGenServiceRegistry(
                     sessFactory);
             List<String> sqlList = DropCreateSqlUtil.getCreateSql(dbClasses,
@@ -470,7 +479,9 @@ public class SchemaManager
                 if (!sql.startsWith("drop table if exists")) {
                     sql = sql.replace("drop table ", "drop table if exists ");
                 }
-                sql = sql.replace(";", " cascade;");
+                if (!sql.endsWith("cascade;")) {
+                    sql = sql.replace(";", " cascade;");
+                }
             } else if (sql.startsWith("alter table")) {
                 // dropping the table drops the index
                 valid = false;

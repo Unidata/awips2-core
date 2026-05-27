@@ -19,9 +19,9 @@
  **/
 package com.raytheon.uf.viz.core.datastructure;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlElement;
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlElement;
 
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;

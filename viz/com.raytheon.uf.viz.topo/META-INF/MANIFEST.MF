@@ -3,9 +3,10 @@ Bundle-ManifestVersion: 2
 Bundle-Name: Viz Topo Displays
 Bundle-SymbolicName: com.raytheon.uf.viz.topo;singleton:=true
 Bundle-Version: 1.18.0.qualifier
+Eclipse-BundleShape: dir
 Bundle-Vendor: Raytheon
 Bundle-ActivationPolicy: lazy
-Bundle-RequiredExecutionEnvironment: JavaSE-11
+Bundle-RequiredExecutionEnvironment: JavaSE-17
 Require-Bundle: com.raytheon.uf.viz.core,
  com.raytheon.uf.common.topo,
  com.raytheon.uf.common.geospatial,
@@ -14,6 +15,6 @@ Require-Bundle: com.raytheon.uf.viz.core,
  com.raytheon.uf.common.style,
  com.raytheon.uf.common.time,
  javax.measure,
- javax.xml.bind
+ jakarta.xml.bind
 Export-Package: com.raytheon.uf.viz.topo
 Bundle-ClassPath: com.raytheon.uf.viz.topo.jar

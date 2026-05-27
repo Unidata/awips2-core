@@ -4,8 +4,8 @@ Bundle-Name: AlertMonitor Plug-in
 Bundle-SymbolicName: com.raytheon.uf.common.alertmonitor
 Bundle-Version: 1.17.0.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-RequiredExecutionEnvironment: JavaSE-17
 Import-Package: com.raytheon.uf.common.message,
  com.raytheon.uf.common.status,
- javax.jms
+ jakarta.jms
 Export-Package: com.raytheon.uf.common.alertmonitor

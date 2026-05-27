@@ -22,7 +22,7 @@ package com.raytheon.uf.common.serialization;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.xml.bind.annotation.adapters.XmlAdapter;
+import jakarta.xml.bind.annotation.adapters.XmlAdapter;
 
 /**
  * Handles the conversion between Java {@link Map} classes to Jaxb usable

@@ -62,7 +62,7 @@ public class UnitConvertingDataFilter implements DataFilter {
             } else {
                  return unitConverter.convert(value);
             }
-        } catch(NumberFormatException e ) {
+        } catch(IllegalArgumentException e ) {
             return Double.NaN;
         }
     }

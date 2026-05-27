@@ -30,7 +30,7 @@ import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import javax.persistence.NamedQuery;
+import jakarta.persistence.NamedQuery;
 
 import org.hibernate.Criteria;
 import org.hibernate.Query;

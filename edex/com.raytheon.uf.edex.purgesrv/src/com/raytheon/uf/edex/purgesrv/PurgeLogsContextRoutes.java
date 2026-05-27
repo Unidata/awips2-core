@@ -1,53 +1,55 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.edex.core;
 
-import java.util.List;
+package com.raytheon.uf.edex.purgesrv;
+
+import com.raytheon.uf.edex.routes.EDEXRouteBuilder;
 
 /**
- * TODO Add Description
- * 
+ * Camel routes converted from file "purge-logs.xml", context "purgeLogsContext"
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Dec 7, 2010            njensen     Initial creation
- * 
+ * 2024-07-11   2037796    aford       Initial creation (from auto-generated)
+ *
  * </pre>
- * 
- * @author njensen
- * @version 1.0
  */
 
-public interface IContextAdmin {
+public class PurgeLogsContextRoutes extends EDEXRouteBuilder {
 
-    public List<String> getAllContexts();
+    private final String purgeLogsCron;
 
-    public List<String> getActiveContexts();
+    public PurgeLogsContextRoutes(String purgeLogsCron) {
+        this.purgeLogsCron = purgeLogsCron;
+    }
 
-    public List<String> getInactiveContexts();
-
-    public void startContext(String name) throws Exception;
-
-    public void stopContext(String name) throws Exception;
-
+    @Override
+    public void configure() throws Exception {
+        // @formatter:off
+        from("cron:purge/purgeLogScheduled?schedule=" + this.purgeLogsCron)
+              .bean("purgeLogs", "purge")
+              .setId("purgeLogScheduled");
+        // @formatter:on
+    }
 }

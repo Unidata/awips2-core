@@ -73,6 +73,8 @@ import com.raytheon.uf.edex.database.dao.SessionManagedDao;
  * Apr 14, 2021  7849     mapeters  Use admin tx manager in {@link #initDb}
  * Feb 08, 2022  7849     mapeters  Update {@link #initDb} to return whether
  *                                  it created tables
+ * Aug 16, 2024  2037215  aford     Fix for issue with semicolons added to the
+ *                                  end of extracted sql statements
  *
  * </pre>
  *
@@ -96,7 +98,7 @@ public abstract class DbInit {
 
     /** Constant used for table regeneration */
     private static final Pattern CASCADE_PATTERN = Pattern
-            .compile("\\scascade$");
+            .compile("\\scascade[;]?$");
 
     /** Constant used for table regeneration */
     private static final String DROP_TABLE = "drop table ";
@@ -384,9 +386,13 @@ public abstract class DbInit {
         if (!sql.contains(replacementText)) {
             sql = dropTextMatcher.replaceFirst(replacementText);
         }
+        // The extracted statements can end with semicolons, so it needs to be
+        // removed and put back after potentially adding to the statement.
+        sql = sql.replace(";", "");
         if (!sql.endsWith(CASCADE)) {
             sql += CASCADE;
         }
+        sql += ";";
         stmt.execute(sql);
         connection.commit();
     }

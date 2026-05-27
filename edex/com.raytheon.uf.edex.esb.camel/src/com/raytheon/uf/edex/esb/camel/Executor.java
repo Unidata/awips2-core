@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -24,7 +24,6 @@ import java.io.FileFilter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
@@ -35,6 +34,9 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 import com.raytheon.edex.utility.EDEXLocalizationAdapter;
+import com.raytheon.uf.common.datastorage.StorageException;
+import com.raytheon.uf.common.datastore.ignite.IgniteClientManager;
+import com.raytheon.uf.common.datastore.ignite.IgniteClusterManager;
 import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.common.util.PropertiesUtil;
@@ -42,9 +44,11 @@ import com.raytheon.uf.edex.core.EDEXUtil;
 import com.raytheon.uf.edex.core.modes.EDEXModesUtil;
 import com.raytheon.uf.edex.esb.camel.context.ContextManager;
 
+import org.apache.ignite.Ignite;
+
 /**
  * Provides the central mechanism for starting the ESB
- * 
+ *
  * <pre>
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
@@ -56,7 +60,7 @@ import com.raytheon.uf.edex.esb.camel.context.ContextManager;
  * Jun 12, 2012  #0609     djohnson     Use EDEXUtil for EDEX_HOME.
  * Jul 09, 2012  #0643     djohnson     Read plugin provided resources into system properties.
  * Jul 17, 2012  #0740     djohnson     Redo changes since the decomposed repositories lost them.
- * Oct 19, 2012  #1274     bgonzale     Load properties from files in conf 
+ * Oct 19, 2012  #1274     bgonzale     Load properties from files in conf
  *                                         resources directory.
  * Feb 14, 2013  1638      mschenke     Removing activemq reference in stop
  * Apr 22, 2013  #1932     djohnson     Use countdown latch for a shutdown hook.
@@ -65,9 +69,12 @@ import com.raytheon.uf.edex.esb.camel.context.ContextManager;
  * May 21, 2014  3195      bclement     system now prints available modes and exits if runmode not specified
  * Dec 22, 2015  4262      dgilling     Wait for async startup beans before starting routes.
  * Feb 08, 2017  6111      njensen      Initialize Spring ApplicationContext more explicitly
- * 
+ * Jul 10, 2024  2037227   tgurney      Fix EDEX crash when no plugins are present
+ *                                      Prevent overriding bean definitions.
+ * Aug 07, 2024  2037700   tgurney      Give the shutdown thread a name
+ * Oct 28, 2025  2037769   smoorthy     Shutdown Ignite directly within shutdown hook.
  * </pre>
- * 
+ *
  * @author chammack
  */
 
@@ -78,6 +85,8 @@ public class Executor {
     private static final Logger logger = LoggerFactory
             .getLogger(Executor.class);
 
+    private static ClassPathXmlApplicationContext context;
+
     public static void start() throws Exception {
         final long t0 = System.currentTimeMillis();
 
@@ -85,7 +94,7 @@ public class Executor {
         System.setProperty("System.status", "Starting");
         final AtomicBoolean shutdownContexts = new AtomicBoolean(false);
 
-        Runtime.getRuntime().addShutdownHook(new Thread() {
+        Runtime.getRuntime().addShutdownHook(new Thread("EDEXShutdown") {
             @Override
             public void run() {
                 ContextManager ctxMgr = ContextManager.getInstance();
@@ -100,18 +109,36 @@ public class Executor {
                 if (shutdownContexts.get()) {
                     ctxMgr.stopContexts();
                 } else {
-                    logger.info("Contexts never started, skipping context shutdown");
+                    logger.info(
+                            "Contexts never started, skipping context shutdown");
+                }
+
+                String datastoreProvider = System.getenv("DATASTORE_PROVIDER");
+                if ("ignite".equals(datastoreProvider)) {
+                    IgniteClusterManager igniteClusterManager = (IgniteClusterManager) context
+                            .getBean("igniteClusterManager");
+                    for (IgniteClientManager icm : igniteClusterManager
+                            .getIgniteClientManagers()) {
+                        try {
+                            icm.doVoidIgniteOp((Ignite i) -> i.close(), false);
+                        } catch (StorageException e) {
+                            logger.error("Error closing ignite", e);
+                        }
+                    }
                 }
 
                 long t2 = System.currentTimeMillis();
                 msg.setLength(0);
-                msg.append("\n**************************************************");
-                msg.append("\n* EDEX ESB is shut down                          *");
+                msg.append(
+                        "\n**************************************************");
+                msg.append(
+                        "\n* EDEX ESB is shut down                          *");
                 msg.append("\n* Total time to shutdown: ")
                         .append(TimeUtil.prettyDuration(t2 - t1)).append("");
                 msg.append("\n* EDEX ESB uptime: ")
                         .append(TimeUtil.prettyDuration(t2 - t0)).append("");
-                msg.append("\n**************************************************");
+                msg.append(
+                        "\n**************************************************");
                 logger.info(msg.toString());
                 shutdownLatch.countDown();
             }
@@ -122,15 +149,15 @@ public class Executor {
         List<File> propertiesFiles = new ArrayList<>();
         File confDir = new File(EDEXModesUtil.CONF_DIR);
         File resourcesDir = new File(confDir, "resources");
-        propertiesFiles.addAll(Arrays.asList(findFiles(resourcesDir,
-                ".properties")));
+        propertiesFiles
+                .addAll(Arrays.asList(findFiles(resourcesDir, ".properties")));
         // load site files after loading the config files so that their
         // properties take precedence.
         String site = System.getProperty("aw.site.identifier");
-        File siteResourcesDir = new File(confDir, "resources" + File.separator
-                + "site" + File.separator + site);
-        propertiesFiles.addAll(Arrays.asList(findFiles(siteResourcesDir,
-                ".properties")));
+        File siteResourcesDir = new File(confDir,
+                "resources" + File.separator + "site" + File.separator + site);
+        propertiesFiles.addAll(
+                Arrays.asList(findFiles(siteResourcesDir, ".properties")));
 
         // Add each file to the system properties
         for (File propertiesFile : propertiesFiles) {
@@ -146,13 +173,13 @@ public class Executor {
             String name = f.getName();
 
             xmlFiles.add(name);
-            springList.add(EDEXModesUtil.XML_PATTERN.matcher(name).replaceAll(
-                    ""));
+            springList.add(
+                    EDEXModesUtil.XML_PATTERN.matcher(name).replaceAll(""));
         }
 
         String modeName = System.getProperty("edex.run.mode");
 
-        if ((modeName != null) && (modeName.length() > 0)) {
+        if (modeName != null && modeName.length() > 0) {
             logger.info("EDEX run configuration: " + modeName);
         } else {
             logger.info("EDEX run configuration must be specified. "
@@ -162,8 +189,8 @@ public class Executor {
         logger.info("EDEX site configuration: "
                 + System.getProperty("aw.site.identifier"));
 
-        List<String> discoveredPlugins = EDEXModesUtil.extractSpringXmlFiles(
-                xmlFiles, modeName);
+        List<String> discoveredPlugins = EDEXModesUtil
+                .extractSpringXmlFiles(xmlFiles, modeName);
 
         StringBuilder msg = new StringBuilder(1000);
         msg.append("\n\nEDEX configuration files: ");
@@ -180,7 +207,14 @@ public class Executor {
          */
         PathManagerFactory.setAdapter(new EDEXLocalizationAdapter());
 
-        ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext();
+        context = new ClassPathXmlApplicationContext();
+
+        /*
+         * Overriding bean definitions is a potential cause of bugs. We would
+         * rather enforce the constraint that any given bean name shall be
+         * defined no more than once.
+         */
+        context.setAllowBeanDefinitionOverriding(false);
         context.setConfigLocations(
                 xmlFiles.toArray(new String[xmlFiles.size()]));
         context.refresh();
@@ -203,8 +237,8 @@ public class Executor {
         msg.setLength(0);
         msg.append("\n**************************************************");
         msg.append("\n* EDEX ESB is now operational                    *");
-        msg.append("\n* Total startup time: ").append(
-                TimeUtil.prettyDuration(t1 - t0));
+        msg.append("\n* Total startup time: ")
+                .append(TimeUtil.prettyDuration(t1 - t0));
         msg.append("\n**************************************************");
         logger.info(msg.toString());
         msg = null;
@@ -216,7 +250,7 @@ public class Executor {
 
     /**
      * Finds all files in the specified directory with specified extension.
-     * 
+     *
      * @param directory
      *            the directory
      * @param extension
@@ -224,31 +258,15 @@ public class Executor {
      * @return the file array
      */
     private static File[] findFiles(File directory, final String extension) {
-        File[] files = directory.listFiles(new FileFilter() {
-            @Override
-            public boolean accept(File pathname) {
-                return pathname.getName().endsWith(extension);
-            }
-        });
+        File[] files = directory.listFiles((FileFilter) pathname -> pathname
+                .getName().endsWith(extension));
 
         // If no files were found return an empty array
-        return (files == null) ? new File[0] : files;
+        return files == null ? new File[0] : files;
     }
 
     private static String printList(List<String> components) {
-        StringBuilder sb = new StringBuilder();
-
         Collections.sort(components);
-        Iterator<String> iterator = components.iterator();
-        while (iterator.hasNext()) {
-            sb.append(iterator.next());
-            sb.append(", ");
-        }
-
-        int length = sb.length();
-        sb.delete(length - 2, length);
-
-        return sb.toString();
+        return String.join(", ", components);
     }
-
 }

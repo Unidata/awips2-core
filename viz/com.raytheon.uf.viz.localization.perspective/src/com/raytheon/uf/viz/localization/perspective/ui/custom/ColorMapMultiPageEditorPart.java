@@ -19,7 +19,7 @@
  **/
 package com.raytheon.uf.viz.localization.perspective.ui.custom;
 
-import javax.xml.bind.JAXBException;
+import jakarta.xml.bind.JAXBException;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jface.text.IDocument;

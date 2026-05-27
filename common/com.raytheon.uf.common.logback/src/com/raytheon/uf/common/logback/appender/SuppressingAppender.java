@@ -21,10 +21,12 @@ package com.raytheon.uf.common.logback.appender;
 
 import java.util.Iterator;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import org.slf4j.Marker;
+import org.slf4j.event.KeyValuePair;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.spi.ILoggingEvent;
@@ -44,15 +46,15 @@ import ch.qos.logback.core.spi.AppenderAttachableImpl;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Sep 15, 2014  #3633     dgilling     Initial creation
- * Jun 09, 2015 4473       njensen     Moved from status to logback plugin
+ * Date          Ticket#    Engineer    Description
+ * ------------  ---------- ----------- --------------------------
+ * Sep 15, 2014  #3633      dgilling    Initial creation
+ * Jun 09, 2015  4473       njensen     Moved from status to logback plugin
+ * May 22, 2024  2037353    tgurney     Fixes for logback 1.5
  * 
  * </pre>
  * 
  * @author dgilling
- * @version 1.0
  */
 
 public class SuppressingAppender extends
@@ -356,6 +358,26 @@ public class SuppressingAppender extends
         @Override
         public void prepareForDeferredProcessing() {
             event.prepareForDeferredProcessing();
+        }
+
+        @Override
+        public List<Marker> getMarkerList() {
+            return event.getMarkerList();
+        }
+
+        @Override
+        public int getNanoseconds() {
+            return event.getNanoseconds();
+        }
+
+        @Override
+        public long getSequenceNumber() {
+            return event.getSequenceNumber();
+        }
+
+        @Override
+        public List<KeyValuePair> getKeyValuePairs() {
+            return event.getKeyValuePairs();
         }
     }
 

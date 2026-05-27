@@ -53,8 +53,9 @@ import com.raytheon.uf.common.status.UFStatus;
  * Jan 05, 2023 8994       smoorthy    Add ability to disable sending audit events,
  *                                     primarily for debugging purposes.
  * Feb 03, 2023 9019       mapeters    Adjust for configurable number of audit threads.
- * Mar 13, 2023 9076       smoorthy    Adjust to buffer events in a queue and send 
+ * Mar 13, 2023 9076       smoorthy    Adjust to buffer events in a queue and send
  *                                     in batches as one large audit event.
+ * Sep 24, 2024 2037700    tgurney     Don't send empty batches
  * </pre>
  *
  * @author mapeters
@@ -125,11 +126,11 @@ public abstract class AbstractDataStorageAuditerProxy
     /**
      * Merge list of maps into one map. Intended for statuses and list of
      * traceIds.
-     * 
+     *
      *
      * @param List
      *            of maps to merge
-     * 
+     *
      *
      * @return Map containing all keys/values of input maps
      */
@@ -144,7 +145,7 @@ public abstract class AbstractDataStorageAuditerProxy
                 String[] list = e.getValue();
 
                 List<String> mergedList = mergedMapLists.computeIfAbsent(key,
-                        (k) -> new ArrayList<String>());
+                        k -> new ArrayList<String>());
                 mergedList.addAll(List.of(list));
             }
         }
@@ -220,7 +221,9 @@ public abstract class AbstractDataStorageAuditerProxy
             mergedEvent.setMetadataStatuses(mergedMetadataStatuses);
 
             try {
-                send(mergedEvent, dest);
+                if (!mergedEvent.isEmpty()) {
+                    send(mergedEvent, dest);
+                }
             } catch (Exception e) {
                 statusHandler.error(
                         "Error sending event to " + dest + ": " + mergedEvent,

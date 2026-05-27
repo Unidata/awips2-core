@@ -2,10 +2,10 @@
  * Copyright 09/24/12 Raytheon Company.
  *
  * Unlimited Rights
- * This software was developed pursuant to Contract Number 
- * DTFAWA-10-D-00028 with the US Government. The US Government’s rights 
+ * This software was developed pursuant to Contract Number
+ * DTFAWA-10-D-00028 with the US Government. The US Government’s rights
  * in and to this copyrighted software are as specified in DFARS
- * 252.227-7014 which was made part of the above contract. 
+ * 252.227-7014 which was made part of the above contract.
  */
 package com.raytheon.uf.common.http;
 
@@ -14,34 +14,35 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 
-import org.apache.http.HeaderElement;
-import org.apache.http.NameValuePair;
-import org.apache.http.message.BasicHeaderElement;
-import org.apache.http.message.BasicHeaderValueFormatter;
-import org.apache.http.message.BasicHeaderValueParser;
-import org.apache.http.message.BasicNameValuePair;
-import org.apache.http.message.ParserCursor;
-import org.apache.http.util.CharArrayBuffer;
+import org.apache.hc.core5.http.HeaderElement;
+import org.apache.hc.core5.http.NameValuePair;
+import org.apache.hc.core5.http.message.BasicHeaderElement;
+import org.apache.hc.core5.http.message.BasicHeaderValueFormatter;
+import org.apache.hc.core5.http.message.BasicHeaderValueParser;
+import org.apache.hc.core5.http.message.BasicNameValuePair;
+import org.apache.hc.core5.http.message.ParserCursor;
+import org.apache.hc.core5.util.CharArrayBuffer;
 
 /**
  * Data object representing a MIME type used in http requests
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Oct 29, 2012            bclement     Initial creation
  * Feb 14, 2014 2756       bclement     moved to common http from ogc common
  * Jan 08, 2015 3789       bclement     refactored to use HeaderValueParser
  * Aug 14, 2017 5731       bsteffen     Add accept() method.
- * 
+ * Apr 15, 2026 2038243    mapeters     Apache httpclient 5 upgrade
+ *
  * </pre>
- * 
+ *
  * @author bclement
- * @version 1.0
  */
 
 public class MimeType {
@@ -90,13 +91,7 @@ public class MimeType {
 
     @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result
-                + ((parameters == null) ? 0 : parameters.hashCode());
-        result = prime * result + ((subtype == null) ? 0 : subtype.hashCode());
-        result = prime * result + ((type == null) ? 0 : type.hashCode());
-        return result;
+        return Objects.hash(parameters, subtype, type);
     }
 
     @Override
@@ -243,7 +238,7 @@ public class MimeType {
 
     /**
      * Format mime type excluding any parameters
-     * 
+     *
      * @return
      */
     public String toStringWithoutParams() {

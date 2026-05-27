@@ -4,7 +4,7 @@ Bundle-Name: Json
 Bundle-SymbolicName: com.raytheon.uf.common.json
 Bundle-Version: 1.16.0.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-17
 Require-Bundle: org.geotools,
  org.apache.commons.pool2,
  com.raytheon.uf.common.status,

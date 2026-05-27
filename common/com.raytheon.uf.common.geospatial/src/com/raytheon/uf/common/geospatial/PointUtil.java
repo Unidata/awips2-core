@@ -23,12 +23,12 @@ import java.awt.Point;
 
 import org.geotools.coverage.grid.GridGeometry2D;
 import org.geotools.coverage.grid.InvalidGridGeometryException;
-import org.geotools.geometry.DirectPosition2D;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
-import org.opengis.referencing.operation.MathTransform;
-import org.opengis.referencing.operation.NoninvertibleTransformException;
-import org.opengis.referencing.operation.TransformException;
+import org.geotools.geometry.Position2D;
+import org.geotools.api.referencing.FactoryException;
+import org.geotools.api.referencing.crs.CoordinateReferenceSystem;
+import org.geotools.api.referencing.operation.MathTransform;
+import org.geotools.api.referencing.operation.NoninvertibleTransformException;
+import org.geotools.api.referencing.operation.TransformException;
 
 import org.locationtech.jts.geom.Coordinate;
 
@@ -42,6 +42,7 @@ import org.locationtech.jts.geom.Coordinate;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jan 26, 2011            njensen     Initial creation
+ * May 07, 2024  2037231   aford       Upgrade GeoTools to 31
  * 
  * </pre>
  * 
@@ -70,14 +71,14 @@ public class PointUtil {
     public static Point determineIndex(Coordinate coordinateToFind,
             CoordinateReferenceSystem crs, GridGeometry2D mapGeometry)
             throws Exception {
-        DirectPosition2D resultPoint = PointUtil.determineExactIndex(
+        Position2D resultPoint = PointUtil.determineExactIndex(
                 coordinateToFind, crs, mapGeometry);
         int x = (int) Math.round(resultPoint.x);
         int y = (int) Math.round(resultPoint.y);
         return new Point(x, y);
     }
 
-    public static DirectPosition2D determineExactIndex(
+    public static Position2D determineExactIndex(
             Coordinate coordinateToFind, CoordinateReferenceSystem crs,
             GridGeometry2D mapGeometry) throws FactoryException,
             InvalidGridGeometryException, TransformException {
@@ -86,14 +87,14 @@ public class PointUtil {
         float fx = (float) coordinateToFind.x;
         float fy = (float) coordinateToFind.y;
         float[] srcPoints = { fx, fy, fx + 360, fy, fx - 360, fy };
-        DirectPosition2D ptPosition = new DirectPosition2D();
+        Position2D ptPosition = new Position2D();
 
         latLonToCrs.transform(srcPoints, 0, srcPoints, 0, 3);
 
         // use the least positive x value
 
         crsToGrid.transform(srcPoints, 0, srcPoints, 0, 3);
-        DirectPosition2D resultPoint = new DirectPosition2D(srcPoints[0],
+        Position2D resultPoint = new Position2D(srcPoints[0],
                 srcPoints[1]);
         for (int i = 0; i < srcPoints.length; i = i + 2) {
             resultPoint.y = srcPoints[i + 1];
@@ -111,7 +112,7 @@ public class PointUtil {
             throws Exception {
         MathTransform crsToLatLon = MapUtil.getTransformToLatLon(crs);
         MathTransform gridToCRS = mapGeometry.getGridToCRS();
-        DirectPosition2D ptPosition = new DirectPosition2D(pointToFind.x,
+        Position2D ptPosition = new Position2D(pointToFind.x,
                 pointToFind.y);
         gridToCRS.transform(ptPosition, ptPosition);
         crsToLatLon.transform(ptPosition, ptPosition);

@@ -2,7 +2,7 @@
 <feature
       id="com.raytheon.uf.edex.foss.com.mchange.feature"
       label="com.mchange Feature"
-      version="0.9.5.5"
+      version="0.12.0"
       provider-name="RAYTHEON">
 
    <description url="http://www.example.com/description">
@@ -19,8 +19,6 @@
 
    <plugin
          id="com.mchange"
-         download-size="0"
-         install-size="0"
-         version="0.9.5.5"/>
+         version="0.0.0"/>
 
 </feature>

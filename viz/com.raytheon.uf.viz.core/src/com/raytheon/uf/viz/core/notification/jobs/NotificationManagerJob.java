@@ -19,10 +19,10 @@
  **/
 package com.raytheon.uf.viz.core.notification.jobs;
 
-import javax.jms.Connection;
-import javax.jms.ConnectionFactory;
-import javax.jms.JMSContext;
-import javax.jms.JMSException;
+import jakarta.jms.Connection;
+import jakarta.jms.ConnectionFactory;
+import jakarta.jms.JMSContext;
+import jakarta.jms.JMSException;
 
 import org.apache.qpid.jms.exceptions.JmsExceptionSupport;
 import org.eclipse.ui.services.IDisposable;

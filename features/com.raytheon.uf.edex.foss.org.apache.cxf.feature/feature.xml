@@ -2,7 +2,7 @@
 <feature
       id="com.raytheon.uf.edex.foss.org.apache.cxf.feature"
       label="org.apache.cxf Feature"
-      version="3.5.9"
+      version="4.0.9"
       provider-name="RAYTHEON">
 
    <description url="http://www.example.com/description">
@@ -19,8 +19,6 @@
 
    <plugin
          id="org.apache.cxf"
-         download-size="0"
-         install-size="0"
-         version="3.5.9"/>
+         version="0.0.0"/>
 
 </feature>

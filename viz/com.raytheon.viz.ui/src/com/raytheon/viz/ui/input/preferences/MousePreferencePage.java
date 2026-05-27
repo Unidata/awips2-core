@@ -25,7 +25,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 
-import org.apache.commons.configuration.ConfigurationException;
+import org.apache.commons.configuration2.ex.ConfigurationException;
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.Status;
@@ -72,6 +72,7 @@ import com.raytheon.viz.ui.UiPlugin;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Oct 27, 2009            bsteffen     Initial creation
+ * Jul 08, 2025 2036453    aford        Commons Configuration 2 Upgrade
  * 
  * </pre>
  * 

@@ -40,6 +40,8 @@ import tech.units.indriya.function.DefaultNumberSystem;
  * Dec 20, 2023 2036519    mapeters    Override multiply()
  * Feb 20, 2024 2036778    mapeters    Simplify basic operations for performance,
  *                                     move to indriya subpackage
+ * Oct 21, 2024 2037232    tgurney     Return NaN from narrow if NaN argument.
+ *
  *
  * </pre>
  *
@@ -49,7 +51,15 @@ public class CustomNumberSystem extends DefaultNumberSystem {
 
     @Override
     public Number narrow(Number number) {
-        if (number instanceof BigDecimal) {
+        if (isNaN(number)) {
+            /*
+             * super.narrow throws exception on NaN. We don't want that. Instead
+             * we want the NaN to propagate because this is how floating-point
+             * arithmetic is generally expected to behave.
+             */
+            return Double.NaN;
+        }
+        if (number instanceof BigDecimal decimal) {
             /*
              * The super method relies on exception catching to determine if
              * BigDecimals can be converted to integers, which is slow.
@@ -58,7 +68,6 @@ public class CustomNumberSystem extends DefaultNumberSystem {
              * this indriya issue, so this override can eventually go away:
              * https://github.com/unitsofmeasurement/indriya/issues/393
              */
-            BigDecimal decimal = (BigDecimal) number;
             decimal = decimal.stripTrailingZeros();
             if (decimal.scale() <= 0) {
                 BigInteger integer = decimal.toBigInteger();
@@ -67,6 +76,11 @@ public class CustomNumberSystem extends DefaultNumberSystem {
             return number;
         }
         return super.narrow(number);
+    }
+
+    private static boolean isNaN(Number number) {
+        return number instanceof Double d && d.isNaN()
+                || number instanceof Float f && f.isNaN();
     }
 
     @Override

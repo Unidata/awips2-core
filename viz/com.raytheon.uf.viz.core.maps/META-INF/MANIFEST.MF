@@ -3,6 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: Maps Plug-in
 Bundle-SymbolicName: com.raytheon.uf.viz.core.maps;singleton:=true
 Bundle-Version: 1.18.1.qualifier
+Eclipse-BundleShape: dir
 Bundle-Activator: com.raytheon.uf.viz.core.maps.Activator
 Bundle-Vendor: RAYTHEON
 Require-Bundle: org.eclipse.core.runtime,
@@ -19,8 +20,8 @@ Require-Bundle: org.eclipse.core.runtime,
  com.raytheon.uf.viz.ui.menus,
  com.raytheon.uf.common.dataplugin.maps,
  com.raytheon.uf.common.colormap,
- javax.xml.bind
-Bundle-RequiredExecutionEnvironment: JavaSE-11
+ jakarta.xml.bind
+Bundle-RequiredExecutionEnvironment: JavaSE-17
 Bundle-ActivationPolicy: lazy
 Export-Package: com.raytheon.uf.viz.core.maps,
  com.raytheon.uf.viz.core.maps.actions,

@@ -23,7 +23,7 @@ package com.raytheon.uf.edex.database.plugin;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.persistence.Table;
+import jakarta.persistence.Table;
 
 import org.apache.commons.beanutils.ConstructorUtils;
 

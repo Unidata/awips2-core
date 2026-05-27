@@ -4,13 +4,14 @@ Bundle-Name: Audit
 Bundle-SymbolicName: com.raytheon.uf.edex.audit
 Bundle-Version: 1.23.0.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-RequiredExecutionEnvironment: JavaSE-17
 Require-Bundle: com.raytheon.uf.edex.core,
  com.raytheon.edex.common,
  com.raytheon.uf.edex.database,
  org.apache.commons.lang3,
  com.raytheon.uf.common.status,
  org.apache.camel,
+ com.raytheon.uf.edex.routes,
  com.raytheon.uf.edex.esb.camel,
  org.slf4j
 Export-Package: com.raytheon.uf.edex.audit

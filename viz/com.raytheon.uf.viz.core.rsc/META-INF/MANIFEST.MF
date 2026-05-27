@@ -4,7 +4,7 @@ Bundle-Name: Core Resource
 Bundle-SymbolicName: com.raytheon.uf.viz.core.rsc;singleton:=true
 Bundle-Version: 1.18.0.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-11
+Bundle-RequiredExecutionEnvironment: JavaSE-17
 Bundle-ActivationPolicy: lazy
 Eclipse-BuddyPolicy: registered
 Require-Bundle: com.raytheon.viz.ui,
@@ -12,7 +12,7 @@ Require-Bundle: com.raytheon.viz.ui,
  com.raytheon.uf.common.geospatial,
  com.raytheon.uf.common.time,
  javax.measure,
- javax.xml.bind,
+ jakarta.xml.bind,
  org.eclipse.core.runtime,
  com.raytheon.uf.common.dataplugin
 Import-Package: com.raytheon.viz.core

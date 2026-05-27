@@ -53,43 +53,31 @@
       <appender-ref ref="PerformanceLogAppender"/>
    </appender> 
 
-   <logger name="CaveLogger" additivity="false">
-      <level value="ALL"/>
+   <logger name="CaveLogger" additivity="false" level="ALL">
       <appender-ref ref="AsyncCaveLogAppender"/>
    </logger>
 
-   <logger name="PerformanceLogger" additivity="false">
-      <level value="ALL"/>
+   <logger name="PerformanceLogger" additivity="false" level="ALL">
       <appender-ref ref="AsyncPerfLogAppender"/>
    </logger>
 
-   <logger name="com.raytheon">
-      <level value="INFO"/>
-   </logger>
+   <logger name="com.raytheon" level="INFO" />
 
-   <logger name="mx4j">
-      <level value="ERROR"/>
-   </logger>
-   <logger name="org.apache">
-      <level value="INFO"/>
-   </logger>
-   <logger name="org.apache.commons.beanutils">
-      <level value="WARN"/>
-   </logger>
-   <logger name="org.apache.qpid">
-      <level value="WARN"/>
-   </logger>
-   <logger name="org.geotools">
-      <level value="WARN"/>
-   </logger>
-   <logger name="org.apache.xbean.spring">
-      <level value="WARN"/>
-   </logger>
-   <logger name="org.springframework">
-      <level value="ERROR"/>
-   </logger>
-   <root> 
-      <level value="INFO"/> 
+   <logger name="mx4j" level="ERROR" />
+
+   <logger name="org.apache" level="INFO" />
+
+   <logger name="org.apache.commons.beanutils" level="WARN" />
+
+   <logger name="org.apache.qpid" level="WARN" />
+
+   <logger name="org.geotools" level="WARN" />
+
+   <logger name="org.apache.xbean.spring" level="WARN" />
+
+   <logger name="org.springframework" level="ERROR" />
+
+   <root level="INFO"> 
       <appender-ref ref="consoleLog"/>
     </root> 
 </configuration> 

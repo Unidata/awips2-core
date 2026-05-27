@@ -19,13 +19,12 @@
  **/
 package com.raytheon.uf.common.serialization.jaxb;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Marshaller;
-import javax.xml.bind.Unmarshaller;
-import javax.xml.bind.Validator;
+import org.glassfish.jaxb.runtime.v2.runtime.JAXBContextImpl;
 
-import com.sun.xml.bind.v2.runtime.JAXBContextImpl;
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.JAXBException;
+import jakarta.xml.bind.Marshaller;
+import jakarta.xml.bind.Unmarshaller;
 
 /**
  * Custom JAXBContext, used to create CustomJAXBUnmarshaller (which creates
@@ -33,8 +32,8 @@ import com.sun.xml.bind.v2.runtime.JAXBContextImpl;
  *
  * This class is created by
  * {@link SerializationContextFactory#createContext(Class[], java.util.Map)}
- * when a call to {@link JAXBContext#newInstance(Class...)} includes
- * {@link JaxbDummyObject}.
+ * when a JAXBManager has been configured with the useCustomJaxbContextFactory
+ * flag set to true.
  *
  * <pre>
  *
@@ -44,6 +43,8 @@ import com.sun.xml.bind.v2.runtime.JAXBContextImpl;
  * ------------ ---------- ----------- --------------------------
  * Sep 13, 2011            mschenke     Initial creation
  * Jun 04, 2015 4496       nabowle      Updated javadoc.
+ * Oct 25, 2024 2037223    aford        JAXB Upgrade - updated comments to reflect
+ *                                      changes to custom context initialization
  *
  * </pre>
  *
@@ -82,14 +83,5 @@ public class CustomJAXBContext extends JAXBContext {
         return new CustomJAXBUnmarshaller(delegate.createUnmarshaller());
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see javax.xml.bind.JAXBContext#createValidator()
-     */
-    @Override
-    public Validator createValidator() throws JAXBException {
-        return delegate.createValidator();
-    }
 
 }

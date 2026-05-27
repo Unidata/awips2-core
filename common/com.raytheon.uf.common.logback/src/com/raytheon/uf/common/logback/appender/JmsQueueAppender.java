@@ -19,9 +19,9 @@
  **/
 package com.raytheon.uf.common.logback.appender;
 
-import javax.jms.JMSException;
-import javax.jms.Queue;
-import javax.jms.Session;
+import jakarta.jms.JMSException;
+import jakarta.jms.Queue;
+import jakarta.jms.Session;
 
 /**
  * An appender that sends log messages to a JMS queue.

@@ -25,11 +25,15 @@ import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 import org.eclipse.swt.graphics.Rectangle;
+import org.geotools.api.geometry.Bounds;
+import org.geotools.api.referencing.crs.CoordinateReferenceSystem;
+import org.geotools.api.referencing.operation.MathTransform;
 import org.geotools.geometry.jts.CoordinateSequenceTransformer;
 import org.geotools.geometry.jts.DefaultCoordinateSequenceTransformer;
 import org.geotools.geometry.jts.ReferencedEnvelope;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
-import org.opengis.referencing.operation.MathTransform;
+import org.locationtech.jts.geom.Envelope;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.impl.PackedCoordinateSequenceFactory;
 
 import com.raytheon.uf.common.geospatial.GeometryTransformer;
 import com.raytheon.uf.common.geospatial.MapUtil;
@@ -43,9 +47,6 @@ import com.raytheon.uf.viz.core.map.IMapDescriptor;
 import com.raytheon.uf.viz.core.maps.rsc.AbstractDbMapResourceData.ColumnDefinition;
 import com.raytheon.uf.viz.core.rsc.LoadProperties;
 import com.raytheon.uf.viz.core.rsc.capabilities.LabelableCapability;
-import org.locationtech.jts.geom.Envelope;
-import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.impl.PackedCoordinateSequenceFactory;
 
 /**
  * Base class for database map resources
@@ -62,6 +63,7 @@ import org.locationtech.jts.geom.impl.PackedCoordinateSequenceFactory;
  * Aug 21, 2014  3459     randerso  Restructured Map resource class hierarchy
  * Jan 29, 2015  4062     randerso  Added a buffer to bounding Geometry
  * Mar 15, 2018  6967     randerso  Code cleanup
+ * May 07, 2024  2037231  aford     Upgrade GeoTools to 31
  *
  * </pre>
  *
@@ -215,7 +217,7 @@ public abstract class AbstractDbMapResource<T extends AbstractDbMapResourceData,
         // long t0 = System.currentTimeMillis();
 
         Envelope env = descriptor.pixelToWorld(extent, descriptor.getCRS());
-        org.opengis.geometry.Envelope sourceEnvelope = new ReferencedEnvelope(
+        Bounds sourceEnvelope = new ReferencedEnvelope(
                 env, descriptor.getCRS());
 
         CoordinateReferenceSystem targetCRS = MapUtil
@@ -230,7 +232,7 @@ public abstract class AbstractDbMapResource<T extends AbstractDbMapResourceData,
         } catch (Exception e) {
             statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(), e);
         }
-        org.opengis.geometry.Envelope targetEnvelope = new ReferencedEnvelope(
+        Bounds targetEnvelope = new ReferencedEnvelope(
                 new Envelope(dstPts[0], dstPts[2], dstPts[1], dstPts[3]),
                 targetCRS);
 

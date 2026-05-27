@@ -19,11 +19,15 @@
  **/
 package com.raytheon.uf.viz.core.maps.rsc;
 
+import org.geotools.api.geometry.Bounds;
+import org.geotools.api.referencing.crs.CoordinateReferenceSystem;
+import org.geotools.api.referencing.operation.MathTransform;
 import org.geotools.geometry.jts.CoordinateSequenceTransformer;
 import org.geotools.geometry.jts.DefaultCoordinateSequenceTransformer;
 import org.geotools.geometry.jts.ReferencedEnvelope;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
-import org.opengis.referencing.operation.MathTransform;
+import org.locationtech.jts.geom.Envelope;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.impl.PackedCoordinateSequenceFactory;
 
 import com.raytheon.uf.common.geospatial.GeometryTransformer;
 import com.raytheon.uf.common.geospatial.MapUtil;
@@ -38,9 +42,6 @@ import com.raytheon.uf.viz.core.rsc.AbstractVizResource;
 import com.raytheon.uf.viz.core.rsc.IResourceDataChanged;
 import com.raytheon.uf.viz.core.rsc.LoadProperties;
 import com.raytheon.uf.viz.core.rsc.capabilities.MagnificationCapability;
-import org.locationtech.jts.geom.Envelope;
-import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.impl.PackedCoordinateSequenceFactory;
 
 /**
  * Abstract base class for all maps
@@ -57,6 +58,7 @@ import org.locationtech.jts.geom.impl.PackedCoordinateSequenceFactory;
  * May 31, 2018  6562      tgurney     T extends AbstractMapResourceData
  * Aug 20, 2018  6891      tgurney     Set the font magnification every time
  *                                     determineFont is called
+ * May 07, 2024  2037231   aford       Upgrade GeoTools to 31
  *
  * </pre>
  *
@@ -188,7 +190,7 @@ public abstract class AbstractMapResource<T extends AbstractMapResourceData, D e
         // long t0 = System.currentTimeMillis();
 
         Envelope env = descriptor.pixelToWorld(extent, descriptor.getCRS());
-        org.opengis.geometry.Envelope sourceEnvelope = new ReferencedEnvelope(
+        Bounds sourceEnvelope = new ReferencedEnvelope(
                 env, descriptor.getCRS());
 
         CoordinateReferenceSystem targetCRS = MapUtil
@@ -203,7 +205,7 @@ public abstract class AbstractMapResource<T extends AbstractMapResourceData, D e
         } catch (Exception e) {
             statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(), e);
         }
-        org.opengis.geometry.Envelope targetEnvelope = new ReferencedEnvelope(
+        Bounds targetEnvelope = new ReferencedEnvelope(
                 new Envelope(dstPts[0], dstPts[2], dstPts[1], dstPts[3]),
                 targetCRS);
 

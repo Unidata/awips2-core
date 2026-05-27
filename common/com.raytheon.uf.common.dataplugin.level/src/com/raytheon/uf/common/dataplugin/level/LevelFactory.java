@@ -32,7 +32,7 @@ import javax.measure.UnconvertibleException;
 import javax.measure.Unit;
 import javax.measure.UnitConverter;
 import javax.measure.format.MeasurementParseException;
-import javax.xml.bind.JAXB;
+import jakarta.xml.bind.JAXB;
 
 import com.raytheon.uf.common.dataplugin.level.request.GetLevelByIdRequest;
 import com.raytheon.uf.common.dataplugin.level.request.GetLevelRequest;

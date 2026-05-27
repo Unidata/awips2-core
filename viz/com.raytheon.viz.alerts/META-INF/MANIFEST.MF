@@ -7,10 +7,10 @@ Bundle-Vendor: Raytheon
 Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.ui,
  com.raytheon.viz.core,
- javax.jms
+ jakarta.jms
 Bundle-ActivationPolicy: lazy
 Export-Package: com.raytheon.viz.alerts,
  com.raytheon.viz.alerts.jobs,
  com.raytheon.viz.alerts.observers
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-17
 

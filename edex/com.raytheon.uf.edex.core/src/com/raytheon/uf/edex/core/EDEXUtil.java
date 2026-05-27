@@ -23,6 +23,8 @@ package com.raytheon.uf.edex.core;
 import java.io.File;
 import java.util.Date;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,6 +66,9 @@ import com.raytheon.uf.edex.core.exception.ShutdownException;
  * Apr 21, 2021  7849     mapeters     Deprecate methods using static Spring context, add {@link
  *                                     #getESBComponent(ApplicationContext, String)}, remove
  *                                     IContextAdmin field
+ * Sep 17, 2024  2037700  tgurney      Replace shutdown boolean flag with a latch
+ *                                     to allow blocking wait for shutdown
+ * Apr 16, 2025  2038247  tgurney      make setMessageProducer static to match the field
  *
  * </pre>
  *
@@ -100,13 +105,15 @@ public class EDEXUtil implements ApplicationContextAware {
 
     private static final Object waiter = new Object();
 
-    private static volatile boolean shuttingDown = false;
+    /* Latch is released when JVM begins shutting down. */
+    private static volatile CountDownLatch shutdownLatch = new CountDownLatch(
+            1);
 
     static {
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void run() {
-                shuttingDown = true;
+                shutdownLatch.countDown();
             }
         });
     }
@@ -235,7 +242,7 @@ public class EDEXUtil implements ApplicationContextAware {
      * @return
      */
     public static boolean isShuttingDown() {
-        return shuttingDown;
+        return shutdownLatch.getCount() == 0;
     }
 
     /**
@@ -244,7 +251,7 @@ public class EDEXUtil implements ApplicationContextAware {
      * @throws ShutdownException
      */
     public static void checkShuttingDown() throws ShutdownException {
-        if (shuttingDown) {
+        if (isShuttingDown()) {
             throw new ShutdownException();
         }
     }
@@ -263,7 +270,7 @@ public class EDEXUtil implements ApplicationContextAware {
         return mainMessageProducer;
     }
 
-    public void setMessageProducer(IMessageProducer messageProducer) {
+    public static void setMessageProducer(IMessageProducer messageProducer) {
         if (mainMessageProducer == null) {
             mainMessageProducer = messageProducer;
         }
@@ -344,6 +351,20 @@ public class EDEXUtil implements ApplicationContextAware {
      */
     public static String getAlertendpoint() {
         return alertEndpoint;
+    }
+
+    /**
+     * Wait up to the specified time for EDEX to begin shutting down
+     *
+     * @param timeout
+     * @param timeUnit
+     * @return true if EDEX shutdown started within the time interval, false if
+     *         the specified time elapsed without EDEX shutdown
+     * @throws InterruptedException
+     */
+    public static boolean awaitShutdown(long timeout, TimeUnit timeUnit)
+            throws InterruptedException {
+        return shutdownLatch.await(timeout, timeUnit);
     }
 
 }

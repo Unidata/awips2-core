@@ -24,9 +24,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import com.raytheon.uf.common.http.ProtectiveHttpOutputStream;
 import com.raytheon.uf.common.localization.FileLocker;
 import com.raytheon.uf.common.localization.FileLocker.Type;
@@ -35,6 +32,9 @@ import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.checksum.ChecksumIO;
 import com.raytheon.uf.edex.core.EDEXUtil;
 import com.raytheon.uf.edex.core.EdexException;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * Base class for handling HTTP methods that are going to modify localization

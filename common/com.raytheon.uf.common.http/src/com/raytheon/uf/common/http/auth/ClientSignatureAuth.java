@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -29,24 +29,24 @@ import java.security.SecureRandom;
 import java.security.Signature;
 import java.security.SignatureException;
 
-import org.apache.http.HttpHost;
-import org.apache.http.client.utils.URIUtils;
+import org.apache.hc.client5.http.utils.URIUtils;
+import org.apache.hc.core5.http.HttpHost;
 
 /**
  * Implements signature authentication for HTTP clients
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Feb 25, 2014 2756       bclement     Initial creation
- * 
+ * Feb 25, 2014 2756       bclement    Initial creation
+ * Apr 15, 2026 2038243    mapeters    Apache httpclient 5 upgrade
+ *
  * </pre>
- * 
+ *
  * @author bclement
- * @version 1.0
  */
 public class ClientSignatureAuth extends SignatureAuthScheme {
 
@@ -56,12 +56,12 @@ public class ClientSignatureAuth extends SignatureAuthScheme {
 
     /**
      * Default constructor, creates a new keypair
-     * 
+     *
      * @throws NoSuchAlgorithmException
      * @throws InvalidKeyException
      */
-    public ClientSignatureAuth() throws NoSuchAlgorithmException,
-            InvalidKeyException {
+    public ClientSignatureAuth()
+            throws NoSuchAlgorithmException, InvalidKeyException {
         this(generateKeys());
     }
 
@@ -79,7 +79,7 @@ public class ClientSignatureAuth extends SignatureAuthScheme {
 
     /**
      * Create a base64 encoded signature from URI
-     * 
+     *
      * @param uri
      * @return
      * @throws SignatureException
@@ -90,7 +90,7 @@ public class ClientSignatureAuth extends SignatureAuthScheme {
 
     /**
      * Create a base64 encoded signature from URI and body
-     * 
+     *
      * @param uri
      * @param bytes
      * @return
@@ -110,7 +110,7 @@ public class ClientSignatureAuth extends SignatureAuthScheme {
 
     /**
      * Generate a new public/private key pair using the default algorithms
-     * 
+     *
      * @return
      * @throws NoSuchAlgorithmException
      */
@@ -130,7 +130,7 @@ public class ClientSignatureAuth extends SignatureAuthScheme {
 
     /**
      * Get the default public key algorithm
-     * 
+     *
      * @return
      */
     public String getKeyAlgorithm() {
@@ -139,7 +139,7 @@ public class ClientSignatureAuth extends SignatureAuthScheme {
 
     /**
      * Get the base64 X509 encoded public key
-     * 
+     *
      * @return
      */
     public String getEncodedPublicKey() {

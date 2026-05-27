@@ -4,7 +4,7 @@ Bundle-Name: Ignite PointData
 Bundle-SymbolicName: com.raytheon.uf.edex.pointdata.ignite
 Bundle-Version: 1.20.0.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-11
+Bundle-RequiredExecutionEnvironment: JavaSE-17
 Require-Bundle: com.raytheon.uf.edex.pointdata,
  com.raytheon.uf.common.datastore.ignite,
  com.raytheon.uf.edex.core,

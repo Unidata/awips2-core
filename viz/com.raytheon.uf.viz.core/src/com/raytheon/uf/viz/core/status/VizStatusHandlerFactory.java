@@ -23,7 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.MissingResourceException;
 
-import javax.xml.bind.JAXBException;
+import jakarta.xml.bind.JAXBException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

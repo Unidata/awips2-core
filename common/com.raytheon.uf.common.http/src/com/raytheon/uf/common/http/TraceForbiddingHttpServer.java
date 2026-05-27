@@ -18,15 +18,12 @@
  **/
 package com.raytheon.uf.common.http;
 
-import java.io.IOException;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletResponse;
-
-import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.util.Callback;
+
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  *
@@ -44,6 +41,7 @@ import org.eclipse.jetty.server.Server;
  * ------------ ---------- ----------- -------------------------------------------
  * Apr 05, 2022 8837       mapeters    Initial creation (extracted anonymous
  *                                     class from collaboration's WebServerRunner)
+ * 2024-05-09   2037228    tgurney     Jetty 12 API changes
  *
  * </pre>
  *
@@ -56,17 +54,15 @@ public class TraceForbiddingHttpServer extends Server {
     }
 
     @Override
-    public void handle(HttpChannel channel)
-            throws IOException, ServletException {
-        Request request = channel.getRequest();
-        Response response = channel.getResponse();
-
+    public boolean handle(Request request, Response response, Callback callback)
+            throws Exception {
         if ("TRACE".equals(request.getMethod().toUpperCase())
                 || "TRACK".equals(request.getMethod().toUpperCase())) {
-            request.setHandled(true);
             response.setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
+            callback.succeeded();
+            return true;
         } else {
-            super.handle(channel);
+            return super.handle(request, response, callback);
         }
     }
 }

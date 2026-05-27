@@ -19,7 +19,7 @@
  **/
 package com.raytheon.uf.common.inventory.tree;
 
-import javax.persistence.Transient;
+import jakarta.persistence.Transient;
 
 import com.raytheon.uf.common.dataplugin.level.Level;
 import com.raytheon.uf.common.dataplugin.level.LevelFactory;

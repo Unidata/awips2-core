@@ -19,7 +19,7 @@
  **/
 package com.raytheon.uf.common.geospatial.adapter;
 
-import javax.xml.bind.annotation.adapters.XmlAdapter;
+import jakarta.xml.bind.annotation.adapters.XmlAdapter;
 
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.io.WKTReader;

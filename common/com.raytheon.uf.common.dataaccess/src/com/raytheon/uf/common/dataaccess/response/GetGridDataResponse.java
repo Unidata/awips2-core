@@ -27,7 +27,7 @@ import java.util.Map;
 
 import org.geotools.coverage.grid.GridGeometry2D;
 import org.geotools.geometry.jts.ReferencedEnvelope;
-import org.opengis.coverage.grid.GridEnvelope;
+import org.geotools.api.coverage.grid.GridEnvelope;
 
 import com.raytheon.uf.common.dataaccess.grid.IGridData;
 import com.raytheon.uf.common.geospatial.LatLonReprojection;

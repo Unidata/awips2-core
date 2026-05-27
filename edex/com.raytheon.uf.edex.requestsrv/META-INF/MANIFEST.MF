@@ -4,7 +4,7 @@ Bundle-Name: EDEX Request Service
 Bundle-SymbolicName: com.raytheon.uf.edex.requestsrv
 Bundle-Version: 1.19.0.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-RequiredExecutionEnvironment: JavaSE-17
 Require-Bundle: com.raytheon.uf.edex.auth,
  com.raytheon.uf.common.auth,
  com.raytheon.uf.common.serialization,
@@ -19,10 +19,11 @@ Require-Bundle: com.raytheon.uf.edex.auth,
  org.springframework,
  org.apache.shiro,
  com.fasterxml.jackson,
- javax.xml.bind
+ jakarta.xml.bind,
+ com.raytheon.uf.edex.routes
 Import-Package: com.raytheon.edex.esb,
- javax.servlet,
- javax.servlet.http
+ jakarta.servlet,
+ jakarta.servlet.http
 Export-Package: com.raytheon.uf.edex.requestsrv,
  com.raytheon.uf.edex.requestsrv.http,
  com.raytheon.uf.edex.requestsrv.request,

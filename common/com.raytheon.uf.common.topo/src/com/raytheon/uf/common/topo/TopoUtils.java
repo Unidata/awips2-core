@@ -25,14 +25,14 @@ import java.util.Map;
 
 import org.geotools.coverage.grid.GeneralGridEnvelope;
 import org.geotools.coverage.grid.GridGeometry2D;
-import org.geotools.geometry.GeneralEnvelope;
+import org.geotools.geometry.GeneralBounds;
 import org.geotools.referencing.CRS;
 import org.geotools.referencing.crs.DefaultGeographicCRS;
-import org.opengis.coverage.grid.GridEnvelope;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
-import org.opengis.referencing.operation.MathTransform;
-import org.opengis.referencing.operation.TransformException;
+import org.geotools.api.coverage.grid.GridEnvelope;
+import org.geotools.api.referencing.FactoryException;
+import org.geotools.api.referencing.crs.CoordinateReferenceSystem;
+import org.geotools.api.referencing.operation.MathTransform;
+import org.geotools.api.referencing.operation.TransformException;
 
 import com.raytheon.uf.common.datastorage.IDataStore;
 import com.raytheon.uf.common.datastorage.Request;
@@ -54,6 +54,7 @@ import com.raytheon.uf.common.geospatial.CRSCache;
  * Feb 10, 2014     #2788  randerso    Changed default topo file name
  * Jul 17, 2015      4608  nabowle     Add public default topo file constant.
  * Nov 02, 2016      5979  njensen     Cast to Number where applicable
+ * May 07, 2024    2037231 aford       Upgrade GeoTools to 31
  *
  * </pre>
  *
@@ -105,7 +106,7 @@ public class TopoUtils {
 
         mt.transform(in, 0, out, 0, 2);
 
-        GeneralEnvelope gridEnvelope = new GeneralEnvelope(2);
+        GeneralBounds gridEnvelope = new GeneralBounds(2);
         gridEnvelope.setCoordinateReferenceSystem(crs);
         gridEnvelope.setRange(0, Math.min(out[0], out[2]),
                 Math.max(out[0], out[2]));

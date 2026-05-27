@@ -22,7 +22,7 @@ package com.raytheon.uf.common.serialization;
 import java.io.File;
 import java.io.InputStream;
 
-import javax.xml.bind.JAXBException;
+import jakarta.xml.bind.JAXBException;
 
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;

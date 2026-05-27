@@ -19,7 +19,7 @@
  **/
 package com.raytheon.uf.common.serialization;
 
-import javax.xml.bind.JAXB;
+import jakarta.xml.bind.JAXB;
 
 /**
  * DEPRECATED! Former usage (no longer applies):
@@ -53,7 +53,7 @@ import javax.xml.bind.JAXB;
  *             smaller set of classes. If working with a single type on one
  *             thread, you can use {@link JAXB} directly. Hibernate no longer
  *             uses ISerializableObject, EDEX will automatically detect classes
- *             with javax.persistence.Entity or javax.persistence.Embeddable
+ *             with jakarta.persistence.Entity or jakarta.persistence.Embeddable
  *             annotations that exist in jars in the edex/lib/plugins directory.
  *             See DatabaseClassAnnotationFinder for more details.
  * 

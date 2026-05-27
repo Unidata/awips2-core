@@ -19,8 +19,6 @@
 
    <plugin
          id="net.opengis_v2"
-         download-size="0"
-         install-size="0"
-         version="1.0.0.qualifier"/>
+         version="0.0.0"/>
 
 </feature>

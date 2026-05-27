@@ -23,7 +23,7 @@ package com.raytheon.uf.common.time.util;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 
-import javax.xml.bind.DatatypeConverter;
+import jakarta.xml.bind.DatatypeConverter;
 
 import org.apache.commons.beanutils.Converter;
 

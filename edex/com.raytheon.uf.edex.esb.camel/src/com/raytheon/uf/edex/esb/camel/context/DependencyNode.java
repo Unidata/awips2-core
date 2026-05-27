@@ -22,124 +22,80 @@ package com.raytheon.uf.edex.esb.camel.context;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.camel.CamelContext;
-import org.apache.camel.Endpoint;
-import org.apache.camel.Route;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.common.util.Pair;
+import com.raytheon.uf.edex.esb.camel.EDEXRouteContext;
 
 /**
  * Class to map a context to its required and dependent contexts.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Apr 10, 2014 2726       rjpeter     Initial creation
- * 
+ * Jul 24, 2024 2037700    tgurney     Kill EDEX if circular dependency
+ * Jul 31, 2024 2037700    tgurney     Replace CamelContext with EDEXRouteContext
+ *
  * </pre>
- * 
+ *
  * @author rjpeter
- * @version 1.0
  */
 public class DependencyNode {
-    private final CamelContext context;
+    private static final Logger logger = LoggerFactory
+            .getLogger(DependencyNode.class);
+
+    private final EDEXRouteContext context;
 
     /**
      * Contexts required by this context.
      */
-    private final Set<CamelContext> requiredContexs = new HashSet<CamelContext>();
+    private final Set<EDEXRouteContext> requiredContexts = new HashSet<>();
 
     /**
      * Contexts that depend on this context.
      */
-    private final Set<CamelContext> dependentContexts = new HashSet<CamelContext>();
+    private final Set<EDEXRouteContext> dependentContexts = new HashSet<>();
 
-    public DependencyNode(CamelContext context) {
+    public DependencyNode(EDEXRouteContext context) {
         this.context = context;
     }
 
     /**
      * Add a node who is dependent on this node. Applies linking in both
      * directions.
-     * 
+     *
      * @param dNode
      */
     public void addDependentNode(DependencyNode dNode) {
-        if (!requiredContexs.contains(dNode.context)) {
+        if (!requiredContexts.contains(dNode.context)) {
             dependentContexts.add(dNode.context);
-            dNode.requiredContexs.add(context);
+            dNode.requiredContexts.add(context);
         } else {
-            StringBuilder msg = new StringBuilder(300);
-            msg.append("Circular CamelContext dependency detected between ")
-                    .append(context.getName())
-                    .append(" and ")
-                    .append(dNode.context.getName())
-                    .append(". Removing dependency, startup/shutdown may be incorrect, verify configuration. ");
-            addRouteData(context, msg);
-            addRouteData(dNode.context, msg);
-            UFStatus.getHandler(DependencyNode.class).warn(msg.toString());
+            logger.error("Circular dependency detected between "
+                    + context.getName() + " and " + dNode.context.getName());
+            System.exit(1);
         }
     }
 
-    public CamelContext getContext() {
+    public EDEXRouteContext getContext() {
         return context;
     }
 
     /**
-     * Get all contexts that this context requires to be running.
-     * 
-     * @return
+     * @return all contexts that this context requires to be running.
      */
-    public Set<CamelContext> getRequiredContexts() {
-        return requiredContexs;
+    public Set<EDEXRouteContext> getRequiredContexts() {
+        return requiredContexts;
     }
 
     /**
-     * Get all contexts that depend on this context to be running.
-     * 
-     * @return
+     * @return all contexts that depend on this context to be running.
      */
-    public Set<CamelContext> getDependentContexts() {
+    public Set<EDEXRouteContext> getDependentContexts() {
         return dependentContexts;
-    }
-
-    /**
-     * Utility method for printing information about a context.
-     * 
-     * @param ctx
-     * @param builder
-     */
-    private static void addRouteData(CamelContext ctx, StringBuilder builder) {
-        builder.append("Context [").append(ctx.getName())
-                .append("] consumes from [");
-        Set<String> consumerEndpoints = new HashSet<String>();
-        for (Route route : ctx.getRoutes()) {
-            Endpoint endpoint = route.getEndpoint();
-            String uri = endpoint.getEndpointUri();
-            Pair<String, String> typeAndName = ContextData
-                    .getEndpointTypeAndName(uri);
-            String name = typeAndName.getFirst() + ":"
-                    + typeAndName.getSecond();
-            builder.append(name).append(", ");
-            consumerEndpoints.add(name);
-        }
-        builder.delete(builder.length() - 2, builder.length());
-        builder.append("] and produces to [");
-        for (Endpoint endpoint : ctx.getEndpoints()) {
-            String uri = endpoint.getEndpointUri();
-            Pair<String, String> typeAndName = ContextData
-                    .getEndpointTypeAndName(uri);
-            String name = typeAndName.getFirst() + ":"
-                    + typeAndName.getSecond();
-            if (!consumerEndpoints.contains(name)) {
-                builder.append(name).append(", ");
-            }
-        }
-        builder.delete(builder.length() - 2, builder.length());
-        builder.append("]. ");
     }
 }

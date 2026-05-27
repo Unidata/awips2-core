@@ -28,12 +28,12 @@ import java.util.ArrayList;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Marshaller;
-import javax.xml.bind.Unmarshaller;
-import javax.xml.bind.ValidationEvent;
-import javax.xml.bind.ValidationEventHandler;
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.JAXBException;
+import jakarta.xml.bind.Marshaller;
+import jakarta.xml.bind.Unmarshaller;
+import jakarta.xml.bind.ValidationEvent;
+import jakarta.xml.bind.ValidationEventHandler;
 import javax.xml.stream.XMLInputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamReader;
@@ -56,6 +56,8 @@ import com.raytheon.uf.common.serialization.MarshalOptions;
  *                                      prevent XEE attacks.
  * Sep 02, 2011 ????       ekladstrup   Add MaintainEventsValidationHandler
  * Nov 08, 2017 6511       tgurney      Add constructor with useValidation flag
+ * Oct 25, 2024 2037223    aford        JAXB Upgrade - updated comments to reflect
+ *                                      changes to custom context initialization
  *
  * </pre>
  *
@@ -119,10 +121,10 @@ public class JaxbMarshallerStrategy {
      * use an XMLStreamReader to parse the source to prevent External Entity
      * Attacks.
      *
-     * CustomJAXBUnmarshaller is only used when the list of Classes provided to
-     * JAXBContext.newInstance(...) contains JaxbDummyObject.class, which causes
-     * the jaxb.properties in this package to be loaded and then uses
-     * SerializationContextFactory.createContext() for the JAXBContext creation.
+     * CustomJAXBUnmarshaller is only used when a JAXBManager is used that has
+     * been created with the useCustomJaxbContextFactory flag set to true.
+     * SerializationContextFactory.createContext() is then called to create
+     * the JAXBContext.
      *
      * CustomJAXBUnmarshaller uses CustomEntityResolver to prevent External
      * Entity Attacks.
