@@ -23,6 +23,9 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+import org.apache.camel.Exchange;
+import org.apache.camel.http.common.HttpMessage;
+
 import com.raytheon.uf.edex.localization.http.writer.ILocalizationResponseWriter;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -45,6 +48,7 @@ import jakarta.servlet.http.HttpServletResponse;
  * May 18, 2017  6242     randerso  Changed to use new roles and permissions
  *                                  framework
  * Aug 07, 2017  5731     bsteffen  Separate logic for each method into it's own class.
+ * May 13, 2026  2041694  mapeters  Camel 4.18 upgrade
  *
  * </pre>
  *
@@ -75,15 +79,17 @@ public class LocalizationHttpService {
     /**
      * Handle HTTP PUT requests for localization files
      *
-     * @param request
-     * @param response
+     * @param exchange
      * @return Always null. Returning null signals to the jetty endpoint that we
      *         handled the response writing ourselves so it will not try to
      *         write to the response.
      * @throws IOException
      */
-    public Object handle(HttpServletRequest request,
-            HttpServletResponse response) throws IOException {
+    public Object handle(Exchange exchange) throws IOException {
+        HttpMessage msg = exchange.getMessage(HttpMessage.class);
+        HttpServletRequest request = msg.getRequest();
+        HttpServletResponse response = msg.getResponse();
+
         switch (request.getMethod()) {
         case "GET":
             get.handle(request, response);
