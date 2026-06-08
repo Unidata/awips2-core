@@ -44,6 +44,7 @@ import com.raytheon.uf.edex.esb.camel.spring.JmsThreadPoolTaskExecutor;
  * Sep 15, 2024 2037700    tgurney     Remove pool size cap for topics, to
  *                                     accomodate multiple consumers on same
  *                                     topic same JVM
+ * Jun 01, 2026 2042123    mapeters    Set deserialization filter
  * </pre>
  *
  * @author rjpeter
@@ -101,6 +102,14 @@ public class DedicatedThreadJmsComponent extends JmsComponent {
         jmsE.setTaskExecutor(executor);
         jmsE.setMessageListenerContainerFactory(
                 MonitoredDefaultMessageListenerContainerFactory.getInstance());
+
+        /*
+         * Add com.raytheon (needed for GribDecodeMessage) and jakarta/gov.noaa
+         * (unknown if needed) to camel's default filter
+         * (JmsBinding.DEFAULT_DESERIALIZATION_FILTER).
+         */
+        jmsE.getConfiguration().setDeserializationFilter(
+                "java.**;javax.**;jakarta.**;org.apache.camel.**;com.raytheon.**;gov.noaa.**;!*");
 
         return jmsE;
     }
