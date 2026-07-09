@@ -84,6 +84,8 @@ import jakarta.xml.bind.JAXBException;
  *                                  processed
  * Mar  4, 2021  8326     tgurney   Camel 3 method naming fix
  * Sep  5, 2024  2037700  tgurney   Remove vm and direct-vm components (Camel 4)
+ * May 13, 2026  2041694  mapeters  Change notifyRoutes param from varargs to
+ *                                  array (Camel 4.18)
  *
  * </pre>
  *
@@ -378,7 +380,7 @@ public class PluginNotifier implements IContextStateProcessor {
      * upgrade to Camel 3 due to failure to resolve references to this method
      * from XML. Maybe due to name conflict with Object.notify()
      */
-    public int notifyRoutes(PluginDataObject... pdos) {
+    public int notifyRoutes(PluginDataObject[] pdos) {
         lock.readLock().lock();
         try {
             if (pdos != null && pdos.length > 0) {

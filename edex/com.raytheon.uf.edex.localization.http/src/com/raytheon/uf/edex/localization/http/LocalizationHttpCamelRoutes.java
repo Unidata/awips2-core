@@ -20,6 +20,8 @@
 
 package com.raytheon.uf.edex.localization.http;
 
+import org.apache.camel.http.common.HttpMessage;
+
 import com.raytheon.uf.edex.routes.EDEXRouteBuilder;
 
 /**
@@ -33,6 +35,8 @@ import com.raytheon.uf.edex.routes.EDEXRouteBuilder;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * 2024-07-11   2037702    aford       Initial creation (from auto-generated)
+ * May 13, 2026 2041694    mapeters    Camel 4.18 upgrade
+ *
  *
  * </pre>
  */
@@ -59,10 +63,19 @@ public class LocalizationHttpCamelRoutes extends EDEXRouteBuilder {
                 + this.edexLocalizationHttpPath + "?"
                 + this.edexLocalizationHttpProperties
                 + "&httpMethodRestrict=HEAD,GET,PUT,DELETE&mapHttpMessageBody=false")
-                        .noStreamCaching()
-                        .setBody(simple("${in.header.CamelHttpServletRequest}"))
-                        .bean("localizationHttpSrv",
-                                "handle(${in.header.CamelHttpServletRequest}, ${in.header.CamelHttpServletResponse})")
+                        .streamCache(false)
+                        /*
+                         * Old comment from xml route (not sure if setting the
+                         * body is still needed): Set the body to prevent camel
+                         * from accessing the input stream from the request. The
+                         * unblemished request needs to be passed on so that
+                         * expect/continue can properly report errors before a
+                         * continue is sent.
+                         */
+                        .process(exchange -> {
+                            exchange.getIn().setBody(exchange
+                                    .getIn(HttpMessage.class).getRequest());
+                        }).bean("localizationHttpSrv", "handle")
                         .setId("localizationHttpRoute");
     }
 }

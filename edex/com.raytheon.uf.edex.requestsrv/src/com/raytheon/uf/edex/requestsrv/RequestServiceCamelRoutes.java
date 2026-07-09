@@ -20,8 +20,8 @@
 
 package com.raytheon.uf.edex.requestsrv;
 
-import com.raytheon.uf.edex.routes.EDEXRouteBuilder;
 import com.raytheon.uf.edex.routes.EDEXHttpRequestFormatParser;
+import com.raytheon.uf.edex.routes.EDEXRouteBuilder;
 
 /**
  * Camel routes converted from file "request-service.xml", context
@@ -36,10 +36,10 @@ import com.raytheon.uf.edex.routes.EDEXHttpRequestFormatParser;
  * 2024-07-11   2037702    aford       Initial creation (from auto-generated)
  * 2024-08-20   2037798    tgurney     Extract RequestFormatParser to new class
  *                                     called EDEXHttpRequestFormatParser
+ * May 13, 2026 2041694    mapeters    Camel 4.18 upgrade
  *
  * </pre>
  */
-
 public class RequestServiceCamelRoutes extends EDEXRouteBuilder {
 
     private final String edexHttpPort;
@@ -64,13 +64,12 @@ public class RequestServiceCamelRoutes extends EDEXRouteBuilder {
 
         // @formatter:off
         from(requestServiceEndpoint)
-                .noStreamCaching()
+                .streamCache(false)
                 .process(new EDEXHttpRequestFormatParser())
                 .to("bean:httpServiceExecutor?method=execute("
                         + "${body}, "
                         + "${in.header." + EDEXHttpRequestFormatParser.FORMAT_HEADER + "}, "
-                        + "${in.header.accept-encoding}, "
-                        + "${in.header.CamelHttpServletResponse})");
+                        + "${in.header.accept-encoding})");
         // @formatter:on
     }
 }

@@ -34,6 +34,9 @@ export MAX_MEM=2304 # in Meg
 if [ $HIGH_MEM == "on" ]; then
     export MAX_MEM=8192
 fi
+if [ "$EXTRA_REQUEST_MEMORY" = true ]; then
+    export MAX_MEM=8192
+fi
 
 export SERIALIZE_POOL_MAX_SIZE=24
 export SERIALIZE_STREAM_INIT_SIZE_MB=2
