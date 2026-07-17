@@ -5,7 +5,7 @@ Bundle-SymbolicName: com.raytheon.uf.common.dataplugin.level
 Bundle-Version: 1.18.0.qualifier
 Bundle-Vendor: Raytheon
 Bundle-ActivationPolicy: lazy
-Bundle-RequiredExecutionEnvironment: JavaSE-11
+Bundle-RequiredExecutionEnvironment: JavaSE-17
 Require-Bundle: com.raytheon.uf.common.dataplugin,
  com.raytheon.uf.common.serialization,
  com.raytheon.uf.common.localization,
@@ -15,7 +15,7 @@ Require-Bundle: com.raytheon.uf.common.dataplugin,
  org.apache.commons.lang3,
  javax.measure,
  com.raytheon.uf.common.dataquery,
- javax.xml.bind
+ jakarta.xml.bind
 Export-Package: com.raytheon.uf.common.dataplugin.level,
  com.raytheon.uf.common.dataplugin.level.mapping,
  com.raytheon.uf.common.dataplugin.level.request,

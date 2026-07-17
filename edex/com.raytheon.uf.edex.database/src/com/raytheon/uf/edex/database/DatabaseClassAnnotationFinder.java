@@ -24,8 +24,8 @@ import java.io.FileFilter;
 import java.net.MalformedURLException;
 import java.util.Set;
 
-import javax.persistence.Embeddable;
-import javax.persistence.Entity;
+import jakarta.persistence.Embeddable;
+import jakarta.persistence.Entity;
 
 import org.reflections.Reflections;
 import org.reflections.scanners.TypeAnnotationsScanner;

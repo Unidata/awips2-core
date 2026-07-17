@@ -21,31 +21,32 @@ package com.raytheon.uf.edex.esb.camel.context;
 
 import java.util.concurrent.ExecutorService;
 
-import org.apache.camel.CamelContext;
-
 import com.raytheon.uf.common.util.SystemUtil;
 import com.raytheon.uf.edex.database.cluster.ClusterLockUtils;
 import com.raytheon.uf.edex.database.cluster.ClusterTask;
+import com.raytheon.uf.edex.esb.camel.EDEXRouteContext;
 
 /**
  * Implementation of {@link IContextStateManager} that handles clustered
  * contexts. Extends {@code DependencyContextStateManager} to allow for
  * clustered contexts to work with dependencies also.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Apr 10, 2014 2726       rjpeter     Initial creation
  * Dec 08, 2016 3440       njensen     Improved check in stopContext()
- * 
+ * Jul 31, 2024 2037700    tgurney     Replace CamelContext with EDEXRouteContext
+ *
  * </pre>
- * 
+ *
  * @author rjpeter
  */
-public class ClusteredContextStateManager extends DependencyContextStateManager {
+public class ClusteredContextStateManager
+        extends DependencyContextStateManager {
 
     /**
      * Name field for cluster task.
@@ -60,7 +61,7 @@ public class ClusteredContextStateManager extends DependencyContextStateManager 
     /**
      * Constructor that takes an {@code ExecutorService}. The
      * {@code ExecutorService} is used for starting/stopping dependent contexts.
-     * 
+     *
      * @param service
      */
     public ClusteredContextStateManager(ExecutorService service) {
@@ -71,16 +72,17 @@ public class ClusteredContextStateManager extends DependencyContextStateManager 
 
     /**
      * Get the {@code ClusterLock} details field.
-     * 
+     *
      * @param context
      * @return
      */
-    protected static String getLockDetails(CamelContext context) {
+    protected static String getLockDetails(EDEXRouteContext context) {
         return context.getName() + ClusterLockUtils.CLUSTER_SUFFIX;
     }
 
     @Override
-    public boolean isContextStartable(CamelContext context) throws Exception {
+    public boolean isContextStartable(EDEXRouteContext context)
+            throws Exception {
         boolean canStartContext = super.isContextStartable(context);
 
         /*
@@ -89,8 +91,8 @@ public class ClusteredContextStateManager extends DependencyContextStateManager 
          */
         if (canStartContext || context.getStatus().isStarted()) {
             ClusterTask lock = ClusterLockUtils.lock(taskName,
-                    getLockDetails(context), myName, ContextManager
-                            .getInstance().getTimeOutMillis(), false);
+                    getLockDetails(context), myName,
+                    ContextManager.getInstance().getTimeOutMillis(), false);
 
             switch (lock.getLockState()) {
             case ALREADY_RUNNING:
@@ -98,9 +100,9 @@ public class ClusteredContextStateManager extends DependencyContextStateManager 
                 canStartContext = lock.getExtraInfo().equals(myName);
                 if (canStartContext) {
                     // update the lock time
-                    ClusterLockUtils
-                            .updateLockTime(taskName, getLockDetails(context),
-                                    System.currentTimeMillis());
+                    ClusterLockUtils.updateLockTime(taskName,
+                            getLockDetails(context),
+                            System.currentTimeMillis());
                 }
                 break;
             case SUCCESSFUL:
@@ -116,7 +118,7 @@ public class ClusteredContextStateManager extends DependencyContextStateManager 
     }
 
     @Override
-    public boolean stopContext(CamelContext context) throws Exception {
+    public boolean stopContext(EDEXRouteContext context) throws Exception {
         // on stop, unlock the cluster lock if we own it
         String contextName = context.getName()
                 + ClusterLockUtils.CLUSTER_SUFFIX;

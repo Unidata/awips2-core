@@ -44,7 +44,7 @@ public class DebugNotificationObserver implements INotificationObserver {
     /*
      * (non-Javadoc)
      * 
-     * @see com.raytheon.viz.alerts.INotificationObserver#notificationArrived(javax.jms.Message[])
+     * @see com.raytheon.viz.alerts.INotificationObserver#notificationArrived(jakarta.jms.Message[])
      */
     @Override
     public void notificationArrived(NotificationMessage[] messages) {

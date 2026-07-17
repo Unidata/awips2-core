@@ -21,9 +21,9 @@ package com.raytheon.uf.viz.topo;
 
 import java.io.File;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlElement;
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlElement;
 
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.topo.TopoUtils;

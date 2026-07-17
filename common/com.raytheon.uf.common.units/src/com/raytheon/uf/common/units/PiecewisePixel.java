@@ -84,7 +84,7 @@ public class PiecewisePixel<Q extends Quantity<Q>> extends AbstractUnit<Q> {
         for (int i = 0; i < dispValues.length; i++) {
             try {
                 stdValues[i] = toStd.convert(dispValues[i]);
-            } catch (NumberFormatException e) {
+            } catch (IllegalArgumentException e) {
                 stdValues[i] = Double.NaN;
             }
         }

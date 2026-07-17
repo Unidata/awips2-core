@@ -26,9 +26,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import com.raytheon.uf.common.http.ProtectiveHttpOutputStream;
 import com.raytheon.uf.common.http.auth.BasicCredential;
 import com.raytheon.uf.common.http.auth.BasicScheme;
@@ -37,6 +34,9 @@ import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.edex.localization.http.scheme.LocalizationAuthorization;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * Base class for servicing http requests for localization, subclasses can be

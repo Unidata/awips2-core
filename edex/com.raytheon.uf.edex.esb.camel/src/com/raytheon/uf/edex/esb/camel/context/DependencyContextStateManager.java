@@ -25,8 +25,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
-import org.apache.camel.CamelContext;
-import org.apache.camel.Route;
+import com.raytheon.uf.edex.esb.camel.EDEXRouteContext;
 
 /**
  * Implementation of IContextStateManager that handles dependencies between
@@ -41,6 +40,7 @@ import org.apache.camel.Route;
  * ------------ ---------- ----------- --------------------------
  * Apr 10, 2014 2726       rjpeter     Initial creation
  * Mar  4, 2021 8326       tgurney     Fixes for Camel 3 API changes
+ * Jul 31, 2024 2037700    tgurney     Replace CamelContext with EDEXRouteContext
  *
  * </pre>
  *
@@ -63,25 +63,19 @@ public class DependencyContextStateManager extends DefaultContextStateManager {
     }
 
     @Override
-    public boolean isContextStartable(CamelContext context) throws Exception {
+    public boolean isContextStartable(EDEXRouteContext context)
+            throws Exception {
         if (!super.isContextStartable(context)) {
             return false;
         }
 
-        Set<CamelContext> requiredContexts = ContextManager.getInstance()
+        Set<EDEXRouteContext> requiredContexts = ContextManager.getInstance()
                 .getDependencyMapping(false).getRequiredContexts(context);
 
         if (requiredContexts != null) {
-            for (CamelContext rContext : requiredContexts) {
+            for (EDEXRouteContext rContext : requiredContexts) {
                 if (!rContext.getStatus().isStarted()) {
                     return false;
-                } else {
-                    for (Route rRoute : rContext.getRoutes()) {
-                        if (!rContext.getRouteController()
-                                .getRouteStatus(rRoute.getId()).isStarted()) {
-                            return false;
-                        }
-                    }
                 }
             }
         }
@@ -90,17 +84,17 @@ public class DependencyContextStateManager extends DefaultContextStateManager {
     }
 
     @Override
-    public boolean startContext(CamelContext context) throws Exception {
+    public boolean startContext(EDEXRouteContext context) throws Exception {
         boolean rval = super.startContext(context);
         ContextManager ctxMgr = ContextManager.getInstance();
 
         if (rval) {
-            Set<CamelContext> dContexts = ctxMgr.getDependencyMapping(false)
+            Set<EDEXRouteContext> dContexts = ctxMgr.getDependencyMapping(false)
                     .getDependentContexts(context);
             if (dContexts != null) {
                 List<Future<Boolean>> callbacks = null;
 
-                for (final CamelContext dCtx : dContexts) {
+                for (final EDEXRouteContext dCtx : dContexts) {
                     final IContextStateManager stateMgr = ctxMgr
                             .getStateManager(dCtx);
                     if (stateMgr.isContextStartable(dCtx)) {
@@ -129,16 +123,17 @@ public class DependencyContextStateManager extends DefaultContextStateManager {
     }
 
     @Override
-    public boolean isContextStoppable(CamelContext context) throws Exception {
+    public boolean isContextStoppable(EDEXRouteContext context)
+            throws Exception {
         if (!super.isContextStoppable(context)) {
             return false;
         }
 
-        Set<CamelContext> dContexts = ContextManager.getInstance()
+        Set<EDEXRouteContext> dContexts = ContextManager.getInstance()
                 .getDependencyMapping(true).getDependentContexts(context);
 
         if (dContexts != null) {
-            for (CamelContext dContext : dContexts) {
+            for (EDEXRouteContext dContext : dContexts) {
                 /*
                  * only need to check if the context has stopped, can't have a
                  * stopped context with started routes.
@@ -153,17 +148,17 @@ public class DependencyContextStateManager extends DefaultContextStateManager {
     }
 
     @Override
-    public boolean stopContext(CamelContext context) throws Exception {
+    public boolean stopContext(EDEXRouteContext context) throws Exception {
         boolean rval = super.stopContext(context);
         ContextManager ctxMgr = ContextManager.getInstance();
 
         if (rval) {
-            Set<CamelContext> rContexts = ctxMgr.getDependencyMapping(true)
+            Set<EDEXRouteContext> rContexts = ctxMgr.getDependencyMapping(true)
                     .getRequiredContexts(context);
             if (rContexts != null) {
                 List<Future<Boolean>> callbacks = null;
 
-                for (final CamelContext rCtx : rContexts) {
+                for (final EDEXRouteContext rCtx : rContexts) {
                     final IContextStateManager stateMgr = ctxMgr
                             .getStateManager(rCtx);
                     if (stateMgr.isContextStoppable(rCtx)) {

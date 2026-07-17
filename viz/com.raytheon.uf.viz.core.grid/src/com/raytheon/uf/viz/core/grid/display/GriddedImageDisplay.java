@@ -21,7 +21,9 @@ package com.raytheon.uf.viz.core.grid.display;
 
 import java.nio.Buffer;
 
+import org.geotools.api.geometry.Bounds;
 import org.geotools.coverage.grid.GridGeometry2D;
+import org.locationtech.jts.geom.Coordinate;
 
 import com.raytheon.uf.common.colormap.image.ColorMapData;
 import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
@@ -36,7 +38,6 @@ import com.raytheon.uf.viz.core.drawables.PaintProperties;
 import com.raytheon.uf.viz.core.drawables.ext.colormap.IColormappedImageExtension;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.map.IMapDescriptor;
-import org.locationtech.jts.geom.Coordinate;
 
 /**
  * TODO Add Description
@@ -49,6 +50,7 @@ import org.locationtech.jts.geom.Coordinate;
  * Aug 13, 2014 #3505      mapeters     Replaced deprecated CMDataPreparerManager
  *                                      reference in initializeRaster() call.
  * May 18, 2015  4079      bsteffen     Move to core.grid
+ * May 07, 2024  2037231   aford        Upgrade GeoTools to 31
  * 
  * </pre>
  * 
@@ -103,7 +105,7 @@ public class GriddedImageDisplay implements IRenderable {
 
             try {
                 if (this.pixelCoverage == null) {
-                    org.opengis.geometry.Envelope ge = this.gridGeometry
+                    Bounds ge = this.gridGeometry
                             .getEnvelope();
 
                     ReferencedCoordinate ll = new ReferencedCoordinate(

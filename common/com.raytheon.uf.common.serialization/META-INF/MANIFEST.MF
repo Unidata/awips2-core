@@ -5,12 +5,12 @@ Bundle-SymbolicName: com.raytheon.uf.common.serialization
 Bundle-Version: 1.18.0.qualifier
 Bundle-Vendor: Raytheon
 Eclipse-BuddyPolicy: global, dependent
-Eclipse-RegisterBuddy: javax.xml.bind
+Eclipse-RegisterBuddy: jakarta.xml.bind
 Comment: dependent policy is only here until SerializableManager is no longer used, as it ensures the ISerializableObject files can be detected
 Require-Bundle: org.apache.thrift,
  org.springframework,
  com.raytheon.uf.common.util,
- javax.xml.bind,
+ jakarta.xml.bind,
  com.raytheon.uf.common.status
 Bundle-ActivationPolicy: lazy
 Export-Package: com.raytheon.uf.common.serialization,
@@ -19,5 +19,5 @@ Export-Package: com.raytheon.uf.common.serialization,
  com.raytheon.uf.common.serialization.jaxb,
  com.raytheon.uf.common.serialization.reflect,
  com.raytheon.uf.common.serialization.thrift
-Bundle-RequiredExecutionEnvironment: JavaSE-11
+Bundle-RequiredExecutionEnvironment: JavaSE-17
 Automatic-Module-Name: com.raytheon.uf.common.serialization

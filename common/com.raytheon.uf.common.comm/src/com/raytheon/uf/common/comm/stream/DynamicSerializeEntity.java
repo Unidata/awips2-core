@@ -24,7 +24,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.util.zip.GZIPOutputStream;
 
-import org.apache.http.entity.AbstractHttpEntity;
+import org.apache.hc.core5.http.io.entity.AbstractHttpEntity;
 
 import com.raytheon.uf.common.serialization.DynamicSerializationManager;
 import com.raytheon.uf.common.serialization.DynamicSerializationManager.SerializationType;
@@ -47,6 +47,7 @@ import com.raytheon.uf.common.util.stream.RateLimitingOutputStream;
  * Jan 22, 2013            njensen     Initial creation
  * Oct 30, 2015 4710       bclement    ByteArrayOutputStream renamed to PooledByteArrayOutputStream
  * Nov 29, 2016 5937       tgurney     Add optional rate limiting
+ * Apr 15, 2026 2038243    mapeters    Apache httpclient 5 upgrade
  *
  * </pre>
  *
@@ -78,9 +79,8 @@ public class DynamicSerializeEntity extends AbstractHttpEntity {
      *            is true, stream will be ignored.
      */
     public DynamicSerializeEntity(Object obj, boolean stream, boolean gzip) {
-        super();
+        super((String) null, null, !gzip && stream);
         this.obj = obj;
-        this.setChunked(!gzip && stream);
         this.gzip = gzip;
         this.stream = stream;
         if (gzip) {
@@ -186,4 +186,8 @@ public class DynamicSerializeEntity extends AbstractHttpEntity {
         this.rateLimiter = rateLimiter;
     }
 
+    @Override
+    public void close() throws IOException {
+        // Nothing to close
+    }
 }

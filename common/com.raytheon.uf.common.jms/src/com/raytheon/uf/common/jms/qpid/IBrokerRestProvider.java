@@ -101,7 +101,7 @@ public interface IBrokerRestProvider {
      *             again via {@link #createQueue(String)}. If you find yourself
      *             needing to delete queues you should be creating those as
      *             temporary queues instead, using
-     *             {@link javax.jms.Session#createTemporaryQueue()}
+     *             {@link jakarta.jms.Session#createTemporaryQueue()}
      */
     @Deprecated
     void deleteQueue(String queue)

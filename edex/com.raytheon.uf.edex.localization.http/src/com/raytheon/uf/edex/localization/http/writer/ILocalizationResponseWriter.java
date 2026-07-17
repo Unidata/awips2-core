@@ -22,10 +22,10 @@ package com.raytheon.uf.edex.localization.http.writer;
 import java.io.IOException;
 import java.io.OutputStream;
 
-import javax.servlet.http.HttpServletRequest;
-
 import com.raytheon.uf.common.http.MimeType;
 import com.raytheon.uf.common.localization.LocalizationContext;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 /**
  * Interface for writers that handle output for HTTP localization requests

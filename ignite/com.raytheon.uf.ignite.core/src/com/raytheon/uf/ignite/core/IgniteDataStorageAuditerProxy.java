@@ -18,8 +18,8 @@
  **/
 package com.raytheon.uf.ignite.core;
 
-import javax.jms.ConnectionFactory;
-import javax.jms.JMSException;
+import jakarta.jms.ConnectionFactory;
+import jakarta.jms.JMSException;
 
 import com.raytheon.uf.common.datastorage.audit.AbstractDataStorageAuditerProxy;
 import com.raytheon.uf.common.datastorage.audit.DataStorageAuditEvent;

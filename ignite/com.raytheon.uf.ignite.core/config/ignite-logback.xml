@@ -57,13 +57,11 @@
 
    <logger name="org.eclipse.jetty" level="ERROR" />
 
-   <logger name="PerformanceLogger" additivity="false">
-      <level value="DEBUG"/>
+   <logger name="PerformanceLogger" additivity="false" level="DEBUG">
       <appender-ref ref="asyncPerformanceFile"/>
    </logger>
 
-   <root>
-      <level value="INFO"/>
+   <root level="INFO">
       <appender-ref ref="asyncFile"/>
    </root>
 </configuration>

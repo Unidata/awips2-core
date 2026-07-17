@@ -46,7 +46,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
-import javax.xml.bind.DatatypeConverter;
+import jakarta.xml.bind.DatatypeConverter;
 
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;

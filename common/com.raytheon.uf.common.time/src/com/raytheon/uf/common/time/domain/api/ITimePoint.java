@@ -21,7 +21,7 @@ package com.raytheon.uf.common.time.domain.api;
 
 import java.util.Date;
 
-import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
+import jakarta.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
 import com.raytheon.uf.common.time.domain.ITimePointTypeAdapter;
 

@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -21,8 +21,8 @@ package com.raytheon.uf.edex.requestsrv.http;
 
 import java.io.InputStream;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import org.apache.camel.Exchange;
+import org.apache.camel.http.common.HttpMessage;
 
 import com.raytheon.uf.common.http.ProtectiveHttpOutputStream;
 import com.raytheon.uf.common.serialization.comm.IServerRequest;
@@ -30,26 +30,28 @@ import com.raytheon.uf.edex.requestsrv.serialization.ISerializingStreamExecutor;
 import com.raytheon.uf.edex.requestsrv.serialization.SerializingStreamExecutor;
 import com.raytheon.uf.edex.requestsrv.serialization.UnsupportedFormatException;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
 /**
  * Class that takes an {@link HttpServletRequest} and translates into an
  * {@link IServerRequest} to execute.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 21, 2014 3541       mschenke    Initial creation
  * Jan 05, 2015 3789       bclement    modified for camel rest implementation
  * Jan 15, 2015 3789       bclement    don't close the request stream
- * 
+ * May 13, 2026 2041694    mapeters    Camel 4.18 upgrade
+ *
  * </pre>
- * 
+ *
  * @author mschenke
- * @version 1.0
  */
-
 public class HttpRequestServiceExecutor {
 
     /** Default instance for convenient sharing of registry. */
@@ -71,18 +73,18 @@ public class HttpRequestServiceExecutor {
      * {@link IServerRequest} object and serializing the response to the
      * {@link HttpServletResponse} directly based on the request (Accept: ,
      * Content-Type, url, etc)
-     * 
+     *
      * @param requestStream
      *            The http request to read from
      * @param requestFormat
      *            request body format
-     * @param response
-     *            The http response to write to
+     * @param acceptEncoding
+     * @param exchange
+     *            The camel exchange containing http response to write to
      * @throws Exception
      */
-    public void execute(InputStream requestStream,
-            String requestFormat, String acceptEncoding,
-            HttpServletResponse response) throws Exception {
+    public void execute(InputStream requestStream, String requestFormat,
+            String acceptEncoding, Exchange exchange) throws Exception {
         if (requestFormat == null) {
             throw new IllegalArgumentException(
                     "Unable to determine HTTP body format from request");
@@ -92,6 +94,9 @@ public class HttpRequestServiceExecutor {
          * default to request format if none set in accept
          */
         String responseFormat = requestFormat;
+
+        HttpServletResponse response = exchange.getMessage(HttpMessage.class)
+                .getResponse();
 
         ProtectiveHttpOutputStream out = new ProtectiveHttpOutputStream(
                 response, acceptEncoding);

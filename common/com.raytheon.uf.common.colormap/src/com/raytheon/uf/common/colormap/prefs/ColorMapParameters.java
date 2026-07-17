@@ -31,10 +31,10 @@ import javax.measure.IncommensurableException;
 import javax.measure.UnconvertibleException;
 import javax.measure.Unit;
 import javax.measure.UnitConverter;
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlElement;
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlAttribute;
+import jakarta.xml.bind.annotation.XmlElement;
 
 import com.raytheon.uf.common.colormap.AbstractColorMap;
 import com.raytheon.uf.common.colormap.Color;
@@ -318,7 +318,7 @@ public class ColorMapParameters {
         if (displayToColorMap != null) {
             try {
                 colorMapValue = (float) displayToColorMap.convert(dispValue);
-            } catch (NumberFormatException e) {
+            } catch (IllegalArgumentException e) {
                 colorMapValue = Float.NaN;
             }
         }

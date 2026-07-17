@@ -4,5 +4,6 @@
     http://www.springframework.org/schema/beans/spring-beans.xsd">
     <bean id="dataStorageAuditContextsBuilder" class="com.raytheon.uf.edex.audit.DataStorageAuditContextsBuilder">
         <constructor-arg ref="messageProducer" />
+        <constructor-arg ref="contextManager" />
     </bean>
 </beans>

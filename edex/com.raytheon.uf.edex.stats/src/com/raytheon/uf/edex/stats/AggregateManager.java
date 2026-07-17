@@ -31,7 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TimeZone;
 
-import javax.xml.bind.JAXBException;
+import jakarta.xml.bind.JAXBException;
 
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;

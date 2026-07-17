@@ -32,10 +32,8 @@ import java.util.List;
 import java.util.ServiceConfigurationError;
 import java.util.Set;
 
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlRegistry;
-
-import com.raytheon.uf.common.serialization.jaxb.JaxbDummyObject;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlRegistry;
 
 /**
  * Determines and organizes the list of ISerializableObjects in the runtime
@@ -57,6 +55,7 @@ import com.raytheon.uf.common.serialization.jaxb.JaxbDummyObject;
  *                                      Added initializeHibernatables flag to disable
  *                                      processing hibernatables on CAVE
  * Oct 14, 2013 2361        njensen     Removed hibernatables
+ * Oct 25, 2024 2037223     aford       JAXB upgrade - Remove use of JaxbDummyObject
  * </pre>
  * 
  * @author njensen
@@ -112,10 +111,6 @@ public class SerializableManager implements IJaxbableClassesLocator {
         }
         jaxbables = new ArrayList<Class<ISerializableObject>>(
                 clazzSet.size() + 1);
-        // Add jaxb dummy object so jaxb.properties gets picked up immediately
-        @SuppressWarnings("rawtypes")
-        Class jaxb = JaxbDummyObject.class;
-        jaxbables.add(jaxb);
         jaxbables.addAll(clazzSet);
         jaxbables.trimToSize();
 

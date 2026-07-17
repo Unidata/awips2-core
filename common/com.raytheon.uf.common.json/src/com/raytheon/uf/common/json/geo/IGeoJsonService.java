@@ -23,8 +23,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 import org.geotools.feature.FeatureCollection;
-import org.opengis.feature.simple.SimpleFeature;
-import org.opengis.feature.simple.SimpleFeatureType;
+import org.geotools.api.feature.simple.SimpleFeature;
+import org.geotools.api.feature.simple.SimpleFeatureType;
 
 import com.raytheon.uf.common.json.JsonException;
 import org.locationtech.jts.geom.Geometry;

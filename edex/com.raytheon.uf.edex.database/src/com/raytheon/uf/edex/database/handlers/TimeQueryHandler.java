@@ -22,6 +22,7 @@ package com.raytheon.uf.edex.database.handlers;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -55,6 +56,8 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  * Feb 25, 2015  4159     rjpeter   Put in check for infinite recursion.
  * Aug 05, 2015  4486     rjpeter   Changed Timestamp to Date.
  * Apr 21, 2021  7849     mapeters  Add {@link IDaoConfigFactory} constructor arg
+ * Oct 20, 2025  2039687  njensen   Make copy of constraint map so the
+ *                                  original is not modified
  *
  * </pre>
  *
@@ -79,7 +82,8 @@ public class TimeQueryHandler implements IRequestHandler<TimeQueryRequest> {
     public List<DataTime> handleRequest(TimeQueryRequest request)
             throws Exception {
         // plugin name is sometimes sent over due to viz API
-        Map<String, RequestConstraint> map = request.getQueryTerms();
+        Map<String, RequestConstraint> map = new HashMap<>(
+                request.getQueryTerms());
         String pluginName = null;
         RequestConstraint rc = map.remove("pluginName");
         if (rc != null) {

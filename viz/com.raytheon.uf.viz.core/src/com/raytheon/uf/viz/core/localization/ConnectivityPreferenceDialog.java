@@ -25,7 +25,7 @@ import java.io.PrintStream;
 import java.net.UnknownHostException;
 import java.util.regex.Pattern;
 
-import org.apache.http.conn.HttpHostConnectException;
+import org.apache.hc.client5.http.HttpHostConnectException;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.swt.SWT;
@@ -35,8 +35,6 @@ import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
-import org.eclipse.swt.events.VerifyEvent;
-import org.eclipse.swt.events.VerifyListener;
 import org.eclipse.swt.graphics.Color;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Point;
@@ -46,10 +44,8 @@ import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
-import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Monitor;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
@@ -93,6 +89,7 @@ import com.raytheon.uf.viz.core.comm.IConnectivityCallback;
  *                                  area.
  * Feb 22, 2022      srcarter@ucar  Added checkbox for resolving IP address
  * Nov 08, 2022      srcarter@ucar  Updated initial status & made details wrap
+ * Apr 15, 2026  2038243  mapeters  Apache httpclient 5 upgrade
  *
  * </pre>
  *
@@ -415,12 +412,7 @@ public class ConnectivityPreferenceDialog {
         label.setLayoutData(gd);
 
         siteText = new Text(textBoxComp, SWT.BORDER);
-        siteText.addVerifyListener(new VerifyListener() {
-            @Override
-            public void verifyText(VerifyEvent e) {
-                e.text = e.text.toUpperCase();
-            }
-        });
+        siteText.addVerifyListener(e -> e.text = e.text.toUpperCase());
         siteText.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetDefaultSelected(SelectionEvent e) {
@@ -518,22 +510,14 @@ public class ConnectivityPreferenceDialog {
         /*
          * Treat the escape key like pressing the Quit button.
          */
-        shell.addListener(SWT.Traverse, new Listener() {
-            @Override
-            public void handleEvent(Event e) {
-                if (e.detail == SWT.TRAVERSE_ESCAPE) {
-                    e.doit = false;
-                    quitAction();
-                }
+        shell.addListener(SWT.Traverse, e -> {
+            if (e.detail == SWT.TRAVERSE_ESCAPE) {
+                e.doit = false;
+                quitAction();
             }
         });
 
-        shell.addListener(SWT.Close, new Listener() {
-            @Override
-            public void handleEvent(Event event) {
-                event.doit = validateAndClose();
-            }
-        });
+        shell.addListener(SWT.Close, event -> event.doit = validateAndClose());
     }
 
     /**

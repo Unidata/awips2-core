@@ -15,7 +15,7 @@
  */
 
 /**NOTICE: slight modifications to Netty's HttpProxyHandler.java class found here: 
- * https://github.com/netty/netty/blob/netty-4.1.63.Final/handler-proxy/src/main/java/io/netty/handler/proxy/HttpProxyHandler.java
+ * https://github.com/netty/netty/blob/netty-4.1.132.Final/handler-proxy/src/main/java/io/netty/handler/proxy/HttpProxyHandler.java
  * 
  * package declaration changed to "com.raytheon.uf.common.jms;" from "package io.netty.handler.proxy;"
  * Imported ProxyConnectException, ProxyHandler, PooledByteBufAllocator, SslContext, SslContextBuilder, SslHandler
@@ -60,6 +60,8 @@ import io.netty.handler.codec.http.FullHttpRequest;
 import io.netty.handler.codec.http.HttpClientCodec;
 import io.netty.handler.codec.http.HttpHeaderNames;
 import io.netty.handler.codec.http.HttpHeaders;
+import io.netty.handler.codec.http.DefaultHttpHeadersFactory;
+import io.netty.handler.codec.http.HttpHeadersFactory;
 import io.netty.handler.codec.http.HttpMethod;
 import io.netty.handler.codec.http.HttpResponse;
 import io.netty.handler.codec.http.HttpResponseStatus;
@@ -99,10 +101,20 @@ import java.net.SocketAddress;
  * ------------ ---------- ----------- --------------------------
  * Aug 06, 2021 22528      smoorthy    Initial creation. Variant Netty HttpProxyHandler that adds 
  *                                     an SslHandler within the addCodec function
+ * Apr 02, 2026 2041430    mapeters    Pull in changes in 4.1.132
  *
  * </pre>
  *
  * 
+ */
+/**
+ * Handler that establishes a blind forwarding proxy tunnel using
+ * <a href="https://datatracker.ietf.org/doc/html/rfc7231#section-4.3.6">HTTP/1.1 CONNECT</a> request. It can be used to
+ * establish plaintext or secure tunnels.
+ * <p>
+ * HTTP users who need to connect to a
+ * <a href="https://datatracker.ietf.org/doc/html/rfc7230#page-10">message-forwarding HTTP proxy agent</a> instead of a
+ * tunneling proxy should not use this handler.
  */
 public final class HttpProxyHandlerSslExt extends ProxyHandler {
 
@@ -237,10 +249,11 @@ public final class HttpProxyHandlerSslExt extends ProxyHandler {
                 hostString :
                 url;
 
+        HttpHeadersFactory headersFactory = DefaultHttpHeadersFactory.headersFactory().withValidation(false);
         FullHttpRequest req = new DefaultFullHttpRequest(
                 HttpVersion.HTTP_1_1, HttpMethod.CONNECT,
                 url,
-                Unpooled.EMPTY_BUFFER, false);
+                Unpooled.EMPTY_BUFFER, headersFactory, headersFactory);
 
         req.headers().set(HttpHeaderNames.HOST, hostHeader);
 

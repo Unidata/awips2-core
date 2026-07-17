@@ -2,8 +2,6 @@
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://www.springframework.org/schema/beans
     http://www.springframework.org/schema/beans/spring-beans.xsd
-    http://camel.apache.org/schema/spring
-    http://camel.apache.org/schema/spring/camel-spring.xsd
     http://www.springframework.org/schema/util
     http://www.springframework.org/schema/util/spring-util.xsd">
 
@@ -35,23 +33,9 @@
         <constructor-arg ref="mapsBloatMonitor" />
     </bean>
 
-    <camelContext id="clusteredDatabaseMonitor" xmlns="http://camel.apache.org/schema/spring"
-        errorHandlerRef="errorHandler">
-        <!-- Route to periodically check the health of the database -->
-        <route id="clusteredDatabaseMonitorRoute">
-            <from
-                uri="timer://databaseMonitor?period=2h&amp;delay=30m&amp;fixedRate=true" />
-            <doTry>
-                <bean ref="dbMonitorRegistry" method="runMonitors" />
-                <doCatch>
-                    <exception>java.lang.Throwable</exception>
-                    <to uri="log:databaseMonitor?level=ERROR" />
-                </doCatch>
-            </doTry>
-        </route>
-    </camelContext>
-
-    <bean factory-bean="contextManager" factory-method="registerClusteredContext">
-        <constructor-arg ref="clusteredDatabaseMonitor" />
+    <bean id="clusteredDatabaseMonitor" factory-bean="routeContextFactory" factory-method="createClustered">
+        <constructor-arg>
+            <bean class="com.raytheon.uf.edex.database.cluster.ClusteredDatabaseMonitorRoutes" />
+        </constructor-arg>
     </bean>
 </beans>

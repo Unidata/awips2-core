@@ -17,17 +17,14 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.common.serialization.jaxb;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
+package com.raytheon.uf.edex.auth;
+
+import com.raytheon.uf.edex.routes.EDEXRouteBuilder;
 
 /**
- * Object added to jaxb class list first so jaxb.properties can be found
- * immediately and save time on initialization.
- *
- * Including this class when creating a JAXBManager is the only way for the
- * JAXBManager to use the CustomJAXBContext and CustomJAXBUnmarshaller.
+ * Camel routes converted from file "auth-request.xml", context
+ * "auth-request-camel"
  *
  * <pre>
  *
@@ -35,15 +32,28 @@ import javax.xml.bind.annotation.XmlAccessorType;
  *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Sep 12, 2011            mschenke     Initial creation
- * Jun 04, 2015 4496       nabowle      Updated javadoc.
+ * 2024-07-11   2037702    aford       Initial creation (from auto-generated)
  *
  * </pre>
- *
- * @author mschenke
- * @version 1.0
  */
-@XmlAccessorType(XmlAccessType.NONE)
-public class JaxbDummyObject {
 
+public class AuthRequestCamelRoutes extends EDEXRouteBuilder {
+
+    public AuthRequestCamelRoutes() {
+    }
+
+    @Override
+    public void configure() throws Exception {
+        // @formatter:off
+        from("jms-generic:topic:edex.alerts.auth?threadName=rolesUpdated-edex.alerts.auth")
+                .doTry()
+                        .bean("serializationUtil", "transformFromThrift")
+                        .bean("iniRealm", "reinitialize")
+                .doCatch(Throwable.class)
+                        .to("log:auth?level=ERROR")
+                .endDoTry()
+                .end()
+                .setId("rolesUpdated");
+        // @formatter:on
+    }
 }

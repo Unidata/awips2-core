@@ -3,6 +3,7 @@ Bundle-ManifestVersion: 2
 Bundle-Name: CAVE UI Personalities
 Bundle-SymbolicName: com.raytheon.uf.viz.personalities.cave;singleton:=true
 Bundle-Version: 1.18.0.qualifier
+Eclipse-BundleShape: dir
 Bundle-Vendor: RAYTHEON
 Require-Bundle: org.eclipse.core.runtime,
  com.raytheon.uf.viz.application,
@@ -23,14 +24,14 @@ Require-Bundle: org.eclipse.core.runtime,
  org.eclipse.osgi.services,
  org.eclipse.e4.ui.css.core,
  org.eclipse.e4.ui.css.swt,
- org.w3c.css.sac,
+ org.w3c.xml.ext,
  org.eclipse.e4.core.commands,
  org.eclipse.e4.core.di,
  org.eclipse.emf.ecore,
  org.slf4j,
- javax.annotation,
- javax.inject
-Bundle-RequiredExecutionEnvironment: JavaSE-11
+ jakarta.annotation,
+ jakarta.inject
+Bundle-RequiredExecutionEnvironment: JavaSE-17
 Bundle-ActivationPolicy: lazy
 Export-Package: com.raytheon.uf.viz.personalities.cave.component,
  com.raytheon.uf.viz.personalities.cave.dialog,

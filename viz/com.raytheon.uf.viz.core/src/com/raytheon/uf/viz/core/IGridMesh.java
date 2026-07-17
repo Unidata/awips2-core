@@ -19,7 +19,7 @@
  **/
 package com.raytheon.uf.viz.core;
 
-import org.opengis.coverage.grid.GridGeometry;
+import org.geotools.api.coverage.grid.GridGeometry;
 
 import com.raytheon.uf.viz.core.drawables.ext.GraphicsExtension;
 

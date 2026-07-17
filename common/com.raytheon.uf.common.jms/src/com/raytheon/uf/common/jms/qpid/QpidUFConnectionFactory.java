@@ -28,25 +28,20 @@ import java.nio.file.Path;
 import java.util.Map.Entry;
 import java.util.function.Supplier;
 
-import javax.jms.Connection;
-import javax.jms.ConnectionFactory;
-import javax.jms.JMSContext;
-import javax.jms.JMSException;
-import javax.jms.QueueConnection;
-
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.config.AuthSchemes;
-import org.apache.http.client.utils.URIBuilder;
+import org.apache.hc.core5.net.URIBuilder;
 import org.apache.qpid.jms.JmsConnectionExtensions;
 import org.apache.qpid.jms.JmsConnectionFactory;
 
-import com.raytheon.uf.common.comm.HttpClient;
 import com.raytheon.uf.common.jms.HttpProxyHandlerSslExt;
 import com.raytheon.uf.common.jms.JMSConnectionInfo;
 import com.raytheon.uf.common.jms.JmsSslConfiguration;
 
 import io.netty.handler.proxy.ProxyHandler;
+import jakarta.jms.Connection;
+import jakarta.jms.ConnectionFactory;
+import jakarta.jms.JMSContext;
+import jakarta.jms.JMSException;
+import jakarta.jms.QueueConnection;
 
 /**
  * Qpid JMS connection factory
@@ -69,6 +64,8 @@ import io.netty.handler.proxy.ProxyHandler;
  *                                     fails
  * Jan 17, 2023 22528      smoorthy    Pass empty credentials for proxy handler if proxy server
  *                                     doesn't require authentication. Add default ssl port 443.
+ * Apr 15, 2026 2038243    mapeters    Apache httpclient 5 upgrade, remove username/password that
+ *                                     were only for obsolete Windows IMET thin clients
  * </pre>
  *
  * @author tgurney
@@ -120,22 +117,6 @@ public class QpidUFConnectionFactory implements ConnectionFactory {
                     "Problem processing proxy address string", e);
         }
 
-        // get user credentials
-        AuthScope authScope = new AuthScope(proxyHost, proxyPort,
-                AuthScope.ANY_REALM, AuthSchemes.BASIC);
-        UsernamePasswordCredentials creds = (UsernamePasswordCredentials) HttpClient
-                .getInstance().getCredentials(authScope);
-
-        String username;
-        String password;
-        if (creds != null) {
-            username = creds.getUserName();
-            password = creds.getPassword();
-        } else {
-            username = "";
-            password = "";
-        }
-
         // add the proxy handler extension
         String host = proxyHost;
         int port = proxyPort;
@@ -145,8 +126,7 @@ public class QpidUFConnectionFactory implements ConnectionFactory {
                     SocketAddress proxyAddress = new InetSocketAddress(host,
                             port); // 443
                     Supplier<ProxyHandler> proxyHandlerFactory = () -> {
-                        return new HttpProxyHandlerSslExt(proxyAddress,
-                                username, password);
+                        return new HttpProxyHandlerSslExt(proxyAddress, "", "");
                     };
                     return proxyHandlerFactory;
                 });

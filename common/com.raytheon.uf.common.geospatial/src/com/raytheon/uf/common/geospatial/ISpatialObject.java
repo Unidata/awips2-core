@@ -21,7 +21,7 @@ package com.raytheon.uf.common.geospatial;
 
 import java.io.Serializable;
 
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
+import org.geotools.api.referencing.crs.CoordinateReferenceSystem;
 
 import org.locationtech.jts.geom.Geometry;
 

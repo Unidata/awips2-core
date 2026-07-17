@@ -31,8 +31,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import javax.xml.bind.JAXBException;
-
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.dataplugin.PluginException;
 import com.raytheon.uf.common.dataplugin.annotations.DataURIUtil;
@@ -61,6 +59,8 @@ import com.raytheon.uf.edex.ingest.notification.router.DataUriRouter;
 import com.raytheon.uf.edex.ingest.notification.router.INotificationRouter;
 import com.raytheon.uf.edex.ingest.notification.router.PdoRouter;
 
+import jakarta.xml.bind.JAXBException;
+
 /**
  * Plugins can register routes with this and then be generically fired to. Helps
  * to reduce dependencies as we no longer need to call a route directly. All
@@ -83,6 +83,9 @@ import com.raytheon.uf.edex.ingest.notification.router.PdoRouter;
  * May 22, 2017  6130     tjensen   Update notify to return the number of PDOs
  *                                  processed
  * Mar  4, 2021  8326     tgurney   Camel 3 method naming fix
+ * Sep  5, 2024  2037700  tgurney   Remove vm and direct-vm components (Camel 4)
+ * May 13, 2026  2041694  mapeters  Change notifyRoutes param from varargs to
+ *                                  array (Camel 4.18)
  *
  * </pre>
  *
@@ -152,7 +155,7 @@ public class PluginNotifier implements IContextStateProcessor {
                                     .unmarshalFromInputStream(is);
                             List<PluginNotifierConfig> configs = confList
                                     .getNotificationConfigs();
-                            if ((configs != null) && !configs.isEmpty()) {
+                            if (configs != null && !configs.isEmpty()) {
                                 for (PluginNotifierConfig conf : configs) {
                                     register(conf, false);
                                 }
@@ -266,10 +269,10 @@ public class PluginNotifier implements IContextStateProcessor {
 
             Map<String, RequestConstraint>[] metadataMaps = config
                     .getMetadataMap();
-            boolean receiveAll = (metadataMaps == null)
-                    || (metadataMaps.length == 0)
-                    || ((metadataMaps.length == 1) && ((metadataMaps[0] == null)
-                            || metadataMaps[0].isEmpty()));
+            boolean receiveAll = metadataMaps == null
+                    || metadataMaps.length == 0
+                    || metadataMaps.length == 1 && (metadataMaps[0] == null
+                            || metadataMaps[0].isEmpty());
 
             if (receiveAll) {
                 // null or empty constraint map implies receive all data
@@ -300,7 +303,7 @@ public class PluginNotifier implements IContextStateProcessor {
     private void validate(PluginNotifierConfig config)
             throws InvalidNotificationConfigException {
         String endpoint = config.getEndpointName();
-        if ((endpoint == null) || (endpoint.trim().length() == 0)) {
+        if (endpoint == null || endpoint.trim().length() == 0) {
             throw new InvalidNotificationConfigException(
                     "endpointName is required");
         }
@@ -316,11 +319,11 @@ public class PluginNotifier implements IContextStateProcessor {
             msg.append("PluginConfiguration ").append(endpoint).append(
                     ": missing required field endpointType.  Valid values for ")
                     .append(NotifyFormat.PDO).append(" format are ")
-                    .append(EndpointType.DIRECTVM).append(" and ")
-                    .append(EndpointType.VM).append(".  Valid values for ")
+                    .append(EndpointType.DIRECT).append(" and ")
+                    .append(EndpointType.SEDA).append(".  Valid values for ")
                     .append(NotifyFormat.DATAURI).append(" format are ")
-                    .append(EndpointType.DIRECTVM).append(", ")
-                    .append(EndpointType.VM).append(", ")
+                    .append(EndpointType.DIRECT).append(", ")
+                    .append(EndpointType.SEDA).append(", ")
                     .append(EndpointType.QUEUE).append(", and ")
                     .append(EndpointType.TOPIC);
             throw new InvalidNotificationConfigException(msg.toString());
@@ -334,8 +337,8 @@ public class PluginNotifier implements IContextStateProcessor {
                     .append(": endpointType ").append(type)
                     .append(" is invalid for format ").append(format)
                     .append(".  Valid values for ").append(NotifyFormat.PDO)
-                    .append(" format are ").append(EndpointType.DIRECTVM)
-                    .append(" and ").append(EndpointType.VM);
+                    .append(" format are ").append(EndpointType.DIRECT)
+                    .append(" and ").append(EndpointType.SEDA);
             throw new InvalidNotificationConfigException(msg.toString());
         }
 
@@ -345,7 +348,7 @@ public class PluginNotifier implements IContextStateProcessor {
         }
 
         if ((EndpointType.QUEUE.equals(type) || EndpointType.TOPIC.equals(type))
-                && (config.getTimeToLive() < 0)) {
+                && config.getTimeToLive() < 0) {
             theHandler.warn("PluginConfiguration: " + endpoint
                     + " has invalid time to live.  Time to live for JMS endpoints must be 0 or greater.  Setting to default of: "
                     + DEFAULT_TIME_TO_LIVE + " ms");
@@ -377,10 +380,10 @@ public class PluginNotifier implements IContextStateProcessor {
      * upgrade to Camel 3 due to failure to resolve references to this method
      * from XML. Maybe due to name conflict with Object.notify()
      */
-    public int notifyRoutes(PluginDataObject... pdos) {
+    public int notifyRoutes(PluginDataObject[] pdos) {
         lock.readLock().lock();
         try {
-            if ((pdos != null) && (pdos.length > 0)) {
+            if (pdos != null && pdos.length > 0) {
                 ITimer timer = TimeUtil.getTimer();
                 timer.start();
                 if (!receiveAllRoutes.isEmpty()) {
@@ -552,7 +555,7 @@ public class PluginNotifier implements IContextStateProcessor {
         Long lastTime;
         for (File file : files) {
             lastTime = this.modifiedTimes.get(file.getName());
-            if ((lastTime == null) || !lastTime.equals(file.lastModified())) {
+            if (lastTime == null || !lastTime.equals(file.lastModified())) {
                 return true;
             }
         }

@@ -22,23 +22,25 @@ package com.raytheon.uf.viz.core.map;
 
 import java.text.NumberFormat;
 
-import javax.xml.bind.annotation.XmlAccessType;
-import javax.xml.bind.annotation.XmlAccessorType;
-import javax.xml.bind.annotation.XmlRootElement;
+import jakarta.xml.bind.annotation.XmlAccessType;
+import jakarta.xml.bind.annotation.XmlAccessorType;
+import jakarta.xml.bind.annotation.XmlRootElement;
 
 import org.eclipse.swt.graphics.RGB;
+import org.geotools.api.geometry.Position;
+import org.geotools.api.referencing.FactoryException;
+import org.geotools.api.referencing.crs.CoordinateReferenceSystem;
+import org.geotools.api.referencing.datum.PixelInCell;
+import org.geotools.api.referencing.operation.MathTransform;
+import org.geotools.api.referencing.operation.TransformException;
 import org.geotools.coverage.grid.GeneralGridEnvelope;
 import org.geotools.coverage.grid.GeneralGridGeometry;
 import org.geotools.coverage.grid.GridGeometry2D;
-import org.geotools.geometry.DirectPosition2D;
-import org.geotools.geometry.GeneralEnvelope;
+import org.geotools.geometry.GeneralBounds;
+import org.geotools.geometry.Position2D;
 import org.geotools.referencing.GeodeticCalculator;
-import org.opengis.geometry.DirectPosition;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
-import org.opengis.referencing.datum.PixelInCell;
-import org.opengis.referencing.operation.MathTransform;
-import org.opengis.referencing.operation.TransformException;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Envelope;
 
 import com.raytheon.uf.common.geospatial.MapUtil;
 import com.raytheon.uf.viz.core.IExtent;
@@ -46,8 +48,6 @@ import com.raytheon.uf.viz.core.PixelCoverage;
 import com.raytheon.uf.viz.core.drawables.AbstractDescriptor;
 import com.raytheon.uf.viz.core.drawables.IDescriptor;
 import com.raytheon.uf.viz.core.exception.VizException;
-import org.locationtech.jts.geom.Coordinate;
-import org.locationtech.jts.geom.Envelope;
 
 /**
  * Implementation of IMapDescriptor
@@ -64,7 +64,8 @@ import org.locationtech.jts.geom.Envelope;
  * Oct 22, 2013  2491     bsteffen    Remove ISerializableObject
  * Oct 12, 2015  4932     njensen     Removed unnecessary exception declarations
  * Sep 27, 2023  2036075  smoorthy    Add override for compatibility test
- * 
+ * May 07, 2024  2037231  aford       Upgrade GeoTools to 31
+ *
  * </pre>
  * 
  * @author chammack
@@ -95,13 +96,13 @@ public class MapDescriptor extends AbstractDescriptor implements IMapDescriptor 
         try {
             MathTransform WGS84toPROJCRS = MapUtil.getTransformFromLatLon(crs);
 
-            GeneralEnvelope envelope = new GeneralEnvelope(2);
+            GeneralBounds envelope = new GeneralBounds(2);
 
-            DirectPosition ll = WGS84toPROJCRS.transform(new DirectPosition2D(
-                    llCoord.x, llCoord.y), null);
+            Position ll = WGS84toPROJCRS
+                    .transform(new Position2D(llCoord.x, llCoord.y), null);
 
-            DirectPosition ur = WGS84toPROJCRS.transform(new DirectPosition2D(
-                    urCoord.x, urCoord.y), null);
+            Position ur = WGS84toPROJCRS
+                    .transform(new Position2D(urCoord.x, urCoord.y), null);
 
             envelope.setRange(0,
                     Math.min(ll.getOrdinate(0), ur.getOrdinate(0)),
@@ -139,10 +140,10 @@ public class MapDescriptor extends AbstractDescriptor implements IMapDescriptor 
         try {
             MathTransform WGS84toPROJCRS = MapUtil.getTransformFromLatLon(crs);
 
-            GeneralEnvelope envelope = new GeneralEnvelope(2);
+            GeneralBounds envelope = new GeneralBounds(2);
 
-            DirectPosition center = WGS84toPROJCRS.transform(
-                    new DirectPosition2D(centerLL.x, centerLL.y), null);
+            Position center = WGS84toPROJCRS
+                    .transform(new Position2D(centerLL.x, centerLL.y), null);
 
             double halfWidth = width / 2;
             envelope.setRange(0, center.getOrdinate(0) - halfWidth,
@@ -160,7 +161,8 @@ public class MapDescriptor extends AbstractDescriptor implements IMapDescriptor 
         }
     }
 
-    private static GridGeometry2D constructGridGeometry(GeneralEnvelope envelope) {
+    private static GridGeometry2D constructGridGeometry(
+            GeneralBounds envelope) {
         // scale map so smaller dimension is DEFAULT_WORLD_HEIGHT pixels
         double aspect = envelope.getSpan(0) / envelope.getSpan(1);
         int mapWidth = (aspect > 1.0 ? (int) Math.round(aspect
@@ -248,7 +250,7 @@ public class MapDescriptor extends AbstractDescriptor implements IMapDescriptor 
         CoordinateReferenceSystem crs = gridGeometry
                 .getCoordinateReferenceSystem();
 
-        DirectPosition s1, d1, s2, d2;
+        Position s1, d1, s2, d2;
         if (crs.getCoordinateSystem().getDimension() == 2) {
             double centerX = (gridGeometry.getGridRange().getLow(0) + gridGeometry
                     .getGridRange().getHigh(0)) / 2;
@@ -256,10 +258,10 @@ public class MapDescriptor extends AbstractDescriptor implements IMapDescriptor 
             double centerY = (gridGeometry.getGridRange().getLow(1) + gridGeometry
                     .getGridRange().getHigh(1)) / 2;
 
-            s1 = new DirectPosition2D(centerX, centerY);
-            d1 = new DirectPosition2D(centerX + 1, centerY);
-            s2 = new DirectPosition2D(crs);
-            d2 = new DirectPosition2D(crs);
+            s1 = new Position2D(centerX, centerY);
+            d1 = new Position2D(centerX + 1, centerY);
+            s2 = new Position2D(crs);
+            d2 = new Position2D(crs);
 
             mapToCoordinateTransform.transform(s1, s2);
             mapToCoordinateTransform.transform(d1, d2);

@@ -20,8 +20,8 @@
 
 package com.raytheon.uf.viz.core.comm;
 
-import javax.jms.ConnectionFactory;
-import javax.jms.JMSException;
+import jakarta.jms.ConnectionFactory;
+import jakarta.jms.JMSException;
 
 import org.springframework.jms.connection.CachingConnectionFactory;
 

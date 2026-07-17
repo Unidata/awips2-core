@@ -4,8 +4,8 @@ import java.util.Calendar;
 import java.util.Iterator;
 import java.util.TimeZone;
 
-import javax.persistence.Transient;
-import javax.xml.bind.annotation.XmlTransient;
+import jakarta.persistence.Transient;
+import jakarta.xml.bind.annotation.XmlTransient;
 
 /**
  * A single DataTime object representing 2 DataTimes, useful for products which

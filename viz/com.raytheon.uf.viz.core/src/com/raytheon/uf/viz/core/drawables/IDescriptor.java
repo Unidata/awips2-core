@@ -22,7 +22,7 @@ package com.raytheon.uf.viz.core.drawables;
 import java.util.Map;
 
 import org.geotools.coverage.grid.GeneralGridGeometry;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
+import org.geotools.api.referencing.crs.CoordinateReferenceSystem;
 
 import com.raytheon.uf.common.time.DataTime;
 import com.raytheon.uf.viz.core.AbstractTimeMatcher;

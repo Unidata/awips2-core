@@ -32,7 +32,7 @@ import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.module.jaxb.JaxbAnnotationModule;
+import com.fasterxml.jackson.module.jakarta.xmlbind.JakartaXmlBindAnnotationModule;
 
 /**
  * A {@code KeyedPoolableObjectFactory} implementation for building ObjectMapper
@@ -49,6 +49,7 @@ import com.fasterxml.jackson.module.jaxb.JaxbAnnotationModule;
  * Oct 23, 2015  #5004     dgilling     Update to use commons-pool2 API.
  * Oct 27, 2015  4767      bclement     upgraded jackson to 1.9
  * Jan 19, 2016  5067      bclement    upgrade jackson to 2.6
+ * Jul 05, 2024  2037423   aford       Jackson Upgrade to 2.16.2
  * 
  * </pre>
  * 
@@ -62,7 +63,7 @@ public class JacksonFactory extends
     public ObjectMapper create(Long arg0) throws Exception {
         ObjectMapper mapper = new ObjectMapper();
         mapper.enableDefaultTyping();
-        mapper.registerModule(new JaxbAnnotationModule());
+        mapper.registerModule(new JakartaXmlBindAnnotationModule());
         mapper.registerModule(new GeoJsonModule());
         return mapper;
     }

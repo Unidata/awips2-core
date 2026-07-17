@@ -30,13 +30,14 @@ import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Map;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-
 import com.raytheon.uf.common.serialization.jaxb.JaxbMarshallerStrategy;
 import com.raytheon.uf.common.serialization.jaxb.PooledJaxbMarshallerStrategy;
+import com.raytheon.uf.common.serialization.jaxb.SerializationContextFactory;
 import com.raytheon.uf.common.status.IPerformanceStatusHandler;
 import com.raytheon.uf.common.status.PerformanceStatus;
+
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.JAXBException;
 
 /**
  * Provides an easy and convenient layer to marshal or unmarshal objects to and
@@ -67,6 +68,8 @@ import com.raytheon.uf.common.status.PerformanceStatus;
  * Feb 10, 2016  5307     bkowal    Added Java 7 {@link Path} support.
  * Oct 19, 2017  6367     tgurney   Replace stdout with logger
  * Dec 16, 2021  8341     randerso  Changed to use performance logging
+ * Oct 25, 2024  2037223  aford     JAXB upgrade - Add flag to determine if the 
+ *                                  Custom JAXB Context Factory should be used.
  *
  * </pre>
  *
@@ -80,6 +83,8 @@ public class JAXBManager {
     private Class<?>[] clazz;
 
     private final JaxbMarshallerStrategy marshStrategy;
+
+    private boolean useCustomJaxbContextFactory = false;
 
     private static final IPerformanceStatusHandler perfLog = PerformanceStatus
             .getHandler("JAXBManager");
@@ -114,8 +119,27 @@ public class JAXBManager {
      */
     public JAXBManager(boolean pooling, Class<?>... clazz)
             throws JAXBException {
-        this(pooling ? new PooledJaxbMarshallerStrategy()
-                : new JaxbMarshallerStrategy(), clazz);
+        this(pooling, false, clazz);
+    }
+
+    /**
+     * Constructor that adds the useCustomJaxbContextFactory flag in order to create
+     * the JAXBContext using the custom Context Factory.
+     * @see #JAXBManager(boolean, Class...)
+     * 
+     * @param pooling
+     * @param useCustomJaxbContextFactory
+     *            whether or not to use the custom JAXB Context Factory
+     *            to create the JAXBContext
+     * @param clazz
+     * @throws JAXBException
+     */
+    public JAXBManager(boolean pooling, boolean useCustomJaxbContextFactory,
+            Class<?>... clazz) throws JAXBException {
+        this(useCustomJaxbContextFactory,
+                pooling ? new PooledJaxbMarshallerStrategy()
+                        : new JaxbMarshallerStrategy(),
+                clazz);
     }
 
     /**
@@ -126,14 +150,37 @@ public class JAXBManager {
      */
     public JAXBManager(JaxbMarshallerStrategy marshStrategy, Class<?>... clazz)
             throws JAXBException {
+        this(false, marshStrategy, clazz);
+    }
+
+    /**
+     * see #JAXBManager(boolean, Class...)
+     * 
+     * @param useCustomJaxbContextFactory
+     *            whether or not to use the custom JAXB Context Factory
+     *            to create the JAXBContext
+     * @param marshStrategy
+     *            the JaxbMarshallerStrategy used for marshaling.
+     * @param clazz
+     *            classes that this instance must know about for
+     *            marshalling/unmarshalling
+     * @throws JAXBException
+     */
+    public JAXBManager(boolean useCustomJaxbContextFactory,
+            JaxbMarshallerStrategy marshStrategy, Class<?>... clazz)
+            throws JAXBException {
         this.clazz = clazz;
-        getJaxbContext();
+        getJaxbContext(useCustomJaxbContextFactory);
         this.marshStrategy = marshStrategy;
+        this.useCustomJaxbContextFactory = useCustomJaxbContextFactory;
     }
 
     /**
      * Returns the JAXB Context behind this JAXBManager.
      *
+     * @param useCustomJaxbContextFactory
+     *             whether or not to use the custom JAXB Context Factory
+     *             to create the JAXBContext
      * @return the JAXBContext
      * @throws JAXBException
      * @Deprecated TODO This method should be protected and the JAXBContext
@@ -145,13 +192,14 @@ public class JAXBManager {
      *             functionality.
      */
     @Deprecated
-    public JAXBContext getJaxbContext() throws JAXBException {
+    public JAXBContext getJaxbContext(boolean useCustomJaxbContextFactory)
+            throws JAXBException {
         if (jaxbContext == null) {
             synchronized (this) {
                 if (jaxbContext == null) {
                     long t0 = System.currentTimeMillis();
                     jaxbContext = JAXBContext.newInstance(clazz,
-                            getJaxbConfig());
+                            getJaxbConfig(useCustomJaxbContextFactory));
                     if (clazz.length == 1) {
                         perfLog.logDuration(
                                 String.format(
@@ -167,11 +215,21 @@ public class JAXBManager {
     }
 
     /**
+     * Returns the JAXB configuration Map.
+     * 
+     * @param useCustomJaxbContextFactory
+     *            whether or not to add the property to the configuration that sets
+     *            the JAXB Context Factory to use the custom factory. 
      * @return mapping of JAXB property names to configuration objects
      * @throws JAXBException
      */
-    protected Map<String, Object> getJaxbConfig() throws JAXBException {
-        return Collections.emptyMap();
+    protected Map<String, Object> getJaxbConfig(
+            boolean useCustomJaxbContextFactory) throws JAXBException {
+        if (useCustomJaxbContextFactory) {
+            return Map.of(JAXBContext.JAXB_CONTEXT_FACTORY, SerializationContextFactory.class.getCanonicalName());
+        } else {
+            return Collections.emptyMap();
+        }
     }
 
     /**
@@ -230,7 +288,7 @@ public class JAXBManager {
      */
     public String marshalToXml(Object obj, MarshalOptions options)
             throws JAXBException {
-        JAXBContext ctx = getJaxbContext();
+        JAXBContext ctx = getJaxbContext(this.useCustomJaxbContextFactory);
         return marshStrategy.marshalToXml(ctx, obj, options);
     }
 
@@ -330,7 +388,8 @@ public class JAXBManager {
     public void marshalToStream(Object obj, OutputStream out,
             MarshalOptions options) throws SerializationException {
         try {
-            JAXBContext cxt = getJaxbContext();
+            JAXBContext cxt = getJaxbContext(
+                    this.useCustomJaxbContextFactory);
             marshStrategy.marshalToStream(cxt, obj, out, options);
         } catch (JAXBException e) {
             throw new SerializationException(e);
@@ -430,7 +489,8 @@ public class JAXBManager {
     public Object unmarshalFromInputStream(InputStream is)
             throws SerializationException {
         try {
-            JAXBContext ctx = getJaxbContext();
+            JAXBContext ctx = getJaxbContext(
+                    this.useCustomJaxbContextFactory);
             return marshStrategy.unmarshalFromInputStream(ctx, is);
         } catch (JAXBException e) {
             throw new SerializationException(e);
@@ -468,7 +528,8 @@ public class JAXBManager {
     protected Object internalUnmarshalFromXmlFile(File file)
             throws SerializationException {
         try {
-            JAXBContext ctx = getJaxbContext();
+            JAXBContext ctx = getJaxbContext(
+                    this.useCustomJaxbContextFactory);
             FileReader reader = new FileReader(file);
             return marshStrategy.unmarshalFromReader(ctx, reader);
         } catch (Exception e) {
@@ -487,7 +548,7 @@ public class JAXBManager {
      */
     protected Object internalUnmarshalFromXml(String xml) throws JAXBException {
         StringReader reader = new StringReader(xml);
-        JAXBContext cxt = getJaxbContext();
+        JAXBContext cxt = getJaxbContext(this.useCustomJaxbContextFactory);
         return marshStrategy.unmarshalFromReader(cxt, reader);
     }
 }

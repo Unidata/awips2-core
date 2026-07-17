@@ -19,7 +19,7 @@
  **/
 package com.raytheon.uf.common.message.adapter;
 
-import javax.xml.bind.annotation.adapters.XmlAdapter;
+import jakarta.xml.bind.annotation.adapters.XmlAdapter;
 
 import com.raytheon.uf.common.message.WsId;
 import com.raytheon.uf.common.serialization.IDeserializationContext;

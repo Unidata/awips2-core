@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.xml.bind.JAXBException;
+import jakarta.xml.bind.JAXBException;
 
 import com.raytheon.uf.common.localization.FileUpdatedMessage;
 import com.raytheon.uf.common.localization.ILocalizationFileObserver;
@@ -38,7 +38,6 @@ import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.serialization.JAXBManager;
 import com.raytheon.uf.common.serialization.SerializationException;
-import com.raytheon.uf.common.serialization.jaxb.JaxbDummyObject;
 import com.raytheon.uf.common.serialization.reflect.ISubClassLocator;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
@@ -63,6 +62,8 @@ import com.raytheon.uf.common.style.level.Level;
  * Mar 10, 2015  4231     nabowle   Watch for changes to loaded style rules and
  *                                  reload them.
  * Apr 16, 2020  8145     randerso  Updated to allow new sample formatting
+ * Oct 25, 2024  2037223  aford     JAXB upgrade - Configure JAXB Manager to
+ *                                  Use Custom JAXB Context Factory
  *
  * </pre>
  *
@@ -186,7 +187,6 @@ public class StyleManager implements ILocalizationFileObserver {
                     "StyleManager must have an ISubClassLocator set on it, cannot detect and process style rules");
         }
         Collection<Class<?>> clz = new ArrayList<>(20);
-        clz.add(JaxbDummyObject.class);
         clz.add(StyleRuleset.class);
         clz.addAll(subClassLocator
                 .locateSubClasses(AbstractStylePreferences.class));
@@ -196,7 +196,11 @@ public class StyleManager implements ILocalizationFileObserver {
         subClassLocator.save();
         this.subClassLocator = null;
         try {
-            return new JAXBManager(clz.toArray(new Class[0]));
+            // configure to use a custom JAXB Context Factory
+            boolean pooling = false;
+            boolean useCustomJaxbContextFactory = true;
+            return new JAXBManager(pooling, useCustomJaxbContextFactory,
+                    clz.toArray(new Class[0]));
         } catch (JAXBException e) {
             throw new SerializationException(
                     "Error initializing StyleManager's JAXB Context", e);

@@ -35,6 +35,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * ------------ ---------- ----------- --------------------------
  * Sep 23, 2021 8608       mapeters    Initial creation
  * Aug 24, 2022 8920       mapeters    Optimizations; Swap key/values for statuses.
+ * Sep 24, 2024 2037700    tgurney     Add isEmpty
  *
  * </pre>
  *
@@ -85,6 +86,12 @@ public class DataStorageAuditEvent {
         return "DataStorageAuditEvent [dataIds=" + Arrays.toString(dataIds)
                 + ", metadataStatuses=" + metadataStatuses + ", dataStatuses="
                 + dataStatuses + "]";
+    }
+
+    public boolean isEmpty() {
+        return (dataIds == null || dataIds.length == 0)
+                && (metadataStatuses == null || metadataStatuses.isEmpty())
+                && (dataStatuses == null || dataStatuses.isEmpty());
     }
 
 }

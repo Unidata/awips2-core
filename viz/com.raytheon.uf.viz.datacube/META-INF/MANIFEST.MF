@@ -3,8 +3,9 @@ Bundle-ManifestVersion: 2
 Bundle-Name: Derived Parameter Plug-in
 Bundle-SymbolicName: com.raytheon.uf.viz.datacube;singleton:=true
 Bundle-Version: 1.14.0.qualifier
+Eclipse-BundleShape: dir
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-RequiredExecutionEnvironment: JavaSE-17
 Bundle-ActivationPolicy: lazy
 Require-Bundle: com.raytheon.uf.common.derivparam,
  com.raytheon.uf.common.serialization.comm,

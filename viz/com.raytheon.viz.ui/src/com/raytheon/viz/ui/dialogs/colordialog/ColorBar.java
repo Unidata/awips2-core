@@ -1170,13 +1170,13 @@ public class ColorBar extends Composite
         if (unitConv != null) {
             try {
                 value = unitConv.convert(value);
-            } catch(NumberFormatException e) {
+            } catch(IllegalArgumentException e) {
                 value = Double.NaN;
             }
 
             try {
                 lastVal = unitConv.convert(lastVal);
-            } catch(NumberFormatException e) {
+            } catch(IllegalArgumentException e) {
                 lastVal = Double.NaN;
             }
 

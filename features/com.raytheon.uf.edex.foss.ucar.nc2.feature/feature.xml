@@ -2,7 +2,7 @@
 <feature
       id="com.raytheon.uf.edex.foss.ucar.nc2.feature"
       label="ucar.nc2 Feature"
-      version="4.6.10"
+      version="5.9.1"
       provider-name="RAYTHEON">
 
    <description url="http://www.example.com/description">
@@ -19,8 +19,6 @@
 
    <plugin
          id="ucar.nc2"
-         download-size="0"
-         install-size="0"
-         version="4.6.10"/>
+         version="0.0.0"/>
 
 </feature>

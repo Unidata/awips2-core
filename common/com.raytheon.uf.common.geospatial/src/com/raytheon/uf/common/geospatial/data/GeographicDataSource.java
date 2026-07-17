@@ -23,7 +23,7 @@ import java.nio.Buffer;
 
 import org.geotools.coverage.grid.GeneralGridGeometry;
 import org.geotools.coverage.grid.GridGeometry2D;
-import org.opengis.coverage.grid.GridGeometry;
+import org.geotools.api.coverage.grid.GridGeometry;
 
 import com.raytheon.uf.common.geospatial.util.GridGeometryWrapChecker;
 import com.raytheon.uf.common.numeric.buffer.BufferWrapper;

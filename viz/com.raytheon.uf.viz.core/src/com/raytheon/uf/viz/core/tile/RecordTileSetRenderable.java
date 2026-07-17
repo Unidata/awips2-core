@@ -32,8 +32,8 @@ import javax.measure.Unit;
 
 import org.geotools.coverage.grid.GridEnvelope2D;
 import org.geotools.coverage.grid.GridGeometry2D;
-import org.geotools.geometry.Envelope2D;
-import org.opengis.coverage.grid.GridEnvelope;
+import org.geotools.geometry.jts.ReferencedEnvelope;
+import org.locationtech.jts.geom.Coordinate;
 
 import com.raytheon.uf.common.colormap.image.ColorMapData;
 import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
@@ -59,7 +59,6 @@ import com.raytheon.uf.viz.core.map.IMapMeshExtension;
 import com.raytheon.uf.viz.core.rsc.AbstractVizResource;
 import com.raytheon.uf.viz.core.rsc.capabilities.ColorMapCapability;
 import com.raytheon.uf.viz.core.rsc.capabilities.ImagingCapability;
-import org.locationtech.jts.geom.Coordinate;
 
 /**
  * {@link TileSetRenderable} for 2D {@link PluginDataObject}s. Groups adjacent
@@ -80,6 +79,7 @@ import org.locationtech.jts.geom.Coordinate;
  *                                  TileSetRenderable.
  * Aug 26, 2015  4633     bsteffen  Preserve CRS when requesting multiple tiles.
  * Jan 21, 2020  73572    tjensen   Add isRestagingEnabled()
+ * May 07, 2024  2037231  aford     Upgrade GeoTools to 31
  *
  * </pre>
  *
@@ -310,7 +310,7 @@ public class RecordTileSetRenderable extends TileSetRenderable {
         for (Entry<Integer, List<Tile>> tileEntry : mapped.entrySet()) {
             List<Tile> tiles = tileEntry.getValue();
             List<GridEnvelope2D> rectangles = new ArrayList<>();
-            List<Envelope2D> envelopes = new ArrayList<>();
+            List<ReferencedEnvelope> envelopes = new ArrayList<>();
 
             for (Tile tile : tiles) {
                 rectangles.add(tile.tileGeometry.getGridRange2D());
@@ -320,10 +320,10 @@ public class RecordTileSetRenderable extends TileSetRenderable {
             // Join together any adjacent rectangles
             for (int i = 0; i < rectangles.size(); i++) {
                 Rectangle r1 = rectangles.get(i);
-                Envelope2D e1 = envelopes.get(i);
+                ReferencedEnvelope e1 = envelopes.get(i);
                 for (int j = i + 1; j < rectangles.size(); j++) {
                     Rectangle r2 = rectangles.get(j);
-                    Envelope2D e2 = envelopes.get(j);
+                    ReferencedEnvelope e2 = envelopes.get(j);
                     boolean joinable = true;
                     if ((r1.x == r2.x && r1.width == r2.width)
                             && (r1.getMaxY() == r2.getMinY()
@@ -345,10 +345,8 @@ public class RecordTileSetRenderable extends TileSetRenderable {
                         // Join the envelopes
                         envelopes.remove(e1);
                         envelopes.remove(e2);
-                        joined = new Envelope2D(
-                                e1.getCoordinateReferenceSystem());
-                        Rectangle2D.union(e1, e2, joined);
-                        envelopes.add((Envelope2D) joined);
+                        e1.expandToInclude(e2);
+                        envelopes.add(e1);
 
                         // start all over.
                         i = -1;
@@ -360,7 +358,7 @@ public class RecordTileSetRenderable extends TileSetRenderable {
             // start a separate job for every big rectangle
             for (int i = 0; i < rectangles.size(); i++) {
                 Tile joinedTile = new Tile(tileEntry.getKey(),
-                        new GridGeometry2D((GridEnvelope) rectangles.get(i),
+                        new GridGeometry2D(rectangles.get(i),
                                 envelopes.get(i)));
                 RecordTileImageCreatorTask task = new RecordTileImageCreatorTask(
                         target, joinedTile, tiles);

@@ -23,10 +23,9 @@ import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.geotools.api.coverage.grid.GridEnvelope;
+import org.geotools.api.geometry.Bounds;
 import org.geotools.coverage.grid.GridGeometry2D;
-import org.opengis.coverage.grid.GridEnvelope;
-import org.opengis.geometry.Envelope;
-
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Geometry;
 import org.locationtech.jts.geom.prep.PreparedGeometry;
@@ -43,7 +42,8 @@ import org.locationtech.jts.geom.prep.PreparedGeometryFactory;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 8, 2012            mschenke     Initial creation
- * 
+ * May 07,2024  2037231   aford        Upgrade GeoTools to 31
+ *
  * </pre>
  * 
  * @author mschenke
@@ -124,7 +124,7 @@ public class Tile {
      * @return
      */
     public boolean crsContains(double x, double y) {
-        Envelope env = tileGeometry.getEnvelope();
+        Bounds env = tileGeometry.getEnvelope();
         return env.getMinimum(0) <= x && env.getMaximum(0) >= x
                 && env.getMinimum(1) <= y && env.getMaximum(1) >= y;
     }

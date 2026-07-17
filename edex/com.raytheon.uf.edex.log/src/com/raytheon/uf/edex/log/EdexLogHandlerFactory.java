@@ -23,7 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.MissingResourceException;
 
-import javax.xml.bind.JAXBException;
+import jakarta.xml.bind.JAXBException;
 
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationContext;

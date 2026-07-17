@@ -22,7 +22,7 @@ package com.raytheon.uf.common.http;
 import java.io.IOException;
 import java.io.OutputStream;
 
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 
 /**
  * Wraps an HTTPServletResponse in an output stream that postpones accessing the

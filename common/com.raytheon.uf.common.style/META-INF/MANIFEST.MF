@@ -4,7 +4,7 @@ Bundle-Name: Style
 Bundle-SymbolicName: com.raytheon.uf.common.style
 Bundle-Version: 1.18.0.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-11
+Bundle-RequiredExecutionEnvironment: JavaSE-17
 Export-Package: com.raytheon.uf.common.style,
  com.raytheon.uf.common.style.arrow,
  com.raytheon.uf.common.style.contour,
@@ -17,5 +17,5 @@ Require-Bundle: com.raytheon.uf.common.colormap,
  com.raytheon.uf.common.status,
  com.raytheon.uf.common.localization,
  org.apache.commons.lang3,
- javax.xml.bind
+ jakarta.xml.bind
 Import-Package: com.raytheon.uf.common.util

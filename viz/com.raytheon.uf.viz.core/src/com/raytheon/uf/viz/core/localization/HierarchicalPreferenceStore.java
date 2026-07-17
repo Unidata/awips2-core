@@ -33,9 +33,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
-import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.MapConfiguration;
-import org.apache.commons.configuration.XMLConfiguration;
+import org.apache.commons.configuration2.MapConfiguration;
+import org.apache.commons.configuration2.XMLConfiguration;
+import org.apache.commons.configuration2.builder.FileBasedConfigurationBuilder;
+import org.apache.commons.configuration2.builder.fluent.Parameters;
+import org.apache.commons.configuration2.builder.fluent.XMLBuilderParameters;
+import org.apache.commons.configuration2.convert.LegacyListDelimiterHandler;
+import org.apache.commons.configuration2.ex.ConfigurationException;
+import org.apache.commons.configuration2.io.FileHandler;
 import org.eclipse.core.runtime.Plugin;
 import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.jface.preference.IPreferenceStore;
@@ -77,6 +82,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Aug 18, 2015 3806       njensen     Use SaveableOutputStream to save
  * Dec 09, 2015 4834       njensen     Get latest ILocalizationFile on reload()
  * Jun 12, 2017 6297       bsteffen    Make listeners thread safe.
+ * Jul 08, 2025 2036453    aford       Commons Configuration 2 Upgrade
  * 
  * </pre>
  * 
@@ -93,7 +99,9 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
 
         private final String configFilePath;
 
-        private XMLConfiguration config;
+        // NOTE: In commons config 2 it is recommended to store the builder and
+        // get the config when needed.
+        private FileBasedConfigurationBuilder<XMLConfiguration> configBuilder;
 
         private boolean loaded = false;
 
@@ -103,7 +111,7 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
                 String configFilePath) {
             this.level = level;
             this.configFilePath = configFilePath;
-            this.config = new XMLConfiguration();
+            this.configBuilder = getConfigBuilder();
         }
 
         public synchronized XMLConfiguration accessConfiguration() {
@@ -117,7 +125,14 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
                             e.getLocalizedMessage(), e);
                 }
             }
-            return config;
+            try {
+                return configBuilder.getConfiguration();
+            } catch (ConfigurationException e) {
+                statusHandler.handle(Priority.PROBLEM,
+                        "Error building configuration from localization file",
+                        e);
+                return new XMLConfiguration();
+            }
         }
 
         public void markDirty() {
@@ -132,7 +147,7 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
             ILocalizationFile file = getILocalizationFile(level);
             if (isDirty()) {
                 try (SaveableOutputStream sos = file.openOutputStream()) {
-                    config.save(sos);
+                    configBuilder.getFileHandler().save(sos);
                     sos.save();
                     dirty = false;
                 } catch (ConfigurationException | IOException e) {
@@ -146,14 +161,25 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
             ILocalizationFile file = getILocalizationFile(level);
             if (file.exists()) {
                 try (InputStream in = file.openInputStream()) {
-                    XMLConfiguration newConfig = new XMLConfiguration();
-                    newConfig.load(in);
-                    this.config = newConfig;
+                    FileBasedConfigurationBuilder<XMLConfiguration> newConfigBuilder = getConfigBuilder();
+                    FileHandler fileHandler = new FileHandler(
+                            newConfigBuilder.getConfiguration());
+                    fileHandler.load(in);
+                    this.configBuilder = newConfigBuilder;
                 } catch (IOException | ConfigurationException e) {
                     throw new LocalizationException(
                             "Error loading localization file into config", e);
                 }
             }
+        }
+
+        private FileBasedConfigurationBuilder<XMLConfiguration> getConfigBuilder() {
+            XMLBuilderParameters xmlParams = new Parameters().xml()
+                    .setListDelimiterHandler(
+                            new LegacyListDelimiterHandler(','));
+            FileBasedConfigurationBuilder<XMLConfiguration> configBuilder = new FileBasedConfigurationBuilder<>(
+                    XMLConfiguration.class).configure(xmlParams);
+            return configBuilder;
         }
 
         /**

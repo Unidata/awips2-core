@@ -53,6 +53,8 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  * Aug 30, 2013 2298       rjpeter     Make getPluginName abstract
  * Sep 21, 2015 4486       rjpeter     Pass entity to QueryParam.
  * Jun 30, 2016 5725       tgurney     Add NOT IN
+ * Oct 20, 2025 2039687    njensen     Make copy of constraint map so the
+ *                                     original is not modified
  * </pre>
  * 
  * @author mschenke
@@ -64,7 +66,8 @@ public class DbQueryHandler implements IRequestHandler<DbQueryRequest> {
             throws Exception {
         String dbName = request.getDatabase();
         List<RequestField> fields = request.getFields();
-        Map<String, RequestConstraint> constraints = request.getConstraints();
+        Map<String, RequestConstraint> constraints = new HashMap<>(
+                request.getConstraints());
         String pluginName = null;
         String entity = request.getEntityClass();
         if (constraints.containsKey("pluginName")) {

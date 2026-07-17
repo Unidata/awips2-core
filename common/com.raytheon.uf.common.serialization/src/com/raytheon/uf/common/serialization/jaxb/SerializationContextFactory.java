@@ -23,20 +23,18 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
+import org.glassfish.jaxb.runtime.api.TypeReference;
+import org.glassfish.jaxb.runtime.v2.model.annotation.RuntimeInlineAnnotationReader;
+import org.glassfish.jaxb.runtime.v2.runtime.JAXBContextImpl;
+import org.glassfish.jaxb.runtime.v2.runtime.JAXBContextImpl.JAXBContextBuilder;
 
-import com.sun.xml.bind.api.TypeReference;
-import com.sun.xml.bind.v2.model.annotation.RuntimeInlineAnnotationReader;
-import com.sun.xml.bind.v2.runtime.JAXBContextImpl;
-import com.sun.xml.bind.v2.runtime.JAXBContextImpl.JAXBContextBuilder;
+import jakarta.xml.bind.JAXBContext;
+import jakarta.xml.bind.JAXBException;
 
 /**
- * JAXBContext factory, creates the jaxb context. This classes is used so that
- * jaxb doesn't waste time on startup looking in the package of every class for
- * jaxb.properties. This class is referenced in DummyObject's jaxb.properties
- * file and DummyObject is added to the class list so this factory is
- * immediately found. Saves about 2s of initialization time
+ * JAXBContext factory, creates the jaxb context. This classes is used to create
+ * a custom JAXBContext and is only used if a JAXBManager is created with the
+ * useCustomJaxbContextFactory flag set to true. 
  * 
  * <pre>
  * 
@@ -46,6 +44,8 @@ import com.sun.xml.bind.v2.runtime.JAXBContextImpl.JAXBContextBuilder;
  * ------------ ---------- ----------- --------------------------
  * Sep 12, 2011            mschenke     Initial creation
  * June 24, 2013 #2126     bkowal       Update for Java 7 compatibility
+ * Oct 25, 2024  2037223   aford        Updated class javadoc to reflect changes
+ *                                      made to how this class is instantiated.
  * 
  * </pre>
  * 

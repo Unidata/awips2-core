@@ -22,12 +22,12 @@ package com.raytheon.uf.viz.core.status;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import javax.jms.BytesMessage;
-import javax.jms.Connection;
-import javax.jms.Destination;
-import javax.jms.JMSException;
-import javax.jms.MessageProducer;
-import javax.jms.Session;
+import jakarta.jms.BytesMessage;
+import jakarta.jms.Connection;
+import jakarta.jms.Destination;
+import jakarta.jms.JMSException;
+import jakarta.jms.MessageProducer;
+import jakarta.jms.Session;
 
 import com.raytheon.uf.common.message.IMessage;
 import com.raytheon.uf.common.serialization.SerializationException;

@@ -20,14 +20,14 @@
 package com.raytheon.uf.common.geospatial.util;
 
 import org.geotools.coverage.grid.GeneralGridGeometry;
-import org.geotools.geometry.DirectPosition2D;
+import org.geotools.geometry.Position2D;
 import org.geotools.referencing.CRS;
 import org.geotools.referencing.crs.DefaultGeographicCRS;
-import org.opengis.referencing.FactoryException;
-import org.opengis.referencing.crs.CoordinateReferenceSystem;
-import org.opengis.referencing.datum.PixelInCell;
-import org.opengis.referencing.operation.MathTransform;
-import org.opengis.referencing.operation.TransformException;
+import org.geotools.api.referencing.FactoryException;
+import org.geotools.api.referencing.crs.CoordinateReferenceSystem;
+import org.geotools.api.referencing.datum.PixelInCell;
+import org.geotools.api.referencing.operation.MathTransform;
+import org.geotools.api.referencing.operation.TransformException;
 
 /**
  * Provide utility methods for determining if a grid geometry is world wide and
@@ -42,6 +42,7 @@ import org.opengis.referencing.operation.TransformException;
  * ------------ ---------- ----------- --------------------------
  * Oct 5, 2012             bsteffen    Initial creation
  * Mar 4, 2015  3959       rjpeter     Added NO_WRAP.
+ * May 07, 2024 2037231    aford       Upgrade GeoTools to 31
  * </pre>
  * 
  * @author bsteffen
@@ -106,8 +107,8 @@ public class GridGeometryWrapChecker {
 
             // Start with two points in grid space, one on each corner side of
             // the y direction.
-            DirectPosition2D corner1 = new DirectPosition2D(nx, 0);
-            DirectPosition2D corner2 = new DirectPosition2D(nx, ny - 1);
+            Position2D corner1 = new Position2D(nx, 0);
+            Position2D corner2 = new Position2D(nx, ny - 1);
             // transform the points to crs space.
             grid2crs.transform(corner1, corner1);
             grid2crs.transform(corner2, corner2);

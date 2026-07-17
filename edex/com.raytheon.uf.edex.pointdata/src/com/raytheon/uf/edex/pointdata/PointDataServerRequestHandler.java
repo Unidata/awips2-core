@@ -20,6 +20,7 @@
 
 package com.raytheon.uf.edex.pointdata;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import com.raytheon.uf.common.dataquery.requests.RequestConstraint;
@@ -40,6 +41,8 @@ import com.raytheon.uf.common.serialization.comm.IRequestHandler;
  * Aug 09, 2011  9696     gzhou       add handle for request from nativeLib
  * May 15, 2013  1869     bsteffen    Remove DataURI column from ldadmesonet.
  * Nov 26, 2013  2537     bsteffen    Use constants in the request class.
+ * Oct 20, 2025  2039687  njensen     Make copy of constraint map so the
+ *                                    original is not modified
  * 
  * </pre>
  * 
@@ -53,7 +56,7 @@ public class PointDataServerRequestHandler implements
     public Object handleRequest(PointDataServerRequest request)
             throws Exception {
         // grab constraint map
-        Map<String, RequestConstraint> map = request.getRcMap();
+        Map<String, RequestConstraint> map = new HashMap<>(request.getRcMap());
 
         // find pluginName
         String pluginName = null;
