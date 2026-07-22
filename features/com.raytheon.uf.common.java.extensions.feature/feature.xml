@@ -19,7 +19,8 @@
 
    <plugin
          id="javax.xml.bind"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="jakarta.xml.bind"
@@ -27,7 +28,8 @@
 
    <plugin
          id="javax.jws"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="jakarta.jws"
@@ -39,7 +41,8 @@
 
    <plugin
          id="javax.activation"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="jakarta.activation"
@@ -47,11 +50,13 @@
 
    <plugin
          id="javax.media.jai"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="javax.xml.ws"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="jakarta.xml.ws"
