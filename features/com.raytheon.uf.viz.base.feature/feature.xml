@@ -26,25 +26,29 @@
          id="com.raytheon.uf.viz.core"
          download-size="0"
          install-size="0"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="com.raytheon.viz.ui"
          download-size="0"
          install-size="0"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="org.apache.activemq"
          download-size="0"
          install-size="0"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="org.w3c.xml.ext"
          download-size="0"
          install-size="0"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="org.apache.xmlgraphics"
@@ -56,13 +60,15 @@
          id="org.apache.batik"
          download-size="0"
          install-size="0"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="com.raytheon.viz.core"
          download-size="0"
          install-size="0"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="org.eclipse.core.resources"
@@ -124,7 +130,8 @@
          id="com.raytheon.uf.viz.ui.menus"
          download-size="0"
          install-size="0"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="com.raytheon.viz.alerts"
@@ -137,7 +144,8 @@
          id="com.raytheon.uf.viz.productbrowser"
          download-size="0"
          install-size="0"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="com.raytheon.uf.viz.core.rsc"
@@ -150,7 +158,8 @@
          id="net.sf.swtaddons"
          download-size="0"
          install-size="0"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="org.eclipse.draw2d"
@@ -170,7 +179,8 @@
          id="com.raytheon.viz.core.gl"
          download-size="0"
          install-size="0"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="com.jogamp.jogl"
@@ -190,19 +200,22 @@
          id="com.raytheon.uf.common.dataplugin.maps"
          download-size="0"
          install-size="0"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="com.raytheon.uf.viz.core.maps"
          download-size="0"
          install-size="0"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="com.raytheon.viz.ui.tools.nav"
          download-size="0"
          install-size="0"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="com.raytheon.uf.viz.spring.dm"
@@ -222,13 +235,15 @@
          id="com.raytheon.uf.viz.datacube"
          download-size="0"
          install-size="0"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="com.raytheon.uf.viz.topo"
          download-size="0"
          install-size="0"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="com.raytheon.viz.core.contours"

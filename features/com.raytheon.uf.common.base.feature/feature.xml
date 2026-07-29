@@ -23,15 +23,18 @@
 
    <plugin
          id="com.fasterxml.jackson"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="com.mchange"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="org.apache.thrift"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="com.raytheon.uf.common.alertmonitor"
@@ -51,7 +54,8 @@
 
    <plugin
          id="com.raytheon.uf.common.dataaccess"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="com.raytheon.uf.common.dataplugin"
@@ -75,15 +79,18 @@
 
    <plugin
          id="com.raytheon.uf.common.event"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="com.raytheon.uf.common.numeric"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="com.raytheon.uf.common.geospatial"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="com.raytheon.uf.common.jms"
@@ -95,7 +102,8 @@
 
    <plugin
          id="com.raytheon.uf.common.message"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="com.raytheon.uf.common.python"
@@ -127,11 +135,13 @@
 
    <plugin
          id="com.raytheon.uf.common.time"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="com.raytheon.uf.common.units"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="com.raytheon.uf.common.util"
@@ -143,27 +153,33 @@
 
    <plugin
          id="javax.measure"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="net.sf.ehcache"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="org.apache.commons.beanutils"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="org.apache.commons.codec"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="org.apache.commons.collections"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="org.apache.commons.collections4"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="org.apache.commons.configuration2"
@@ -171,11 +187,13 @@
 
    <plugin
          id="org.apache.commons.digester"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="org.apache.commons.lang3"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="org.apache.commons.text"
@@ -183,7 +201,8 @@
 
    <plugin
          id="org.apache.velocity"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="org.apache.xml.resolver"
@@ -191,35 +210,43 @@
 
    <plugin
          id="org.geotools"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="org.jdom2"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="org.apache.commons.pool"
-         version="1.6.0"/>
+         version="1.6.0"
+         unpack="true"/>
 
    <plugin
          id="org.javassist"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="org.hibernate"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="org.jep"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="org.slf4j"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="org.springframework"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="com.raytheon.uf.common.pypies"
@@ -231,7 +258,8 @@
 
    <plugin
          id="org.apache.qpid"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="org.apache.commons.io"
@@ -239,7 +267,8 @@
 
    <plugin
          id="ch.qos.logback"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="com.raytheon.uf.common.topo"
@@ -251,7 +280,8 @@
 
    <plugin
          id="org.reflections"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="com.raytheon.uf.common.inventory"
@@ -259,11 +289,13 @@
 
    <plugin
          id="com.raytheon.uf.common.derivparam"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="com.raytheon.uf.common.derivparam.python"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="com.raytheon.uf.common.wxmath"
@@ -271,7 +303,8 @@
 
    <plugin
          id="org.apache.xerces"
-         version="2.12.2"/>
+         version="2.12.2"
+         unpack="false"/>
 
    <plugin
          id="com.raytheon.uf.common.convert"
@@ -279,15 +312,18 @@
 
    <plugin
          id="org.checkerframework"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="org.postgres"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="javax.persistence"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="com.raytheon.uf.common.logback"
@@ -295,7 +331,8 @@
 
    <plugin
          id="org.apache.commons.pool2"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
    <plugin
          id="com.raytheon.uf.common.auth.util"
@@ -311,7 +348,8 @@
 
    <plugin
          id="com.google.guava"
-         version="33.5.0"/>
+         version="33.5.0"
+         unpack="true"/>
 
    <plugin
          id="com.google.gson"
@@ -333,7 +371,8 @@
          id="ar.com.hjg.pngj"
          download-size="0"
          install-size="0"
-         version="0.0.0"/>
+         version="0.0.0"
+         unpack="true"/>
 
  <!--The org.openhab.core library would go here. It's needed for the Unidata Streamflow but we aren't distributing that right now-->
 
