@@ -290,7 +290,7 @@
          download-size="0"
          install-size="0"
          version="2.12.2"
-         unpack="true"/>
+         unpack="false"/>
 
    <plugin
          id="com.raytheon.uf.viz.auth"
