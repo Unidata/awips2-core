@@ -54,7 +54,7 @@
          id="org.apache.commons.commons-io"
          download-size="0"
          install-size="0"
-         version="2.15.1"/>
+         version="0.0.0"/>
 
    <plugin
          id="org.apache.commons.logging"
@@ -381,7 +381,7 @@
          download-size="0"
          install-size="0"
          version="0.0.0"
-         unpack="true"/>
+         unpack="false"/>
 
          <plugin
          id="org.apache.commons.digester"
