@@ -774,6 +774,32 @@ public class MapUtil {
         }
     }
 
+    public static ProjectedCRS constructRotatedPole(
+            double majorAxis, double minorAxis, double southPoleLat,
+            double southPoleLon) {
+        double latitudeOfOrigin = 90.0 + southPoleLat;
+        double centralMeridian = correctLon(southPoleLon);
+        
+        try {
+            ParameterValueGroup parameters = dmtFactory.getDefaultParameters("Rotated_Pole");
+
+            parameters.parameter("semi_major").setValue(majorAxis);
+            parameters.parameter("semi_minor").setValue(minorAxis);
+            parameters.parameter("central_meridian").setValue(centralMeridian);
+            parameters.parameter("latitude_of_origin").setValue(latitudeOfOrigin);
+            parameters.parameter("false_easting").setValue(0.0);
+            parameters.parameter("false_northing").setValue(0.0);
+
+            String name = "Rotated Pole(LatO: " + latitudeOfOrigin
+                    + ", CM: " + centralMeridian + ")";
+
+            return constructProjection(name, parameters);
+        } catch (Exception e) {
+            statusHandler.handle(Priority.WARN, e.getLocalizedMessage(), e);
+            return null;
+        }
+    }
+    
     public static ProjectedCRS constructNative(String type, String encoded) {
         try {
             ParameterValueGroup parameters = dmtFactory
@@ -1328,7 +1354,43 @@ public class MapUtil {
         // Create the geometry from the constructed String
         return createPolygon(d);
     }
+    
+    public static Polygon createGeometryFromNative(
+            CoordinateReferenceSystem crs, double minX, double minY,
+            double maxX, double maxY, double centralMeridian) throws Exception {
 
+        double[] corners = {
+                minX, minY,
+                maxX, minY,
+                maxX, maxY,
+                minX, maxY,
+                minX, minY
+        };
+
+        MathTransform toLatLon =
+                MapUtil.getTransformFromLatLon(crs).inverse();
+
+        toLatLon.transform(corners, 0, corners, 0, 5);
+        
+        /*
+         * Keep geographic longitudes within +/-180 degrees of the
+         * projection central meridian. Using the normal [-180,180]
+         * longitude range can place points on the wrong side of the
+         * longitude seam for rotated pole projections.
+         */
+        for (int i = 0; i < corners.length; i += 2) {
+            while (corners[i] - centralMeridian > 180.0) {
+                corners[i] -= 360.0;
+            }
+
+            while (corners[i] - centralMeridian < -180.0) {
+                corners[i] += 360.0;
+            }
+        }
+
+        return createPolygon(corners);
+    }
+    
     private static Polygon createPolygon(double[] points) {
         GeometryFactory gf = new GeometryFactory();
 
