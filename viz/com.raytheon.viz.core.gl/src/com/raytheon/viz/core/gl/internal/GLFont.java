@@ -70,13 +70,11 @@ public class GLFont extends AbstractAWTDeviceFont implements IGLFont {
         this.fontFile = font;
         this.fontType = type;
         this.currentFontSize = this.fontSize = fontSize;
-        this.textRenderer = TextRendererCache.getRenderer(this.font);
     }
 
     public GLFont(Point dpi, String fontName, float fontSize, Style[] styles) {
         super(dpi, fontName, fontSize, styles);
         this.currentFontSize = this.fontSize = fontSize;
-        this.textRenderer = TextRendererCache.getRenderer(this.font);
     }
 
     @Override
@@ -95,7 +93,15 @@ public class GLFont extends AbstractAWTDeviceFont implements IGLFont {
     }
 
     @Override
-    public TextRenderer getTextRenderer() {
+    public synchronized TextRenderer getTextRenderer() {
+        if (disposed) {
+            throw new IllegalStateException("Attempted to use a disposed GLFont");
+        }
+
+        if (textRenderer == null) {
+            textRenderer = TextRendererCache.getRenderer(font);
+        }
+
         return textRenderer;
     }
 
@@ -132,10 +138,9 @@ public class GLFont extends AbstractAWTDeviceFont implements IGLFont {
         }
         this.magnification = magnification;
         if (newSize != currentFontSize) {
-            dispose();
+            disposeInternal();
             currentFontSize = newSize;
             font = font.deriveFont(newSize);
-            this.textRenderer = TextRendererCache.getRenderer(this.font);
             disposed = false;
         }
 
@@ -150,15 +155,13 @@ public class GLFont extends AbstractAWTDeviceFont implements IGLFont {
     }
 
     @Override
-    public void disposeInternal() {
+    public synchronized void disposeInternal() {
         if (!disposed) {
-            if (this.textRenderer != null) {
-
-                TextRendererCache.releaseRenderer(this.font);
-                this.textRenderer = null;
-                disposed = true;
-
+            if (textRenderer != null) {
+                TextRendererCache.releaseRenderer(font);
+                textRenderer = null;
             }
+            disposed = true;
         }
     }
 

@@ -95,6 +95,8 @@ public class TextRendererCache {
             renderer = unusedMap.remove(font);
             if (renderer == null) {
                 renderer = new TextRenderer(font, false, false);
+                renderer.setUseVertexArrays(false);
+             
             }
             usedMap.put(font, renderer);
             refs.put(font, 1);

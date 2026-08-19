@@ -108,6 +108,8 @@ public class ProductBrowserView extends ViewPart {
     private Action collapseAction;
 
     private Action refreshAction;
+    
+    private Font boldFont;
 
     @Override
     public void createPartControl(Composite parent) {
@@ -232,6 +234,10 @@ public class ProductBrowserView extends ViewPart {
         productTree = new Tree(parent,
                 SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL | SWT.BORDER);
         productTree.setLayoutData(gridData);
+        
+        FontData fontData = productTree.getFont().getFontData()[0];
+        boldFont = new Font(productTree.getDisplay(),
+                new FontData(fontData.getName(), fontData.getHeight(), SWT.BOLD));
 
         /*
          * Wrap productTree as TreeViewer to handle tree expansions and listen
@@ -397,13 +403,7 @@ public class ProductBrowserView extends ViewPart {
                                 index);
                         dataTypeToUpdate.setData(LABEL_DATA_KEY, label);
                         dataTypeToUpdate.setData(DEF_DATA_KEY, prod);
-                        Font font = dataTypeToUpdate.getFont();
-                        FontData fontData = font.getFontData()[0];
-                        fontData = new FontData(fontData.getName(),
-                                fontData.getHeight(), SWT.BOLD);
-                        font = new Font(dataTypeToUpdate.getDisplay(),
-                                fontData);
-                        dataTypeToUpdate.setFont(font);
+                        dataTypeToUpdate.setFont(boldFont);
                     }
                     String displayText = "Checking Availability of " + labelName
                             + "...";
@@ -507,7 +507,11 @@ public class ProductBrowserView extends ViewPart {
 
     @Override
     public void dispose() {
-        super.dispose();
         Job.getJobManager().cancel(ProductBrowserQueryJob.class);
+
+        if (boldFont != null && !boldFont.isDisposed()) {
+            boldFont.dispose();
+        }
+        super.dispose();
     }
 }
