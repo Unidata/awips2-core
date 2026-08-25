@@ -149,38 +149,29 @@ public class DbMapResource
     private static final int BASE_DENSITY_MULT = 50;
 
     protected class LabelNode {
-        private final Rectangle2D rect;
 
         private final String label;
 
         private final double[] location;
 
-        public LabelNode(String label, Coordinate c, IGraphicsTarget target,
-                IFont font) {
+        public LabelNode(String label, Coordinate c) {
             this.label = label;
             this.location = descriptor.worldToPixel(new double[] { c.x, c.y });
-            DrawableString ds = new DrawableString(label, null);
-            ds.font = font;
-            rect = target.getStringsBounds(ds);
         }
+        
+        /*
+        * Retain the old constructor signature for subclasses such as
+        * ZoneSelectorResource, but do not perform any GL operations here.
+        */
+       public LabelNode(String label, Coordinate c, IGraphicsTarget target,
+               IFont font) {
+           this(label, c);
+       }
 
-        /**
-         * @return the rect
-         */
-        public Rectangle2D getRect() {
-            return rect;
-        }
-
-        /**
-         * @return the label
-         */
         public String getLabel() {
             return label;
         }
 
-        /**
-         * @return the location
-         */
         public double[] getLocation() {
             return location;
         }
@@ -436,9 +427,10 @@ public class DbMapResource
                                 c = e.getCoordinate();
                             }
                             if (c != null) {
-                                LabelNode node = new LabelNode(label, c,
-                                        req.getTarget(), req.getResource()
-                                                .getFont(req.getTarget()));
+                                LabelNode node = new LabelNode(label, c);
+                                //,
+                               //         req.getTarget(), req.getResource()
+                                 //               .getFont(req.getTarget()));
                                 newLabels.add(node);
                             }
                         } catch (TopologyException e) {
@@ -694,12 +686,14 @@ public class DbMapResource
                 string.verticallAlignment = VerticalAlignment.MIDDLE;
                 boolean add = true;
 
+                Rectangle2D rect = target.getStringsBounds(string);
+
                 IExtent strExtent = new PixelExtent(node.location[0],
                         node.location[0]
-                                + (node.rect.getWidth() * worldToScreenRatio),
+                                + (rect.getWidth() * worldToScreenRatio),
                         node.location[1],
                         node.location[1]
-                                + ((node.rect.getHeight() - node.rect.getY())
+                                + ((rect.getHeight() - rect.getY())
                                         * worldToScreenRatio));
 
                 if ((lastLabel != null) && lastLabel.equals(node.label)) {
