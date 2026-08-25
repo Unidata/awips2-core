@@ -3,35 +3,6 @@
             <displayList>
                 <displays xsi:type="d2DMapRenderableDisplay" magnification="1.0" density="1.0" scale="WSR-88D TDAY" mapCenter="-84.123 40.022 0.0" zoomLevel="1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
                     <descriptor xsi:type="mapDescriptor">
-                        <resource>
-                            <loadProperties loadWithoutData="true">
-                                <resourceType>PLAN_VIEW</resourceType>
-                                <perspectiveProperty xsi:type="d2dLoadProperties" loadMode="VALID_TIME_SEQ" timeMatchBasis="true"/>
-                                <capabilities>
-                                    <capability xsi:type="imagingCapability" contrast="1.0" brightness="1.0" interpolationState="false" alpha="1.0"/>
-                                    <capability xsi:type="magnificationCapability" magnification="1.0"/>
-                                    <capability xsi:type="colorableCapability" colorAsString="white"/>
-                                    <capability xsi:type="rangeRingsOverlayCapability"/>
-                                    <capability xsi:type="outlineCapability" outlineWidth="1" outlineOn="true" lineStyle="DEFAULT"/>
-                                </capabilities>
-                            </loadProperties>
-                            <properties isVisible="true" isHoverOn="false" isMapLayer="false" isBlinking="false" isSystemResource="false" renderingOrderId="IMAGE_LOCAL">
-                                <pdProps minDisplayWidth="0" maxDisplayWidth="100000000"/>
-                            </properties>
-                            <resourceData xsi:type="radarResourceData" pointID="" mode="" latest="false" rangeRings="true" isRequeryNecessaryOnTimeMatch="true" isUpdatingOnMetadataOnly="false" retrieveData="true">
-                                <metadataMap>
-                                    <mapping key="productCode">
-                                        <constraint constraintType="EQUALS" constraintValue="${product1}"/>
-                                    </mapping>
-                                    <mapping key="icao">
-                                        <constraint constraintType="EQUALS" constraintValue="tday"/>
-                                    </mapping>
-                                    <mapping key="pluginName">
-                                        <constraint constraintType="EQUALS" constraintValue="radar"/>
-                                    </mapping>
-                                </metadataMap>
-                            </resourceData>
-                        </resource>
                                 <resource>
                                     <loadProperties loadWithoutData="false">
                                         <resourceType>PLAN_VIEW</resourceType>
@@ -140,35 +111,6 @@
                 </displays>
                 <displays xsi:type="d2DMapRenderableDisplay" magnification="1.0" density="1.0" scale="WSR-88D TDAY" mapCenter="-84.123 40.022 0.0" zoomLevel="1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
                     <descriptor xsi:type="mapDescriptor">
-                        <resource>
-                            <loadProperties loadWithoutData="true">
-                                <resourceType>PLAN_VIEW</resourceType>
-                                <perspectiveProperty xsi:type="d2dLoadProperties" loadMode="VALID_TIME_SEQ" timeMatchBasis="true"/>
-                                <capabilities>
-                                    <capability xsi:type="imagingCapability" contrast="1.0" brightness="1.0" interpolationState="false" alpha="1.0"/>
-                                    <capability xsi:type="magnificationCapability" magnification="1.0"/>
-                                    <capability xsi:type="colorableCapability" colorAsString="white"/>
-                                    <capability xsi:type="rangeRingsOverlayCapability"/>
-                                    <capability xsi:type="outlineCapability" outlineWidth="1" outlineOn="true" lineStyle="DEFAULT"/>
-                                </capabilities>
-                            </loadProperties>
-                            <properties isVisible="true" isHoverOn="false" isMapLayer="false" isBlinking="false" isSystemResource="false" renderingOrderId="IMAGE_LOCAL">
-                                <pdProps minDisplayWidth="0" maxDisplayWidth="100000000"/>
-                            </properties>
-                            <resourceData xsi:type="radarResourceData" pointID="" mode="" latest="false" rangeRings="true" isRequeryNecessaryOnTimeMatch="true" isUpdatingOnMetadataOnly="false" retrieveData="true">
-                                <metadataMap>
-                                    <mapping key="productCode">
-                                        <constraint constraintType="EQUALS" constraintValue="${product2}"/>
-                                    </mapping>
-                                    <mapping key="icao">
-                                        <constraint constraintType="EQUALS" constraintValue="tday"/>
-                                    </mapping>
-                                    <mapping key="pluginName">
-                                        <constraint constraintType="EQUALS" constraintValue="radar"/>
-                                    </mapping>
-                                </metadataMap>
-                            </resourceData>
-                        </resource>
                                 <resource>
                                     <loadProperties loadWithoutData="false">
                                         <resourceType>PLAN_VIEW</resourceType>
