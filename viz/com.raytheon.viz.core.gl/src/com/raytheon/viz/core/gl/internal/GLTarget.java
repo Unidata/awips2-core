@@ -1110,18 +1110,6 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
         return result;
     }
 
-    /** Log pane dimensions while its OpenGL context is current. */
-    private void logViewport(String location) {
-        int[] viewport = new int[4];
-        gl.glGetIntegerv(GL2.GL_VIEWPORT, viewport, 0);
-        System.out.println("GLTarget "
-                + Integer.toHexString(System.identityHashCode(this))
-                + " " + location
-                + " canvas=" + canvasSize.width + "x" + canvasSize.height
-                + " viewport=" + viewport[0] + "," + viewport[1]
-                + "," + viewport[2] + "," + viewport[3]);
-    }
-
     @Override
     public void init() {
         makeContextCurrent();
@@ -1138,9 +1126,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
 
         Rectangle bounds = this.canvasSize;
         Rectangle viewportBounds = getViewportBounds(bounds);
-        logViewport("init: before viewport reset");
         gl.glViewport(0, 0, viewportBounds.width, viewportBounds.height);
-        logViewport("init: after viewport reset");
 
         // gl.glDisable(GL2.GL_DEPTH_TEST);
 
@@ -1305,9 +1291,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
 
         makeContextCurrent();
         Rectangle viewportBounds = getViewportBounds(bounds);
-        logViewport("resize: before viewport reset");
         gl.glViewport(0, 0, viewportBounds.width, viewportBounds.height);
-        logViewport("resize: after viewport reset");
         gl.glMatrixMode(GL2.GL_PROJECTION);
         gl.glLoadIdentity();
 
