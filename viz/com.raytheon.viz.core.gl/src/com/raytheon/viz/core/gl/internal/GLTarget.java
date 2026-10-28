@@ -162,6 +162,7 @@ import com.jogamp.opengl.util.awt.TextRenderer;
  * Mar 23, 2015  5506     randerso    Fix NPE when initializing offscreen targets
  * Sep 13, 2016           mjames@ucar jogamp refactor for osx
  * Nov 01, 2016  5957     bsteffen    Do not interpolate colormap alpha
+ * Oct 28, 2026		   tiffanym@ucar  Use Cocoa backing-pixel dimensions for viewport initialization and resizing to fix multi-panel rendering on macOS Retina displays
  * 
  * </pre>
  * 
@@ -1039,6 +1040,76 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
      * 
      * @see com.raytheon.viz.IGraphicsTarget#init()
      */
+    /** Report a Cocoa bridge failure once without preventing CAVE startup. */
+    private boolean reportedBackingBoundsFailure;
+
+    /**
+     * Return viewport dimensions in framebuffer pixels. SWT layout and
+     * canvasSize remain in logical coordinates.
+     *
+     * Cocoa access is reflective so this class also compiles against the
+     * Windows and Linux SWT fragments. The Cocoa calls are made only from
+     * init/resize, on the SWT UI thread.
+     */
+    private Rectangle getViewportBounds(Rectangle logicalBounds) {
+        Rectangle result = new Rectangle(0, 0,
+                logicalBounds.width, logicalBounds.height);
+        if (!"cocoa".equals(SWT.getPlatform()) || theCanvas == null
+                || theCanvas.isDisposed()
+                || logicalBounds.width <= 0 || logicalBounds.height <= 0) {
+            return result;
+        }
+
+        try {
+            Object view = theCanvas.getClass().getField("view").get(theCanvas);
+            if (view == null) {
+                return result;
+            }
+
+            ClassLoader loader = view.getClass().getClassLoader();
+            Class<?> viewClass = Class.forName(
+                    "org.eclipse.swt.internal.cocoa.NSView", true, loader);
+            Class<?> rectClass = Class.forName(
+                    "org.eclipse.swt.internal.cocoa.NSRect", true, loader);
+            Class<?> osClass = Class.forName(
+                    "org.eclipse.swt.internal.cocoa.OS", true, loader);
+
+            Object viewBounds = viewClass.getMethod("bounds").invoke(view);
+            Object backingBounds = rectClass.getConstructor().newInstance();
+            long viewId = ((Number) view.getClass().getField("id")
+                    .get(view)).longValue();
+            long selector = ((Number) osClass.getMethod("sel_registerName",
+                    String.class).invoke(null, "convertRectToBacking:"))
+                    .longValue();
+
+            // Use SWT's native struct-return bridge, including on ARM64.
+            osClass.getMethod("objc_msgSend_stret", rectClass,
+                    long.class, long.class, rectClass)
+                    .invoke(null, backingBounds, viewId, selector, viewBounds);
+
+            double width = ((Number) rectClass.getField("width")
+                    .get(backingBounds)).doubleValue();
+            double height = ((Number) rectClass.getField("height")
+                    .get(backingBounds)).doubleValue();
+            if (!Double.isFinite(width) || !Double.isFinite(height)
+                    || width <= 0 || height <= 0
+                    || width > Integer.MAX_VALUE || height > Integer.MAX_VALUE) {
+                throw new IllegalStateException("Invalid Cocoa backing bounds: "
+                        + width + "x" + height);
+            }
+            result.width = (int) Math.round(width);
+            result.height = (int) Math.round(height);
+        } catch (ReflectiveOperationException | RuntimeException | LinkageError e) {
+            if (!reportedBackingBoundsFailure) {
+                reportedBackingBoundsFailure = true;
+                statusHandler.handle(Priority.PROBLEM,
+                        "Cannot obtain Cocoa backing bounds; using logical "
+                                + "viewport dimensions for this target.", e);
+            }
+        }
+        return result;
+    }
+
     @Override
     public void init() {
         makeContextCurrent();
@@ -1054,7 +1125,8 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
         capabilities = com.raytheon.viz.core.gl.GLCapabilities.getInstance(gl);
 
         Rectangle bounds = this.canvasSize;
-        gl.glViewport(0, 0, bounds.width, bounds.height);
+        Rectangle viewportBounds = getViewportBounds(bounds);
+        gl.glViewport(0, 0, viewportBounds.width, viewportBounds.height);
 
         // gl.glDisable(GL2.GL_DEPTH_TEST);
 
@@ -1218,7 +1290,8 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
         Rectangle bounds = theCanvas.getClientArea();
 
         makeContextCurrent();
-        gl.glViewport(0, 0, bounds.width, bounds.height);
+        Rectangle viewportBounds = getViewportBounds(bounds);
+        gl.glViewport(0, 0, viewportBounds.width, viewportBounds.height);
         gl.glMatrixMode(GL2.GL_PROJECTION);
         gl.glLoadIdentity();
 

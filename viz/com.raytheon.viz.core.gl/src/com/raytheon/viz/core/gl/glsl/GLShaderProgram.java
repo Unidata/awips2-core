@@ -51,6 +51,7 @@ import com.raytheon.viz.core.gl.objects.GLVertexBufferObject;
  * Aug 19, 2015  4709     bsteffen  Allow setting vertex attributes.
  * Sep 13, 2016           mjames    jogamp refactor for osx using Buffers
  * Jul 24, 2017  6316     njensen   Safety check for null programs
+ * Oct 28, 2026      tiffanym@ucar  Add in log to print out what program is failing to render
  * 
  * </pre>
  * 
@@ -208,7 +209,12 @@ public class GLShaderProgram {
             gl.glShaderSource(shaderId, 1, new String[] { program },
                     (int[]) null, 0);
             gl.glCompileShader(shaderId);
-            checkForCompileErrors(gl, shaderId, glShaderId, programName);
+
+            if (checkForCompileErrors(gl, shaderId, glShaderId, programName)) {
+                gl.glDeleteShader(shaderId);
+                throw new VizException(
+                        "Error compiling " + programName + " GLSL shader");
+            }
         }
         return shaderId;
     }
