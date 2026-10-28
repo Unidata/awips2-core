@@ -19,11 +19,11 @@
  **/
 package com.raytheon.viz.core.gl.ext;
 
-import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
 import java.util.Stack;
 
+import com.jogamp.opengl.GL;
 import com.jogamp.opengl.GL2;
 
 import com.raytheon.uf.common.colormap.image.ColorMapData.ColorMapDataType;
@@ -65,6 +65,7 @@ import com.raytheon.viz.core.gl.internal.GLView2D;
  *                                     format for offscreen textures.
  * Jan 26, 2015  3980      bsteffen    Add system property to disable luminance.
  * Jan 18, 2023			srcarter@ucar  Bring over MJ changes for GL2
+ * Oct 28, 2026         tiffanym@ucar  Preserve and restore the OpenGL viewport during offscreen rendering to fix RGB display scaling on macOS Retina displays
  * 
  * </pre>
  * 
@@ -74,20 +75,19 @@ import com.raytheon.viz.core.gl.internal.GLView2D;
 public class GLOffscreenRenderingExtension extends GraphicsExtension<IGLTarget>
         implements IGraphicsExtensionInterface {
 
-    private static class ViewInfo {
-        private IView view;
+	private static class ViewInfo {
+	    private IView view;
 
-        private AbstractGLImage image;
+	    private AbstractGLImage image;
 
-        /**
-         * @param extent
-         * @param bounds
-         */
-        public ViewInfo(IView view, AbstractGLImage image) {
-            this.view = view;
-            this.image = image;
-        }
-    }
+	    private int[] viewport;
+
+	    public ViewInfo(IView view, AbstractGLImage image, int[] viewport) {
+	        this.view = view;
+	        this.image = image;
+	        this.viewport = viewport;
+	    }
+	}
 
     private static boolean checkedLuminance = false;
 
@@ -133,15 +133,21 @@ public class GLOffscreenRenderingExtension extends GraphicsExtension<IGLTarget>
 
         IView view = new GLView2D(offscreenExtent);
 
-        if (currentInfo == null) {
-            // Use null for image so we use canvas when we pop
-            viewStack.push(new ViewInfo(target.getView(), null));
-        } else {
-            viewStack.push(currentInfo);
-        }
-        setCurrentView(new ViewInfo(view, glImage));
-    }
+        // Preserve the actual viewport in framebuffer pixels.
+        // Target bounds may use logical dimensions on HiDPI displays.
+        int[] viewport = new int[4];
+        target.getGl().glGetIntegerv(GL.GL_VIEWPORT, viewport, 0);
 
+        if (currentInfo == null) {
+            viewStack.push(new ViewInfo(target.getView(), null, viewport));
+        } else {
+            // Preserve the viewport for nested offscreen rendering too.
+            viewStack.push(new ViewInfo(currentInfo.view,
+                    currentInfo.image, viewport));
+        }
+
+        setCurrentView(new ViewInfo(view, glImage, null));
+    }
     /**
      * Ends offscreen rendering. Should only be called if a call to
      * {@link #beginOffscreenRendering(AbstractGLImage)} or
@@ -158,23 +164,29 @@ public class GLOffscreenRenderingExtension extends GraphicsExtension<IGLTarget>
 
     private void setCurrentView(ViewInfo current) throws VizException {
         currentInfo = current;
-        Rectangle bounds = null;
-        if (currentInfo.image == null) {
-            // Null bounds means use current targets bounds
-            bounds = new Rectangle(target.getBounds().width,
-                    target.getBounds().height);
-            // Set currentInfo to null since we are using screen/display info
-            // and we don't want to cache old info
+
+        if (current.image == null) {
             currentInfo = null;
-            target.getGl().getGL2().glBindFramebuffer(GL2.GL_FRAMEBUFFER, 0);
+            target.getGl().glBindFramebuffer(GL.GL_FRAMEBUFFER, 0);
         } else {
-            bounds = new Rectangle(currentInfo.image.getWidth(),
-                    currentInfo.image.getHeight());
-            currentInfo.image.usaAsFrameBuffer();
+            current.image.usaAsFrameBuffer();
         }
 
         target.setView(current.view);
-        target.getGl().getGL2().glViewport(0, 0, bounds.width, bounds.height);
+
+        if (current.viewport != null) {
+            // Restore the exact viewport saved before the offscreen pass.
+            target.getGl().glViewport(
+                    current.viewport[0],
+                    current.viewport[1],
+                    current.viewport[2],
+                    current.viewport[3]);
+        } else {
+            // A new offscreen pass uses the texture's pixel dimensions.
+            target.getGl().glViewport(0, 0,
+                    current.image.getWidth(),
+                    current.image.getHeight());
+        }
     }
 
     /*
