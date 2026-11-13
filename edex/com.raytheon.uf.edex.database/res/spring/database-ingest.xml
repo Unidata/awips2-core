@@ -32,10 +32,4 @@
         <constructor-arg value="mapsBloatMonitor" />
         <constructor-arg ref="mapsBloatMonitor" />
     </bean>
-
-    <bean id="clusteredDatabaseMonitor" factory-bean="routeContextFactory" factory-method="createClustered">
-        <constructor-arg>
-            <bean class="com.raytheon.uf.edex.database.cluster.ClusteredDatabaseMonitorRoutes" />
-        </constructor-arg>
-    </bean>
 </beans>
